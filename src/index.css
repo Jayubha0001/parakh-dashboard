@@ -1,0 +1,95 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+body {
+  font-family: "Poppins", "Roboto", sans-serif;
+  font-size: 14px;
+  background: #f4f7fc;
+  overflow-x: hidden;
+  color: #1f2937;
+}
+
+.MuiTypography-root {
+  font-size: 0.95rem;
+}
+
+.MuiCard-root {
+  border-radius: 14px !important;
+}
+
+/* Print rules - used by the Reports page "Print / Save as PDF" button */
+@media print {
+
+  /* Force backgrounds, chart bars, chips, and badge colors to actually
+     print instead of the browser stripping them to plain black/white. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  .MuiDrawer-root,
+  .no-print {
+    display: none !important;
+  }
+
+  /* The big navy hero banner is for on-screen browsing; on a printed
+     report it wastes the whole first page, so it's hidden via the
+     "no-print" wrapper Reports.jsx puts around <Header />. */
+
+  body,
+  #root {
+    background: #fff !important;
+  }
+
+  /* MUI Accordions/Tabs stay collapsed on screen for readability, but a
+     printed report should show every indicator and competency table, not
+     just whichever one happened to be open/selected. */
+  .MuiCollapse-root {
+    height: auto !important;
+    visibility: visible !important;
+    overflow: visible !important;
+  }
+
+  .MuiCollapse-wrapper,
+  .MuiCollapse-wrapperInner {
+    height: auto !important;
+  }
+
+  .print-show-all {
+    display: block !important;
+  }
+
+  .print-only-label {
+    display: block !important;
+  }
+
+  /* The main content area uses minHeight:100vh for on-screen layout so
+     the sidebar always reaches the bottom of the viewport. In print that
+     forces the page to be at least one full screen tall even when the
+     actual content is shorter, which is exactly what creates a trailing
+     blank page. */
+  .dashboard-main-content {
+    min-height: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .MuiAccordion-root {
+    break-inside: avoid;
+  }
+
+  .MuiAccordion-root.Mui-expanded {
+    margin: 8px 0 !important;
+  }
+}
