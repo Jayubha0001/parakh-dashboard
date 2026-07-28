@@ -8,18 +8,45 @@ import CombinedBandSummary from "../components/CombinedBandSummary";
 import CombinedRankingTable from "../components/CombinedRankingTable";
 import DistrictRankingChart from "../charts/DistrictRankingChart";
 import DistrictFilterBar from "../components/DistrictFilterBar";
+import ActionItemsQueue from "../components/ActionItemsQueue";
+import DistrictCompareView from "../components/DistrictCompareView";
 
-import { loadExcel, getCombinedRanking } from "../services/dataService";
+import {
+  loadExcel,
+  loadSATSem1Excel,
+  getCombinedRankingWithSAT,
+  getComparisonActionItems,
+  getAllDistrictNames,
+  getAllDistrictComparisonActionItems,
+  getPGICategoryHeatmap,
+  getSheetData,
+  getSATGradeWise,
+  getSATSem1GradeWise,
+} from "../services/dataService";
 
 const Comparison = () => {
   const [loading, setLoading] = useState(true);
-  const [ranking, setRanking] = useState({ weights: {}, districts: [], bandSummary: [] });
+  const [ranking, setRanking] = useState({ weights: {}, districts: [], bandSummary: [], bandSummaryWithSAT: [] });
+  const [actionItems, setActionItems] = useState([]);
+  const [allDistrictNames, setAllDistrictNames] = useState([]);
+  const [allDistrictItems, setAllDistrictItems] = useState([]);
   const [district, setDistrict] = useState("All");
+  const [pgiHeatmap, setPgiHeatmap] = useState({ categories: [], data: [] });
+  const [parakhGradeWise, setParakhGradeWise] = useState([]);
+  const [satGradeSem1, setSatGradeSem1] = useState({ grades: [], data: [] });
+  const [satGradeSem2, setSatGradeSem2] = useState({ grades: [], data: [] });
 
   useEffect(() => {
     async function fetchData() {
-      const workbook = await loadExcel();
-      setRanking(getCombinedRanking(workbook));
+      const [workbook, sem1Workbook] = await Promise.all([loadExcel(), loadSATSem1Excel()]);
+      setRanking(getCombinedRankingWithSAT(workbook, sem1Workbook));
+      setActionItems(getComparisonActionItems(workbook, sem1Workbook));
+      setAllDistrictNames(getAllDistrictNames(workbook));
+      setAllDistrictItems(getAllDistrictComparisonActionItems(workbook, sem1Workbook));
+      setPgiHeatmap(getPGICategoryHeatmap(workbook));
+      setParakhGradeWise(getSheetData(workbook, "Dashboard_PARAKH"));
+      setSatGradeSem1(getSATSem1GradeWise(sem1Workbook));
+      setSatGradeSem2(getSATGradeWise(workbook));
       setLoading(false);
     }
 
@@ -30,7 +57,7 @@ const Comparison = () => {
     return (
       <DashboardLayout>
         <Header />
-        <Loading message="Loading combined PGI-D + PARAKH ranking..." />
+        <Loading message="Loading combined PGI-D + PARAKH + SAT ranking..." />
       </DashboardLayout>
     );
   }
@@ -49,10 +76,20 @@ const Comparison = () => {
     <DashboardLayout>
       <Header />
 
+      <DistrictCompareView
+        districts={ranking.districts}
+        districtA={district !== "All" ? district : ranking.districts[0]?.District || ""}
+        onChangeDistrictA={(d) => setDistrict(d)}
+        pgiHeatmap={pgiHeatmap}
+        parakhGradeWise={parakhGradeWise}
+        satGradeSem1={satGradeSem1}
+        satGradeSem2={satGradeSem2}
+      />
+
       <DistrictFilterBar district={district} setDistrict={setDistrict} districts={districts} />
 
       <CombinedBandSummary
-        bandSummary={ranking.bandSummary}
+        bandSummary={ranking.bandSummaryWithSAT}
         weights={ranking.weights}
       />
 
@@ -61,6 +98,13 @@ const Comparison = () => {
       </Box>
 
       <CombinedRankingTable data={filteredDistricts} />
+
+      <ActionItemsQueue
+        items={actionItems}
+        allDistricts={allDistrictNames}
+        allItems={allDistrictItems}
+        syncDistrict={district}
+      />
     </DashboardLayout>
   );
 };

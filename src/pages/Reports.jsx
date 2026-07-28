@@ -10,6 +10,7 @@ import {
   Button,
   Chip,
   Divider,
+  Paper,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import PrintIcon from "@mui/icons-material/Print";
@@ -19,6 +20,7 @@ import Header from "../components/Header";
 import Loading from "../components/Loading";
 import { bandColor } from "../components/CombinedBandSummary";
 import DistrictDeepDive from "../components/DistrictDeepDive";
+import ActionItemsQueue from "../components/ActionItemsQueue";
 
 import {
   loadExcel,
@@ -28,6 +30,9 @@ import {
   getLocationComparison,
   getDistrictPGIIndicators,
   getDistrictCompetencies,
+  getPriorityActionItems,
+  getAllDistrictNames,
+  getAllDistrictActionItems,
 } from "../services/dataService";
 
 import { downloadCSV } from "../utils/helpers";
@@ -41,6 +46,9 @@ const Reports = () => {
   const [gender, setGender] = useState({ data: [] });
   const [location, setLocation] = useState({ data: [] });
   const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [actionItems, setActionItems] = useState([]);
+  const [allDistrictNames, setAllDistrictNames] = useState([]);
+  const [allDistrictItems, setAllDistrictItems] = useState([]);
 
   const [pgiDetail, setPgiDetail] = useState({ indicators: [], domainSummary: [], overall: null });
   const [competencies, setCompetencies] = useState({ g3: [], g6: [], g9: [] });
@@ -56,6 +64,9 @@ const Reports = () => {
       setGender(getGenderComparison(wb));
       setLocation(getLocationComparison(wb));
       setSelectedDistrict(c.districts[0]?.District || "");
+      setActionItems(getPriorityActionItems(wb));
+      setAllDistrictNames(getAllDistrictNames(wb));
+      setAllDistrictItems(getAllDistrictActionItems(wb));
 
       setLoading(false);
     }
@@ -119,36 +130,56 @@ const Reports = () => {
       <Box className="no-print"><Header /></Box>
 
       {/* Controls */}
-      <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 3 }} className="no-print">
-        <CardContent>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: 2,
-              alignItems: "center",
-            }}
-          >
-            <Typography variant="h6" fontWeight="bold">
-              📄 District Report Card
+      <Paper
+        elevation={0}
+        sx={{ borderRadius: 4, overflow: "hidden", mt: 3 }}
+        className="no-print"
+      >
+        <Box
+          sx={{
+            background: "linear-gradient(120deg, #0F172A 0%, #1E3A5F 100%)",
+            color: "#fff",
+            px: 3,
+            py: 2.5,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 2,
+          }}
+        >
+          <Box>
+            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 20 }}>
+              📄 District Report Generator
             </Typography>
-
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              onClick={handleExportAll}
-            >
-              Export All Districts (CSV)
-            </Button>
+            <Typography sx={{ fontSize: 13, opacity: 0.85, mt: 0.3 }}>
+              Pick a district for a printable report card, or export the full state ranking
+            </Typography>
           </Box>
 
+          <Button
+            variant="contained"
+            startIcon={<DownloadIcon />}
+            onClick={handleExportAll}
+            sx={{
+              bgcolor: "#F0B429",
+              color: "#16233B",
+              fontWeight: 700,
+              textTransform: "none",
+              "&:hover": { bgcolor: "#FFD54F" },
+            }}
+          >
+            Export All Districts (CSV)
+          </Button>
+        </Box>
+
+        <Box sx={{ p: 3 }}>
           <TextField
             select
             label="Select District"
             value={selectedDistrict}
             onChange={(e) => setSelectedDistrict(e.target.value)}
-            sx={{ mt: 3, minWidth: 260 }}
+            sx={{ minWidth: 260 }}
           >
             {combined.districts.map((d) => (
               <MenuItem key={d.District} value={d.District}>
@@ -156,8 +187,8 @@ const Reports = () => {
               </MenuItem>
             ))}
           </TextField>
-        </CardContent>
-      </Card>
+        </Box>
+      </Paper>
 
       {/* Printable Report Card */}
       {districtRow && (
@@ -337,6 +368,15 @@ const Reports = () => {
       {pgiDetail.overall && (
         <DistrictDeepDive pgiDetail={pgiDetail} competencies={competencies} />
       )}
+
+      <Box className="no-print">
+        <ActionItemsQueue
+          items={actionItems}
+          allDistricts={allDistrictNames}
+          allItems={allDistrictItems}
+          syncDistrict={selectedDistrict}
+        />
+      </Box>
     </DashboardLayout>
   );
 };

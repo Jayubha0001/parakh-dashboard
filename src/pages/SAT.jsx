@@ -340,7 +340,7 @@ const SAT = () => {
               📝 Gujarat SAT Dashboard
             </Typography>
             <Typography sx={{ mt: 1, opacity: 0.85 }}>
-              Summative Assessment Test — {semester === "all" ? "Both Semesters (Combined)" : semester === "sem1" ? "Semester 1" : "Semester 2"}
+              Semester Assessment Test — {semester === "all" ? "Both Semesters (Combined)" : semester === "sem1" ? "Semester 1" : "Semester 2"}
             </Typography>
             <Typography sx={{ mt: 1, opacity: 0.75, fontSize: 14 }}>
               {satSummary.totalDistricts} Districts · District / Grade / Subject / Learning-Outcome level breakdown

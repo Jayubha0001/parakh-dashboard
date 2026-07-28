@@ -89,34 +89,18 @@ const DetailTable = ({ colHeadA, colHeadB, children }) => (
 
 const DistrictCompareView = ({
   districts = [],
-  defaultDistrictA,
+  districtA,
+  onChangeDistrictA,
   pgiHeatmap = { categories: [], data: [] },
   parakhGradeWise = [],
   satGradeSem1 = { grades: [], data: [] },
   satGradeSem2 = { grades: [], data: [] },
 }) => {
   const names = districts.map((d) => d.District);
-
-  // District A and District B are fully local to this compare widget now —
-  // picking them here only changes what's shown in this card. They used to
-  // be wired up to the page's own District filter below, which meant
-  // choosing two districts to compare collapsed the ranking chart/table/
-  // action items further down the page to just District A. Keeping the
-  // selection local fixes that: the rest of the page keeps its own
-  // independent "All" / single-district filter.
-  const [districtA, setDistrictA] = useState(defaultDistrictA || names[0] || "");
   const [districtB, setDistrictB] = useState(names[1] || names[0] || "");
 
-  // Keep District A/B valid (and different from each other where possible)
-  // if the district list changes underneath us (e.g. data finishes loading).
-  useEffect(() => {
-    if (!names.length) return;
-    if (!names.includes(districtA)) {
-      setDistrictA(defaultDistrictA && names.includes(defaultDistrictA) ? defaultDistrictA : names[0]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [names.join("|")]);
-
+  // Keep District B valid (and different from A where possible) if the
+  // district list or District A changes underneath us.
   useEffect(() => {
     if (!names.length) return;
     if (!names.includes(districtB)) {
@@ -169,9 +153,9 @@ const DistrictCompareView = ({
               select
               fullWidth
               size="small"
-              label="District A"
+              label="District A (also sets the page filter below)"
               value={districtA}
-              onChange={(e) => setDistrictA(e.target.value)}
+              onChange={(e) => onChangeDistrictA(e.target.value)}
             >
               {names.map((n) => (
                 <MenuItem key={n} value={n}>
@@ -312,13 +296,10 @@ const DistrictCompareView = ({
                 <AccordionDetails>
                   {parakhA && parakhB ? (
                     <DetailTable colHeadA={districtA} colHeadB={districtB}>
-                      {/* Dashboard_PARAKH stores these as 0-1 fractions (e.g. 0.6 =
-                          60%), same as every other PARAKH reader in this app — multiply
-                          by 100 here too, or these rows print "0.6%" instead of "60.0%". */}
-                      <DetailRow label="Foundational (Grade 3)" a={parakhA.Foundational * 100} b={parakhB.Foundational * 100} />
-                      <DetailRow label="Preparatory (Grade 6)" a={parakhA.Preparatory * 100} b={parakhB.Preparatory * 100} />
-                      <DetailRow label="Middle (Grade 9)" a={parakhA.Middle * 100} b={parakhB.Middle * 100} />
-                      <DetailRow label="Overall" a={parakhA.Overall * 100} b={parakhB.Overall * 100} />
+                      <DetailRow label="Foundational (Grade 3)" a={parakhA.Foundational} b={parakhB.Foundational} />
+                      <DetailRow label="Preparatory (Grade 6)" a={parakhA.Preparatory} b={parakhB.Preparatory} />
+                      <DetailRow label="Middle (Grade 9)" a={parakhA.Middle} b={parakhB.Middle} />
+                      <DetailRow label="Overall" a={parakhA.Overall} b={parakhB.Overall} />
                     </DetailTable>
                   ) : (
                     <Typography sx={{ fontSize: 13, color: "text.secondary" }}>No PARAKH grade-wise data for one of these districts.</Typography>
@@ -366,9 +347,8 @@ const DistrictCompareView = ({
             Note: the source workbook doesn't track week-by-week data — PGI-D is one annual round, PARAKH one
             assessment cycle, and SAT is tracked per semester (Sem 1 and Sem 2 shown separately above; the
             Composite row averages both). Every chip above shows exactly which sheet/period that row's number
-            comes from. District A and District B above are independent of the District filter below — pick
-            any two districts here to compare them without changing the ranking chart, table, or action items
-            further down the page.
+            comes from. District A here is the same district selected in the filter below, so the rest of the
+            page (chart, ranking table, action items) stays in sync with whichever district you're comparing.
           </Typography>
         </Box>
       </CardContent>

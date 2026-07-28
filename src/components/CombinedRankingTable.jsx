@@ -18,6 +18,8 @@ import {
   Tooltip,
 } from "@mui/material";
 import { bandColor } from "./CombinedBandSummary";
+import { isPriorityDistrict } from "../utils/priorityDistricts";
+import PriorityChip from "./PriorityChip";
 
 const medalColor = (rank) => {
   if (rank === 1) return "#F0B429";
@@ -69,7 +71,7 @@ const CombinedRankingTable = ({ data = [] }) => {
             color: "#16233B",
           }}
         >
-          Combined PGI-D + PARAKH Ranking — All 33 Districts
+          Combined PGI-D + PARAKH + SAT Ranking — All 33 Districts
         </Typography>
 
         <TextField
@@ -79,12 +81,14 @@ const CombinedRankingTable = ({ data = [] }) => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ mb: 2 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            },
           }}
         />
 
@@ -101,6 +105,9 @@ const CombinedRankingTable = ({ data = [] }) => {
                   PARAKH %
                 </TableCell>
                 <TableCell align="center" sx={{ fontWeight: 700, bgcolor: "#0F172A", color: "#fff" }}>
+                  SAT % (Sem1+2 avg)
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 700, bgcolor: "#0F172A", color: "#fff" }}>
                   Composite %
                 </TableCell>
                 <TableCell align="center" sx={{ fontWeight: 700, bgcolor: "#0F172A", color: "#fff" }}>
@@ -111,30 +118,40 @@ const CombinedRankingTable = ({ data = [] }) => {
 
             <TableBody>
               {filteredRows.map((row) => (
-                <TableRow key={row.District} hover>
+                <TableRow
+                  key={row.District}
+                  hover
+                  sx={isPriorityDistrict(row.District) ? { bgcolor: "#FFFBEB" } : undefined}
+                >
                   <TableCell>
-                    <RankBadge rank={row.Rank} />
+                    <RankBadge rank={row.RankWithSAT ?? row.Rank} />
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 500 }}>{row.District}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>
+                    {row.District}
+                    <PriorityChip district={row.District} />
+                  </TableCell>
                   <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
                     {row.PGIDScore.toFixed(1)}%
                   </TableCell>
                   <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
                     {row.PARAKHScore.toFixed(1)}%
                   </TableCell>
+                  <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
+                    {row.SATScore != null ? `${row.SATScore.toFixed(1)}%` : "—"}
+                  </TableCell>
                   <TableCell
                     align="center"
                     sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700 }}
                   >
-                    {row.CompositeScore.toFixed(1)}%
+                    {(row.CompositeWithSAT ?? row.CompositeScore).toFixed(1)}%
                   </TableCell>
                   <TableCell align="center">
                     <Tooltip title={row.PriorityNote || ""} arrow>
                       <Chip
-                        label={row.Band}
+                        label={row.BandWithSAT ?? row.Band}
                         size="small"
                         sx={{
-                          bgcolor: bandColor(row.Band),
+                          bgcolor: bandColor(row.BandWithSAT ?? row.Band),
                           color: "#fff",
                           fontWeight: "bold",
                         }}

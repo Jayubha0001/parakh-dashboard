@@ -10,12 +10,16 @@ import PGIRankingChart from "../charts/PGIRankingChart";
 import HeatMapChart from "../charts/HeatMapChart";
 import Loading from "../components/Loading";
 import DistrictFilterBar from "../components/DistrictFilterBar";
+import ActionItemsQueue from "../components/ActionItemsQueue";
 
 import {
   loadExcel,
   getStatePGISummary,
   getDistrictPGIRanking,
   getPGICategoryHeatmap,
+  getPGIActionItems,
+  getAllDistrictNames,
+  getAllDistrictPGIActionItems,
 } from "../services/dataService";
 
 const PGI = () => {
@@ -24,6 +28,9 @@ const PGI = () => {
   const [districtRanking, setDistrictRanking] = useState([]);
   const [heatmap, setHeatmap] = useState({ categories: [], data: [] });
   const [district, setDistrict] = useState("All");
+  const [actionItems, setActionItems] = useState([]);
+  const [allDistrictNames, setAllDistrictNames] = useState([]);
+  const [allDistrictItems, setAllDistrictItems] = useState([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -32,6 +39,9 @@ const PGI = () => {
       setStateSummary(getStatePGISummary(workbook));
       setDistrictRanking(getDistrictPGIRanking(workbook));
       setHeatmap(getPGICategoryHeatmap(workbook));
+      setActionItems(getPGIActionItems(workbook));
+      setAllDistrictNames(getAllDistrictNames(workbook));
+      setAllDistrictItems(getAllDistrictPGIActionItems(workbook));
 
       setLoading(false);
     }
@@ -100,6 +110,13 @@ const PGI = () => {
       <PGITable data={filteredSorted} />
 
       <HeatMapChart categories={heatmap.categories} data={filteredHeatmapData} />
+
+      <ActionItemsQueue
+        items={actionItems}
+        allDistricts={allDistrictNames}
+        allItems={allDistrictItems}
+        syncDistrict={district}
+      />
     </DashboardLayout>
   );
 };

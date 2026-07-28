@@ -13,8 +13,10 @@ import { NavLink } from "react-router-dom";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import SchoolIcon from "@mui/icons-material/School";
 import AssessmentIcon from "@mui/icons-material/Assessment";
+import FactCheckIcon from "@mui/icons-material/FactCheck";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import DescriptionIcon from "@mui/icons-material/Description";
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 
 const drawerWidth = 240;
 
@@ -35,9 +37,19 @@ const menuItems = [
     path: "/pgi",
   },
   {
+    text: "SAT",
+    icon: <FactCheckIcon />,
+    path: "/sat",
+  },
+  {
     text: "Comparison",
     icon: <EmojiEventsIcon />,
     path: "/comparison",
+  },
+  {
+    text: "PM Shri",
+    icon: <AccountBalanceIcon />,
+    path: "/pmshri",
   },
   {
     text: "Reports",

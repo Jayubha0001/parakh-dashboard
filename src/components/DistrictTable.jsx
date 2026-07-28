@@ -18,6 +18,8 @@ import {
   TextField,
   InputAdornment,
 } from "@mui/material";
+import { isPriorityDistrict } from "../utils/priorityDistricts";
+import PriorityChip from "./PriorityChip";
 
 const DistrictTable = ({ data }) => {
         const [search, setSearch] = useState("");
@@ -48,12 +50,14 @@ const DistrictTable = ({ data }) => {
   value={search}
   onChange={(e) => setSearch(e.target.value)}
   sx={{ mb: 2 }}
-  InputProps={{
-    startAdornment: (
-      <InputAdornment position="start">
-        <SearchIcon />
-      </InputAdornment>
-    ),
+  slotProps={{
+    input: {
+      startAdornment: (
+        <InputAdornment position="start">
+          <SearchIcon />
+        </InputAdornment>
+      ),
+    },
   }}
 />
         <TableContainer component={Paper}>
@@ -103,11 +107,19 @@ const DistrictTable = ({ data }) => {
                 <TableRow
                   key={row.Rank}
                   hover
+                  sx={
+                    isPriorityDistrict(row.District)
+                      ? { bgcolor: "#FFFBEB" }
+                      : undefined
+                  }
                 >
 
                   <TableCell>{row.Rank}</TableCell>
 
-                  <TableCell>{row.District}</TableCell>
+                  <TableCell>
+                    {row.District}
+                    <PriorityChip district={row.District} />
+                  </TableCell>
 
                   <TableCell align="center">
                     {row.Foundational}%

@@ -17,6 +17,9 @@ import {
   InputAdornment,
 } from "@mui/material";
 
+import { isPriorityDistrict } from "../utils/priorityDistricts";
+import PriorityChip from "./PriorityChip";
+
 const isGapColumn = (col) => col.toLowerCase().includes("gap");
 
 const ComparisonSection = ({
@@ -92,12 +95,14 @@ const ComparisonSection = ({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ mb: 2 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            },
           }}
         />
 
@@ -123,8 +128,15 @@ const ComparisonSection = ({
 
             <TableBody>
               {filteredRows.map((row) => (
-                <TableRow key={row.District} hover>
-                  <TableCell>{row.District}</TableCell>
+                <TableRow
+                  key={row.District}
+                  hover
+                  sx={isPriorityDistrict(row.District) ? { bgcolor: "#FFFBEB" } : undefined}
+                >
+                  <TableCell>
+                    {row.District}
+                    <PriorityChip district={row.District} />
+                  </TableCell>
 
                   {columns.map((col) => {
                     const val = row[col] ?? 0;
