@@ -4,16 +4,15 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   LabelList,
 } from "recharts";
 
 import DashboardLayout from "../components/DashboardLayout";
-import SATTable from "../components/SATTable";
 import SATHeatMapChart from "../components/SATHeatMapChart";
 import SATSemesterComparison from "../components/SATSemesterComparison";
 import Loading from "../components/Loading";
@@ -104,15 +103,115 @@ const SAT = () => {
     fetchData();
   }, []);
 
-  // Active dataset for this page, based on the Semester 1 / Semester 2
-  // toggle. Everything below (KPIs, charts, heat-maps, table, action
-  // items) reads from these — unchanged variable names — so switching
-  // semester swaps the whole page at once.
-  const satRanking = semester === "sem1" ? satRankingSem1 : satRankingSem2;
-  const satGradeWise = semester === "sem1" ? satGradeWiseSem1 : satGradeWiseSem2;
-  const satSummary = semester === "sem1" ? satSummarySem1 : satSummarySem2;
-  const satSubjectWise = semester === "sem1" ? satSubjectWiseSem1 : satSubjectWiseSem2;
-  const satSubjectHeatmap = semester === "sem1" ? satSubjectHeatmapSem1 : satSubjectHeatmapSem2;
+  // -----------------------------
+  // Combined "All" dataset — both semesters' percentages averaged
+  // together (district ranking uses the pooled-marks Total from
+  // getSATSemesterComparison; grade/subject/heat-map values are the
+  // mean of the two semesters' percentages per cell, since raw marks
+  // aren't tracked at that granularity).
+  // -----------------------------
+
+  const satRankingAll = satSemesterComparison
+    .filter((d) => d.TotalPct != null)
+    .map((d) => ({ District: d.District, PercentAchieved: d.TotalPct }))
+    .sort((a, b) => b.PercentAchieved - a.PercentAchieved)
+    .map((d, index) => ({ ...d, Rank: index + 1 }));
+
+  const avgOf = (a, b) => (a == null && b == null ? null : ((a ?? b) + (b ?? a)) / 2);
+
+  const satGradeWiseAll = (() => {
+    const grades = [...new Set([...satGradeWiseSem2.grades, ...satGradeWiseSem1.grades])];
+    const districtsUnion = [
+      ...new Set([
+        ...satGradeWiseSem2.data.map((d) => d.District),
+        ...satGradeWiseSem1.data.map((d) => d.District),
+      ]),
+    ];
+
+    const data = districtsUnion.map((District) => {
+      const row = { District };
+      grades.forEach((grade) => {
+        const s2 = satGradeWiseSem2.data.find((d) => d.District === District)?.[grade];
+        const s1 = satGradeWiseSem1.data.find((d) => d.District === District)?.[grade];
+        const avg = avgOf(s1, s2);
+        if (avg != null) row[grade] = avg;
+      });
+      return row;
+    });
+
+    return { grades, data };
+  })();
+
+  const satSummaryAll = {
+    stateAverage: satRankingAll.length
+      ? satRankingAll.reduce((sum, d) => sum + d.PercentAchieved, 0) / satRankingAll.length
+      : 0,
+    totalDistricts: satRankingAll.length,
+    gradeAverages: satGradeWiseAll.grades.map((grade) => {
+      const values = satGradeWiseAll.data.map((d) => d[grade]).filter((v) => typeof v === "number");
+      return {
+        grade,
+        average: values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0,
+      };
+    }),
+  };
+
+  const satSubjectWiseAll = (() => {
+    const subjects = [
+      ...new Set([
+        ...satSubjectWiseSem2.map((s) => s.subject),
+        ...satSubjectWiseSem1.map((s) => s.subject),
+      ]),
+    ];
+
+    return subjects
+      .map((subject) => ({
+        subject,
+        PercentAchieved: avgOf(
+          satSubjectWiseSem1.find((s) => s.subject === subject)?.PercentAchieved,
+          satSubjectWiseSem2.find((s) => s.subject === subject)?.PercentAchieved
+        ),
+      }))
+      .filter((s) => s.PercentAchieved != null)
+      .sort((a, b) => b.PercentAchieved - a.PercentAchieved);
+  })();
+
+  const satSubjectHeatmapAll = (() => {
+    const subjects = [
+      ...new Set([...satSubjectHeatmapSem2.subjects, ...satSubjectHeatmapSem1.subjects]),
+    ];
+    const districtsUnion = [
+      ...new Set([
+        ...satSubjectHeatmapSem2.data.map((d) => d.District),
+        ...satSubjectHeatmapSem1.data.map((d) => d.District),
+      ]),
+    ];
+
+    const data = districtsUnion.map((District) => {
+      const row = { District };
+      subjects.forEach((subject) => {
+        const s2 = satSubjectHeatmapSem2.data.find((d) => d.District === District)?.[subject];
+        const s1 = satSubjectHeatmapSem1.data.find((d) => d.District === District)?.[subject];
+        const avg = avgOf(s1, s2);
+        if (avg != null) row[subject] = avg;
+      });
+      return row;
+    });
+
+    return { subjects, data };
+  })();
+
+  // Active dataset for this page, based on the All / Semester 1 /
+  // Semester 2 toggle. Everything below (KPIs, charts, heat-maps,
+  // table, action items) reads from these — unchanged variable names —
+  // so switching semester swaps the whole page at once.
+  const satRanking = semester === "all" ? satRankingAll : semester === "sem1" ? satRankingSem1 : satRankingSem2;
+  const satGradeWise = semester === "all" ? satGradeWiseAll : semester === "sem1" ? satGradeWiseSem1 : satGradeWiseSem2;
+  const satSummary = semester === "all" ? satSummaryAll : semester === "sem1" ? satSummarySem1 : satSummarySem2;
+  const satSubjectWise = semester === "all" ? satSubjectWiseAll : semester === "sem1" ? satSubjectWiseSem1 : satSubjectWiseSem2;
+  const satSubjectHeatmap = semester === "all" ? satSubjectHeatmapAll : semester === "sem1" ? satSubjectHeatmapSem1 : satSubjectHeatmapSem2;
+  // Action items don't have a pooled-marks version — Semester 2 is used
+  // as the basis whenever "All" is selected.
   const satActionItems = semester === "sem1" ? satActionItemsSem1 : satActionItemsSem2;
   const allDistrictSatItems = semester === "sem1" ? allDistrictSatItemsSem1 : allDistrictSatItemsSem2;
 
@@ -124,13 +223,6 @@ const SAT = () => {
 
   const topDistrict = sortedByScore[0];
   const lowestDistrict = sortedByScore[sortedByScore.length - 1];
-
-  // Leaderboard + table narrow to the selected district; the state-level
-  // overview card above stays state-wide as a fixed reference.
-  const filteredRanking =
-    district === "All"
-      ? sortedByScore
-      : sortedByScore.filter((d) => d.District === district);
 
   const top5 = sortedByScore.slice(0, 5).map((d) => ({
     District: d.District,
@@ -145,51 +237,81 @@ const SAT = () => {
       Score: Number(d.PercentAchieved.toFixed(1)),
     }));
 
-  const chartAll = sortedByScore.map((d) => ({
+  // District x Grade and District x Subject heat-map tables (Semester 2 /
+  // Semester 1, both always shown) are built directly where they're
+  // rendered further down, from satGradeWiseSem2/Sem1 and
+  // satSubjectHeatmapSem2/Sem1.
+
+  // -----------------------------
+  // Sem 1 vs Sem 2 comparison data for the three main charts + the two
+  // heat-maps below — these are ALWAYS both-semesters, independent of
+  // the Semester 1 / Semester 2 toggle above (which only drives the
+  // KPI cards, leaderboard, table, and action items).
+  // -----------------------------
+
+  const districtComparisonChartAll = satSemesterComparison.map((d) => ({
     District: d.District,
-    Score: Number(d.PercentAchieved.toFixed(1)),
+    "Sem 1": d.Sem1Pct != null ? Number(d.Sem1Pct.toFixed(1)) : null,
+    "Sem 2": d.Sem2Pct != null ? Number(d.Sem2Pct.toFixed(1)) : null,
   }));
 
-  const chartData =
+  const districtComparisonChartData =
     district !== "All"
-      ? [
-          ...chartAll.filter((d) => d.District === district),
-          {
-            District: "Gujarat State Average",
-            Score: Number(satSummary.stateAverage.toFixed(1)),
-            isAverage: true,
-          },
-        ]
-      : chartAll;
+      ? districtComparisonChartAll.filter((d) => d.District === district)
+      : districtComparisonChartAll;
 
-  const gradeChartData = satGradeWise.grades.map((grade) => {
-    const row = { grade };
-    if (district !== "All") {
-      const districtRow = satGradeWise.data.find((d) => d.District === district);
-      row.Score = Number((districtRow?.[grade] ?? 0).toFixed(1));
-    } else {
-      const stateAvg = satSummary.gradeAverages.find((g) => g.grade === grade);
-      row.Score = Number((stateAvg?.average ?? 0).toFixed(1));
-    }
-    return row;
-  });
+  const gradeComparisonChartData = (() => {
+    const grades = [...new Set([...satGradeWiseSem2.grades, ...satGradeWiseSem1.grades])];
 
-  const subjectChartData = satSubjectWise.map((s) => ({
-    subject: s.subject,
-    Score: Number(s.PercentAchieved.toFixed(1)),
-  }));
+    return grades.map((grade) => {
+      let sem1Value;
+      let sem2Value;
 
-  // District x Grade and District x Subject heat-map tables, narrowed to
-  // the selected district like the rest of the page.
-  const gradeHeatmapData =
+      if (district !== "All") {
+        sem1Value = satGradeWiseSem1.data.find((d) => d.District === district)?.[grade];
+        sem2Value = satGradeWiseSem2.data.find((d) => d.District === district)?.[grade];
+      } else {
+        sem1Value = satSummarySem1.gradeAverages.find((g) => g.grade === grade)?.average;
+        sem2Value = satSummarySem2.gradeAverages.find((g) => g.grade === grade)?.average;
+      }
+
+      return {
+        grade,
+        "Sem 1": sem1Value != null ? Number(sem1Value.toFixed(1)) : null,
+        "Sem 2": sem2Value != null ? Number(sem2Value.toFixed(1)) : null,
+      };
+    });
+  })();
+
+  const subjectComparisonChartData = (() => {
+    const subjects = [
+      ...new Set([
+        ...satSubjectWiseSem2.map((s) => s.subject),
+        ...satSubjectWiseSem1.map((s) => s.subject),
+      ]),
+    ];
+
+    return subjects.map((subject) => {
+      const sem1Value = satSubjectWiseSem1.find((s) => s.subject === subject)?.PercentAchieved;
+      const sem2Value = satSubjectWiseSem2.find((s) => s.subject === subject)?.PercentAchieved;
+
+      return {
+        subject,
+        "Sem 1": sem1Value != null ? Number(sem1Value.toFixed(1)) : null,
+        "Sem 2": sem2Value != null ? Number(sem2Value.toFixed(1)) : null,
+      };
+    });
+  })();
+
+  const gradeHeatmapDataSem1 =
     district !== "All"
-      ? satGradeWise.data.filter((d) => d.District === district)
-      : satGradeWise.data;
+      ? satGradeWiseSem1.data.filter((d) => d.District === district)
+      : satGradeWiseSem1.data;
 
-  const subjectHeatmapData =
+  const subjectHeatmapDataSem1 =
     district !== "All"
-      ? satSubjectHeatmap.data.filter((d) => d.District === district)
-      : satSubjectHeatmap.data;
+      ? satSubjectHeatmapSem1.data.filter((d) => d.District === district)
+      : satSubjectHeatmapSem1.data;
 
   if (loading) {
     return (
@@ -218,7 +340,7 @@ const SAT = () => {
               📝 Gujarat SAT Dashboard
             </Typography>
             <Typography sx={{ mt: 1, opacity: 0.85 }}>
-              Semester Assessment Test — {semester === "sem1" ? "Semester 1" : "Semester 2"}
+              Semester Assessment Test — {semester === "all" ? "Both Semesters (Combined)" : semester === "sem1" ? "Semester 1" : "Semester 2"}
             </Typography>
             <Typography sx={{ mt: 1, opacity: 0.75, fontSize: 14 }}>
               {satSummary.totalDistricts} Districts · District / Grade / Subject / Learning-Outcome level breakdown
@@ -248,8 +370,9 @@ const SAT = () => {
                 },
               }}
             >
-              <ToggleButton value="sem2">Semester 2</ToggleButton>
+              <ToggleButton value="all">All</ToggleButton>
               <ToggleButton value="sem1">Semester 1</ToggleButton>
+              <ToggleButton value="sem2">Semester 2</ToggleButton>
             </ToggleButtonGroup>
           </Grid>
 
@@ -324,13 +447,6 @@ const SAT = () => {
           })}
         </Grid>
       </Paper>
-
-      {/* District Filter */}
-      <Box mt={1} mb={2}>
-        <DistrictFilterBar district={district} setDistrict={setDistrict} districts={districts} />
-      </Box>
-
-      <SATSemesterComparison data={satSemesterComparison} district={district} />
 
       {/* Leaderboard: Top 5 / Needs Support */}
       <Grid container spacing={3} mb={3}>
@@ -416,73 +532,54 @@ const SAT = () => {
         ))}
       </Grid>
 
-      {/* District-wise bar chart */}
+      {/* District Filter */}
+      <Box mt={1} mb={2}>
+        <DistrictFilterBar district={district} setDistrict={setDistrict} districts={districts} />
+      </Box>
+
+      <SATSemesterComparison data={satSemesterComparison} district={district} />
+
+      {/* District-wise bar chart — Sem 1 vs Sem 2, always both */}
       <Card elevation={3} sx={{ mb: 3 }}>
         <CardContent>
           <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-            District-wise SAT Overall Performance (%) · {semester === "sem1" ? "Semester 1" : "Semester 2"}
+            District-wise SAT Overall Performance (%) · Semester 1 vs Semester 2
           </Typography>
 
-          <ResponsiveContainer width="100%" height={420}>
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
+          <ResponsiveContainer width="100%" height={460}>
+            <BarChart data={districtComparisonChartData} margin={{ top: 30, right: 30, left: 20, bottom: 100 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="District" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 10 }} />
               <YAxis domain={[0, 100]} />
-              <Tooltip formatter={(value) => `${value}%`} />
-              <Bar dataKey="Score" barSize={20} radius={[6, 6, 0, 0]}>
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={index}
-                    fill={
-                      entry.isAverage
-                        ? "#0F172A"
-                        : entry.Score >= 60
-                        ? "#2E7D32"
-                        : entry.Score >= 45
-                        ? "#FB8C00"
-                        : "#D32F2F"
-                    }
-                  />
-                ))}
-                <LabelList
-                  dataKey="Score"
-                  position="top"
-                  formatter={(value) => `${value}%`}
-                  style={{ fontSize: 11, fontWeight: "bold", fill: "#333" }}
-                />
-              </Bar>
+              <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
+              <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: 12 }} />
+              <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
+              <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* Grade-wise bar chart */}
-      {gradeChartData.length > 0 && (
+      {/* Grade-wise bar chart — Sem 1 vs Sem 2, always both */}
+      {gradeComparisonChartData.length > 0 && (
         <Card elevation={3} sx={{ mb: 3 }}>
           <CardContent>
             <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-              SAT — Grade-wise Performance (%) · {semester === "sem1" ? "Semester 1" : "Semester 2"}{district !== "All" ? ` · ${district}` : " · Gujarat State Average"}
+              SAT — Grade-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district}` : " · Gujarat State Average"}
             </Typography>
 
             <ResponsiveContainer width="100%" height={340}>
-              <BarChart data={gradeChartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+              <BarChart data={gradeComparisonChartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="grade" tick={{ fontSize: 12 }} />
                 <YAxis domain={[0, 100]} />
-                <Tooltip formatter={(value) => `${value}%`} />
-                <Bar dataKey="Score" barSize={40} radius={[6, 6, 0, 0]}>
-                  {gradeChartData.map((entry, index) => (
-                    <Cell
-                      key={index}
-                      fill={entry.Score >= 60 ? "#2E7D32" : entry.Score >= 45 ? "#FB8C00" : "#D32F2F"}
-                    />
-                  ))}
-                  <LabelList
-                    dataKey="Score"
-                    position="top"
-                    formatter={(value) => `${value}%`}
-                    style={{ fontSize: 11, fontWeight: "bold", fill: "#333" }}
-                  />
+                <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
+                <Legend />
+                <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={30}>
+                  <LabelList dataKey="Sem 1" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 10, fontWeight: "bold", fill: "#555" }} />
+                </Bar>
+                <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={30}>
+                  <LabelList dataKey="Sem 2" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 10, fontWeight: "bold", fill: "#333" }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -490,33 +587,26 @@ const SAT = () => {
         </Card>
       )}
 
-      {/* Subject-wise bar chart (state-wide) */}
-      {subjectChartData.length > 0 && (
+      {/* Subject-wise bar chart (state-wide) — Sem 1 vs Sem 2, always both */}
+      {subjectComparisonChartData.length > 0 && (
         <Card elevation={3} sx={{ mb: 3 }}>
           <CardContent>
             <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-              SAT — Subject-wise Performance (%) · Gujarat State-wide · {semester === "sem1" ? "Semester 1" : "Semester 2"}
+              SAT — Subject-wise Performance (%) · Gujarat State-wide · Semester 1 vs Semester 2
             </Typography>
 
             <ResponsiveContainer width="100%" height={340}>
-              <BarChart data={subjectChartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+              <BarChart data={subjectComparisonChartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="subject" angle={-25} textAnchor="end" interval={0} tick={{ fontSize: 10 }} />
                 <YAxis domain={[0, 100]} />
-                <Tooltip formatter={(value) => `${value}%`} />
-                <Bar dataKey="Score" barSize={30} radius={[6, 6, 0, 0]}>
-                  {subjectChartData.map((entry, index) => (
-                    <Cell
-                      key={index}
-                      fill={entry.Score >= 60 ? "#2E7D32" : entry.Score >= 45 ? "#FB8C00" : "#D32F2F"}
-                    />
-                  ))}
-                  <LabelList
-                    dataKey="Score"
-                    position="top"
-                    formatter={(value) => `${value}%`}
-                    style={{ fontSize: 11, fontWeight: "bold", fill: "#333" }}
-                  />
+                <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
+                <Legend />
+                <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={22}>
+                  <LabelList dataKey="Sem 1" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#555" }} />
+                </Bar>
+                <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={22}>
+                  <LabelList dataKey="Sem 2" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#333" }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -526,19 +616,39 @@ const SAT = () => {
 
       <SATHeatMapChart
         icon="📊"
-        title={`District x Grade — SAT Score Heat-map (%) · ${semester === "sem1" ? "Semester 1" : "Semester 2"}${district !== "All" ? ` · ${district}` : ""}`}
-        columns={satGradeWise.grades}
-        data={gradeHeatmapData}
+        title={`District x Grade — SAT Score Heat-map (%) · Semester 2${district !== "All" ? ` · ${district}` : ""}`}
+        columns={satGradeWiseSem2.grades}
+        data={
+          district !== "All"
+            ? satGradeWiseSem2.data.filter((d) => d.District === district)
+            : satGradeWiseSem2.data
+        }
+      />
+
+      <SATHeatMapChart
+        icon="📊"
+        title={`District x Grade — SAT Score Heat-map (%) · Semester 1${district !== "All" ? ` · ${district}` : ""}`}
+        columns={satGradeWiseSem1.grades}
+        data={gradeHeatmapDataSem1}
       />
 
       <SATHeatMapChart
         icon="📘"
-        title={`District x Subject — SAT Score Heat-map (%) · ${semester === "sem1" ? "Semester 1" : "Semester 2"}${district !== "All" ? ` · ${district}` : ""}`}
-        columns={satSubjectHeatmap.subjects}
-        data={subjectHeatmapData}
+        title={`District x Subject — SAT Score Heat-map (%) · Semester 2${district !== "All" ? ` · ${district}` : ""}`}
+        columns={satSubjectHeatmapSem2.subjects}
+        data={
+          district !== "All"
+            ? satSubjectHeatmapSem2.data.filter((d) => d.District === district)
+            : satSubjectHeatmapSem2.data
+        }
       />
 
-      <SATTable data={filteredRanking} />
+      <SATHeatMapChart
+        icon="📘"
+        title={`District x Subject — SAT Score Heat-map (%) · Semester 1${district !== "All" ? ` · ${district}` : ""}`}
+        columns={satSubjectHeatmapSem1.subjects}
+        data={subjectHeatmapDataSem1}
+      />
 
       <ActionItemsQueue
         items={satActionItems}

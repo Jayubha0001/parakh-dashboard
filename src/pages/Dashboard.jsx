@@ -32,6 +32,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   LabelList,
 } from "recharts";
 
@@ -39,7 +40,6 @@ import Header from "../components/Header";
 import DashboardLayout from "../components/DashboardLayout";
 import FilterBar from "../components/FilterBar";
 import PGITable from "../components/PGITable";
-import SATTable from "../components/SATTable";
 import SATSemesterComparison from "../components/SATSemesterComparison";
 import ActionItemsQueue from "../components/ActionItemsQueue";
 import NationalBenchmarkPanel from "../components/NationalBenchmarkPanel";
@@ -61,10 +61,12 @@ import {
   getSATDistrictRanking,
   getSATGradeWise,
   getSATStateSummary,
+  getSATSubjectWise,
   getSATSemesterComparison,
   getSATSem1DistrictRanking,
   getSATSem1GradeWise,
   getSATSem1StateSummary,
+  getSATSem1SubjectWise,
 } from "../services/dataService";
 
 const Dashboard = () => {
@@ -88,10 +90,12 @@ const Dashboard = () => {
   const [satRankingSem2, setSatRankingSem2] = useState([]);
   const [satGradeWiseSem2, setSatGradeWiseSem2] = useState({ grades: [], data: [] });
   const [satSummarySem2, setSatSummarySem2] = useState({ stateAverage: 0, totalDistricts: 0, gradeAverages: [] });
+  const [satSubjectWiseSem2, setSatSubjectWiseSem2] = useState([]);
 
   const [satRankingSem1, setSatRankingSem1] = useState([]);
   const [satGradeWiseSem1, setSatGradeWiseSem1] = useState({ grades: [], data: [] });
   const [satSummarySem1, setSatSummarySem1] = useState({ stateAverage: 0, totalDistricts: 0, gradeAverages: [] });
+  const [satSubjectWiseSem1, setSatSubjectWiseSem1] = useState([]);
 
   const [satSemesterComparison, setSatSemesterComparison] = useState([]);
 
@@ -138,10 +142,12 @@ const Dashboard = () => {
       setSatRankingSem2(getSATDistrictRanking(workbook));
       setSatGradeWiseSem2(getSATGradeWise(workbook));
       setSatSummarySem2(getSATStateSummary(workbook));
+      setSatSubjectWiseSem2(getSATSubjectWise(workbook));
 
       setSatRankingSem1(getSATSem1DistrictRanking(sem1Workbook));
       setSatGradeWiseSem1(getSATSem1GradeWise(sem1Workbook));
       setSatSummarySem1(getSATSem1StateSummary(sem1Workbook));
+      setSatSubjectWiseSem1(getSATSem1SubjectWise(sem1Workbook));
 
       setSatSemesterComparison(getSATSemesterComparison(workbook, sem1Workbook));
 
@@ -440,39 +446,64 @@ const satBottom5 = [...satRanking]
     Score: Number(d.PercentAchieved.toFixed(1)),
   }));
 
-const satChartAll = satRanking.map((d) => ({
+// -----------------------------
+// Sem 1 vs Sem 2 comparison data — always both semesters, independent
+// of the satSemester toggle above (which only drives the KPI/table).
+// -----------------------------
+
+const satDistrictComparisonChartAll = satSemesterComparison.map((d) => ({
   District: d.District,
-  Score: Number(d.PercentAchieved.toFixed(1)),
+  "Sem 1": d.Sem1Pct != null ? Number(d.Sem1Pct.toFixed(1)) : null,
+  "Sem 2": d.Sem2Pct != null ? Number(d.Sem2Pct.toFixed(1)) : null,
 }));
 
-const satChartData =
+const satDistrictComparisonChartData =
   district !== "All"
-    ? [
-        ...satChartAll.filter((d) => d.District === district),
-        {
-          District: "Gujarat State Average",
-          Score: Number(satSummary.stateAverage.toFixed(1)),
-          isAverage: true,
-        },
-      ]
-    : satChartAll;
+    ? satDistrictComparisonChartAll.filter((d) => d.District === district)
+    : satDistrictComparisonChartAll;
 
-const satTableData =
-  district !== "All"
-    ? satRanking.filter((d) => d.District === district)
-    : satRanking;
+const satGradeComparisonChartData = (() => {
+  const grades = [...new Set([...satGradeWiseSem2.grades, ...satGradeWiseSem1.grades])];
 
-const satGradeChartData = satGradeWise.grades.map((grade) => {
-  const row = { grade };
-  if (district !== "All") {
-    const districtRow = satGradeWise.data.find((d) => d.District === district);
-    row.Score = Number((districtRow?.[grade] ?? 0).toFixed(1));
-  } else {
-    const stateAvg = satSummary.gradeAverages.find((g) => g.grade === grade);
-    row.Score = Number((stateAvg?.average ?? 0).toFixed(1));
-  }
-  return row;
-});
+  return grades.map((grade) => {
+    let sem1Value;
+    let sem2Value;
+
+    if (district !== "All") {
+      sem1Value = satGradeWiseSem1.data.find((d) => d.District === district)?.[grade];
+      sem2Value = satGradeWiseSem2.data.find((d) => d.District === district)?.[grade];
+    } else {
+      sem1Value = satSummarySem1.gradeAverages.find((g) => g.grade === grade)?.average;
+      sem2Value = satSummarySem2.gradeAverages.find((g) => g.grade === grade)?.average;
+    }
+
+    return {
+      grade,
+      "Sem 1": sem1Value != null ? Number(sem1Value.toFixed(1)) : null,
+      "Sem 2": sem2Value != null ? Number(sem2Value.toFixed(1)) : null,
+    };
+  });
+})();
+
+const satSubjectComparisonChartData = (() => {
+  const subjects = [
+    ...new Set([
+      ...satSubjectWiseSem2.map((s) => s.subject),
+      ...satSubjectWiseSem1.map((s) => s.subject),
+    ]),
+  ];
+
+  return subjects.map((subject) => {
+    const sem1Value = satSubjectWiseSem1.find((s) => s.subject === subject)?.PercentAchieved;
+    const sem2Value = satSubjectWiseSem2.find((s) => s.subject === subject)?.PercentAchieved;
+
+    return {
+      subject,
+      "Sem 1": sem1Value != null ? Number(sem1Value.toFixed(1)) : null,
+      "Sem 2": sem2Value != null ? Number(sem2Value.toFixed(1)) : null,
+    };
+  });
+})();
 
   // -----------------------------
   // Return
@@ -1183,79 +1214,61 @@ const satGradeChartData = satGradeWise.grades.map((grade) => {
 <Card elevation={3}>
   <CardContent>
     <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-      District-wise SAT Overall Performance (%) · {satSemester === "sem1" ? "Semester 1" : "Semester 2"}
+      District-wise SAT Overall Performance (%) · Semester 1 vs Semester 2
     </Typography>
 
-    <ResponsiveContainer width="100%" height={420}>
-      <BarChart data={satChartData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
+    <ResponsiveContainer width="100%" height={460}>
+      <BarChart data={satDistrictComparisonChartData} margin={{ top: 30, right: 30, left: 20, bottom: 100 }}>
         <CartesianGrid strokeDasharray="3 3" />
-
         <XAxis dataKey="District" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 10 }} />
-
         <YAxis domain={[0, 100]} />
-
-        <Tooltip formatter={(value) => `${value}%`} />
-
-        <Bar dataKey="Score" barSize={20} radius={[6, 6, 0, 0]}>
-          {satChartData.map((entry, index) => (
-            <Cell
-              key={index}
-              fill={
-                entry.isAverage
-                  ? "#0F172A"
-                  : entry.Score >= 60
-                  ? "#2E7D32"
-                  : entry.Score >= 45
-                  ? "#FB8C00"
-                  : "#D32F2F"
-              }
-            />
-          ))}
-
-          <LabelList
-            dataKey="Score"
-            position="top"
-            formatter={(value) => `${value}%`}
-            style={{ fontSize: 11, fontWeight: "bold", fill: "#333" }}
-          />
-        </Bar>
+        <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
+        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: 12 }} />
+        <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
+        <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
       </BarChart>
     </ResponsiveContainer>
   </CardContent>
 </Card>
 
-{satGradeChartData.length > 0 && (
+{satGradeComparisonChartData.length > 0 && (
   <Card elevation={3} sx={{ mt: 3 }}>
     <CardContent>
       <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-        SAT — Grade-wise Performance (%) · {satSemester === "sem1" ? "Semester 1" : "Semester 2"}{district !== "All" ? ` · ${district}` : " · Gujarat State Average"}
+        SAT — Grade-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district}` : " · Gujarat State Average"}
       </Typography>
 
       <ResponsiveContainer width="100%" height={340}>
-        <BarChart data={satGradeChartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+        <BarChart data={satGradeComparisonChartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" />
-
           <XAxis dataKey="grade" tick={{ fontSize: 12 }} />
-
           <YAxis domain={[0, 100]} />
+          <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
+          <Legend />
+          <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={30} />
+          <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={30} />
+        </BarChart>
+      </ResponsiveContainer>
+    </CardContent>
+  </Card>
+)}
 
-          <Tooltip formatter={(value) => `${value}%`} />
+{satSubjectComparisonChartData.length > 0 && (
+  <Card elevation={3} sx={{ mt: 3 }}>
+    <CardContent>
+      <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
+        SAT — Subject-wise Performance (%) · Gujarat State-wide · Semester 1 vs Semester 2
+      </Typography>
 
-          <Bar dataKey="Score" barSize={40} radius={[6, 6, 0, 0]}>
-            {satGradeChartData.map((entry, index) => (
-              <Cell
-                key={index}
-                fill={entry.Score >= 60 ? "#2E7D32" : entry.Score >= 45 ? "#FB8C00" : "#D32F2F"}
-              />
-            ))}
-
-            <LabelList
-              dataKey="Score"
-              position="top"
-              formatter={(value) => `${value}%`}
-              style={{ fontSize: 11, fontWeight: "bold", fill: "#333" }}
-            />
-          </Bar>
+      <ResponsiveContainer width="100%" height={340}>
+        <BarChart data={satSubjectComparisonChartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="subject" angle={-25} textAnchor="end" interval={0} tick={{ fontSize: 10 }} />
+          <YAxis domain={[0, 100]} />
+          <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
+          <Legend />
+          <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={22} />
+          <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={22} />
         </BarChart>
       </ResponsiveContainer>
     </CardContent>
@@ -1263,8 +1276,6 @@ const satGradeChartData = satGradeWise.grades.map((grade) => {
 )}
 
 <SATSemesterComparison data={satSemesterComparison} district={district} />
-
-<SATTable data={satTableData} />
 
 <ActionItemsQueue
   items={actionItems}
