@@ -48,10 +48,9 @@ const Comparison = () => {
       setParakhGradeWise(getSheetData(workbook, "Dashboard_PARAKH"));
       setSatGradeSem1(getSATSem1GradeWise(sem1Workbook));
       setSatGradeSem2(getSATGradeWise(workbook));
-      // Default the compare widget to the top two ranked districts so the
-      // page has something to show on first load.
-      setDistrictA(combined.districts[0]?.District || "");
-      setDistrictB(combined.districts[1]?.District || "");
+      // District A/B start blank — nothing is picked until the user actually
+      // picks it from the dropdown, instead of silently pre-selecting the
+      // top two ranked districts.
       setLoading(false);
     }
 

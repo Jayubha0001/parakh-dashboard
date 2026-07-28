@@ -21,6 +21,16 @@ import {
 } from "@mui/material";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+} from "recharts";
 import { bandColor } from "./CombinedBandSummary";
 
 // One row per indicator: label, accessor, and which sheet/period it comes
@@ -68,6 +78,33 @@ const DetailRow = ({ label, a, b, unit = "%" }) => {
         {winner === "B" && <EmojiEventsIcon sx={{ fontSize: 13, ml: 0.5, verticalAlign: "middle" }} />}
       </TableCell>
     </TableRow>
+  );
+};
+
+// The chart half of each detail box: same rows as the table next to it,
+// drawn as a grouped bar chart so the gap between the two districts is
+// visible at a glance instead of only readable from numbers in a table.
+const DetailChart = ({ rows, colHeadA, colHeadB }) => {
+  const chartData = rows.map((r) => ({
+    name: r.label,
+    [colHeadA]: r.a == null ? null : Number(r.a.toFixed(1)),
+    [colHeadB]: r.b == null ? null : Number(r.b.toFixed(1)),
+  }));
+
+  return (
+    <Box sx={{ width: "100%", height: Math.max(220, rows.length * 46) }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 24, left: 0, bottom: 5 }} barGap={4}>
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+          <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
+          <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 11 }} />
+          <RechartsTooltip formatter={(value) => (value == null ? "No data" : `${value}%`)} />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          <Bar dataKey={colHeadA} fill="#1E3A8A" radius={[0, 3, 3, 0]} barSize={14} />
+          <Bar dataKey={colHeadB} fill="#F0B429" radius={[0, 3, 3, 0]} barSize={14} />
+        </BarChart>
+      </ResponsiveContainer>
+    </Box>
   );
 };
 
@@ -145,8 +182,11 @@ const DistrictCompareView = ({
               value={districtA}
               onChange={(e) => onChangeDistrictA(e.target.value)}
             >
+              <MenuItem value="">
+                <em>Select a district…</em>
+              </MenuItem>
               {names.map((n) => (
-                <MenuItem key={n} value={n}>
+                <MenuItem key={n} value={n} disabled={n === districtB}>
                   {n}
                 </MenuItem>
               ))}
@@ -161,8 +201,11 @@ const DistrictCompareView = ({
               value={districtB}
               onChange={(e) => onChangeDistrictB(e.target.value)}
             >
+              <MenuItem value="">
+                <em>Select a district…</em>
+              </MenuItem>
               {names.map((n) => (
-                <MenuItem key={n} value={n}>
+                <MenuItem key={n} value={n} disabled={n === districtA}>
                   {n}
                 </MenuItem>
               ))}
@@ -263,11 +306,21 @@ const DistrictCompareView = ({
                 </AccordionSummary>
                 <AccordionDetails>
                   {pgiA && pgiB ? (
-                    <DetailTable colHeadA={districtA} colHeadB={districtB}>
-                      {pgiHeatmap.categories.map((cat) => (
-                        <DetailRow key={cat} label={cat} a={pgiA[cat]} b={pgiB[cat]} unit="" />
-                      ))}
-                    </DetailTable>
+                    (() => {
+                      const rows = pgiHeatmap.categories.map((cat) => ({ label: cat, a: pgiA[cat], b: pgiB[cat] }));
+                      return (
+                        <>
+                          <DetailChart rows={rows} colHeadA={districtA} colHeadB={districtB} />
+                          <Box sx={{ mt: 2 }}>
+                            <DetailTable colHeadA={districtA} colHeadB={districtB}>
+                              {rows.map((r) => (
+                                <DetailRow key={r.label} label={r.label} a={r.a} b={r.b} unit="" />
+                              ))}
+                            </DetailTable>
+                          </Box>
+                        </>
+                      );
+                    })()
                   ) : (
                     <Typography sx={{ fontSize: 13, color: "text.secondary" }}>No PGI-D category data for one of these districts.</Typography>
                   )}
@@ -283,15 +336,30 @@ const DistrictCompareView = ({
                 </AccordionSummary>
                 <AccordionDetails>
                   {parakhA && parakhB ? (
-                    <DetailTable colHeadA={districtA} colHeadB={districtB}>
-                      {/* Dashboard_PARAKH stores these as 0-1 fractions (e.g. 0.6 =
-                          60%), same as every other PARAKH reader in this app — multiply
-                          by 100 here too, or these rows print "0.6%" instead of "60.0%". */}
-                      <DetailRow label="Foundational (Grade 3)" a={parakhA.Foundational * 100} b={parakhB.Foundational * 100} />
-                      <DetailRow label="Preparatory (Grade 6)" a={parakhA.Preparatory * 100} b={parakhB.Preparatory * 100} />
-                      <DetailRow label="Middle (Grade 9)" a={parakhA.Middle * 100} b={parakhB.Middle * 100} />
-                      <DetailRow label="Overall" a={parakhA.Overall * 100} b={parakhB.Overall * 100} />
-                    </DetailTable>
+                    (() => {
+                      // Dashboard_PARAKH stores these as 0-1 fractions (e.g. 0.6 =
+                      // 60%), same as every other PARAKH reader in this app —
+                      // multiply by 100 here too, or these print "0.6%" instead
+                      // of "60.0%".
+                      const rows = [
+                        { label: "Foundational (Grade 3)", a: parakhA.Foundational * 100, b: parakhB.Foundational * 100 },
+                        { label: "Preparatory (Grade 6)", a: parakhA.Preparatory * 100, b: parakhB.Preparatory * 100 },
+                        { label: "Middle (Grade 9)", a: parakhA.Middle * 100, b: parakhB.Middle * 100 },
+                        { label: "Overall", a: parakhA.Overall * 100, b: parakhB.Overall * 100 },
+                      ];
+                      return (
+                        <>
+                          <DetailChart rows={rows} colHeadA={districtA} colHeadB={districtB} />
+                          <Box sx={{ mt: 2 }}>
+                            <DetailTable colHeadA={districtA} colHeadB={districtB}>
+                              {rows.map((r) => (
+                                <DetailRow key={r.label} label={r.label} a={r.a} b={r.b} />
+                              ))}
+                            </DetailTable>
+                          </Box>
+                        </>
+                      );
+                    })()
                   ) : (
                     <Typography sx={{ fontSize: 13, color: "text.secondary" }}>No PARAKH grade-wise data for one of these districts.</Typography>
                   )}
@@ -308,22 +376,42 @@ const DistrictCompareView = ({
                 <AccordionDetails>
                   <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "#16233B", mb: 1 }}>Semester 1</Typography>
                   {sat1A && sat1B ? (
-                    <DetailTable colHeadA={districtA} colHeadB={districtB}>
-                      {satGradeSem1.grades.map((g) => (
-                        <DetailRow key={`s1-${g}`} label={g} a={sat1A[g]} b={sat1B[g]} />
-                      ))}
-                    </DetailTable>
+                    (() => {
+                      const rows = satGradeSem1.grades.map((g) => ({ label: g, a: sat1A[g], b: sat1B[g] }));
+                      return (
+                        <>
+                          <DetailChart rows={rows} colHeadA={districtA} colHeadB={districtB} />
+                          <Box sx={{ mt: 2 }}>
+                            <DetailTable colHeadA={districtA} colHeadB={districtB}>
+                              {rows.map((r) => (
+                                <DetailRow key={`s1-${r.label}`} label={r.label} a={r.a} b={r.b} />
+                              ))}
+                            </DetailTable>
+                          </Box>
+                        </>
+                      );
+                    })()
                   ) : (
                     <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 2 }}>No SAT Sem 1 grade-wise data for one of these districts.</Typography>
                   )}
 
-                  <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "#16233B", mt: 2, mb: 1 }}>Semester 2</Typography>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "#16233B", mt: 3, mb: 1 }}>Semester 2</Typography>
                   {sat2A && sat2B ? (
-                    <DetailTable colHeadA={districtA} colHeadB={districtB}>
-                      {satGradeSem2.grades.map((g) => (
-                        <DetailRow key={`s2-${g}`} label={g} a={sat2A[g]} b={sat2B[g]} />
-                      ))}
-                    </DetailTable>
+                    (() => {
+                      const rows = satGradeSem2.grades.map((g) => ({ label: g, a: sat2A[g], b: sat2B[g] }));
+                      return (
+                        <>
+                          <DetailChart rows={rows} colHeadA={districtA} colHeadB={districtB} />
+                          <Box sx={{ mt: 2 }}>
+                            <DetailTable colHeadA={districtA} colHeadB={districtB}>
+                              {rows.map((r) => (
+                                <DetailRow key={`s2-${r.label}`} label={r.label} a={r.a} b={r.b} />
+                              ))}
+                            </DetailTable>
+                          </Box>
+                        </>
+                      );
+                    })()
                   ) : (
                     <Typography sx={{ fontSize: 13, color: "text.secondary" }}>No SAT Sem 2 grade-wise data for one of these districts.</Typography>
                   )}
@@ -331,6 +419,23 @@ const DistrictCompareView = ({
               </Accordion>
             </Box>
           </>
+        )}
+
+        {!(rowA && rowB) && (
+          <Box
+            sx={{
+              mt: 1,
+              p: 3,
+              textAlign: "center",
+              border: "1px dashed #C9CFDD",
+              borderRadius: 2,
+              color: "text.secondary",
+              fontSize: 13,
+            }}
+          >
+            Pick District A and District B above to see the indicator-by-indicator comparison, charts, and detailed
+            reports.
+          </Box>
         )}
 
         <Box sx={{ mt: 2 }}>
