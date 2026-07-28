@@ -50,7 +50,6 @@ const CombinedBandSummary = ({ bandSummary = [], weights = {} }) => {
         >
           WEIGHT — PGI-D {(weights.pgid * 100).toFixed(0)}% · PARAKH{" "}
           {(weights.parakh * 100).toFixed(0)}%
-          {weights.sat != null && ` · SAT ${(weights.sat * 100).toFixed(0)}%`}
         </Typography>
       </Box>
 

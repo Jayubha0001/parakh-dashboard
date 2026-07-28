@@ -37,7 +37,7 @@ const FilterBar = ({
       <Grid
         container
         spacing={2}
-        sx={{ alignItems: "center" }}
+        alignItems="center"
       >
 
         {/* Filters */}
@@ -102,7 +102,8 @@ const FilterBar = ({
 
         <Grid
           size={{ xs: 12, md: 3 }}
-          sx={{ display: "flex", justifyContent: "flex-end" }}
+          display="flex"
+          justifyContent="flex-end"
         >
 
           <Button

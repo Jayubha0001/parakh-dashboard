@@ -74,17 +74,6 @@ body {
     display: block !important;
   }
 
-  /* The main content area uses minHeight:100vh for on-screen layout so
-     the sidebar always reaches the bottom of the viewport. In print that
-     forces the page to be at least one full screen tall even when the
-     actual content is shorter, which is exactly what creates a trailing
-     blank page. */
-  .dashboard-main-content {
-    min-height: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-  }
-
   .MuiAccordion-root {
     break-inside: avoid;
   }

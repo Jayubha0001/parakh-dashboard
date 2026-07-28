@@ -16,8 +16,6 @@ import {
   Chip,
 } from "@mui/material";
 import { gradeColor } from "./PGIHeader";
-import { isPriorityDistrict } from "../utils/priorityDistricts";
-import PriorityChip from "./PriorityChip";
 
 const PGITable = ({ data = [] }) => {
   const [search, setSearch] = useState("");
@@ -40,14 +38,12 @@ const PGITable = ({ data = [] }) => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ mb: 2 }}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            },
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
           }}
         />
 
@@ -71,16 +67,9 @@ const PGITable = ({ data = [] }) => {
 
             <TableBody>
               {filteredRows.map((row, index) => (
-                <TableRow
-                  key={row.District}
-                  hover
-                  sx={isPriorityDistrict(row.District) ? { bgcolor: "#FFFBEB" } : undefined}
-                >
+                <TableRow key={row.District} hover>
                   <TableCell>{index + 1}</TableCell>
-                  <TableCell>
-                    {row.District}
-                    <PriorityChip district={row.District} />
-                  </TableCell>
+                  <TableCell>{row.District}</TableCell>
                   <TableCell align="center">{row.Score.toFixed(2)}</TableCell>
                   <TableCell align="center">{row.PercentAchieved.toFixed(1)}%</TableCell>
                   <TableCell align="center">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Box, Grid } from "@mui/material";
+import { Box } from "@mui/material";
 
 import DashboardLayout from "../components/DashboardLayout";
 import Header from "../components/Header";
@@ -8,8 +8,6 @@ import SubjectPerformanceChart from "../charts/SubjectPerformanceChart";
 import ComparisonSection from "../components/ComparisonSection";
 import ContextualSummaryCards from "../components/ContextualSummaryCards";
 import DistrictFilterBar from "../components/DistrictFilterBar";
-import ActionItemsQueue from "../components/ActionItemsQueue";
-import NationalBenchmarkPanel from "../components/NationalBenchmarkPanel";
 
 import {
   loadExcel,
@@ -19,9 +17,6 @@ import {
   getManagementComparison,
   getSocialGroupComparison,
   getContextualSummary,
-  getPARAKHActionItems,
-  getAllDistrictNames,
-  getAllDistrictPARAKHActionItems,
 } from "../services/dataService";
 
 const PARAKH = () => {
@@ -33,9 +28,6 @@ const PARAKH = () => {
   const [management, setManagement] = useState({ columns: [], data: [] });
   const [socialGroup, setSocialGroup] = useState({ columns: [], data: [] });
   const [contextual, setContextual] = useState({ columns: [], data: [] });
-  const [actionItems, setActionItems] = useState([]);
-  const [allDistrictNames, setAllDistrictNames] = useState([]);
-  const [allDistrictItems, setAllDistrictItems] = useState([]);
   const [district, setDistrict] = useState("All");
 
   useEffect(() => {
@@ -48,9 +40,6 @@ const PARAKH = () => {
       setManagement(getManagementComparison(workbook));
       setSocialGroup(getSocialGroupComparison(workbook));
       setContextual(getContextualSummary(workbook));
-      setActionItems(getPARAKHActionItems(workbook));
-      setAllDistrictNames(getAllDistrictNames(workbook));
-      setAllDistrictItems(getAllDistrictPARAKHActionItems(workbook));
 
       setLoading(false);
     }
@@ -82,69 +71,41 @@ const PARAKH = () => {
 
       <DistrictFilterBar district={district} setDistrict={setDistrict} districts={districts} />
 
-      <NationalBenchmarkPanel
-        district={district}
-        subjectData={subject.data}
-        genderData={gender.data}
-        locationData={location.data}
-        managementData={management.data}
-        socialGroupData={socialGroup.data}
-      />
-
       <SubjectPerformanceChart columns={subject.columns} data={byDistrict(subject.data)} />
 
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <ComparisonSection
-            title="Boys vs Girls — Average Performance"
-            icon="🚻"
-            columns={gender.columns}
-            data={byDistrict(gender.data)}
-            color="#8E24AA"
-          />
-        </Grid>
+      <ComparisonSection
+        title="Boys vs Girls — Average Performance"
+        icon="🚻"
+        columns={gender.columns}
+        data={byDistrict(gender.data)}
+        color="#8E24AA"
+      />
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <ComparisonSection
-            title="Rural vs Urban — Average Performance"
-            icon="🏘️"
-            columns={location.columns}
-            data={byDistrict(location.data)}
-            color="#00897B"
-          />
-        </Grid>
-      </Grid>
+      <ComparisonSection
+        title="Rural vs Urban — Average Performance"
+        icon="🏘️"
+        columns={location.columns}
+        data={byDistrict(location.data)}
+        color="#00897B"
+      />
 
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <ComparisonSection
-            title="School Management Type — Average Performance"
-            icon="🏫"
-            columns={management.columns}
-            data={byDistrict(management.data)}
-            color="#5D4037"
-          />
-        </Grid>
+      <ComparisonSection
+        title="School Management Type — Average Performance"
+        icon="🏫"
+        columns={management.columns}
+        data={byDistrict(management.data)}
+        color="#5D4037"
+      />
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <ComparisonSection
-            title="Social Group — Average Performance & Equity Gap"
-            icon="🤝"
-            columns={socialGroup.columns}
-            data={byDistrict(socialGroup.data)}
-            color="#C62828"
-          />
-        </Grid>
-      </Grid>
+      <ComparisonSection
+        title="Social Group — Average Performance & Equity Gap"
+        icon="🤝"
+        columns={socialGroup.columns}
+        data={byDistrict(socialGroup.data)}
+        color="#C62828"
+      />
 
       <ContextualSummaryCards data={contextual.data} />
-
-      <ActionItemsQueue
-        items={actionItems}
-        allDistricts={allDistrictNames}
-        allItems={allDistrictItems}
-        syncDistrict={district}
-      />
     </DashboardLayout>
   );
 };

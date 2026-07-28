@@ -1,82 +1,89 @@
-import { Card, CardContent, Typography, Box } from "@mui/material";
+import { Card, CardContent, Typography } from "@mui/material";
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
+  ScatterChart,
+  Scatter,
   XAxis,
   YAxis,
+  ZAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
+  Cell,
 } from "recharts";
-
-// A vertical grouped bar chart — one column-group per district, with a
-// separate bar for each of the three indicators (PGI-D / PARAKH / SAT).
-// Districts sit along the X-axis (rotated labels) and % runs up the
-// Y-axis, so it reads like a normal "standing" bar chart. With up to 33
-// districts on screen at once, the chart scrolls horizontally inside a
-// fixed-height card rather than squeezing every bar down to nothing.
-const WIDTH_PER_DISTRICT = 90;
+import { bandColor } from "../components/CombinedBandSummary";
 
 const DistrictRankingChart = ({ data = [] }) => {
-  const chartData = [...data]
-    .sort((a, b) => (a.RankWithSAT ?? a.Rank) - (b.RankWithSAT ?? b.Rank))
-    .map((d) => ({
-      District: d.District,
-      "PGI-D %": Number(d.PGIDScore.toFixed(1)),
-      "PARAKH %": Number(d.PARAKHScore.toFixed(1)),
-      "SAT %": d.SATScore != null ? Number(d.SATScore.toFixed(1)) : null,
-      Band: d.BandWithSAT ?? d.Band,
-    }));
-
-  const chartWidth = Math.max(700, chartData.length * WIDTH_PER_DISTRICT);
+  const chartData = data.map((d) => ({
+    District: d.District,
+    x: Number(d.PGIDScore.toFixed(1)),
+    y: Number(d.PARAKHScore.toFixed(1)),
+    Band: d.Band,
+  }));
 
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 4 }}>
       <CardContent>
-        <Typography variant="h6" fontWeight="bold" mb={0.5} sx={{ color: "#1E3A8A" }}>
-          📊 PGI-D vs PARAKH vs SAT — District by District
-        </Typography>
-        <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 2 }}>
-          Districts sorted best-to-worst by overall rank, left to right. Each bar is that district's actual % on the
-          indicator — hover any bar for the exact number. Scroll sideways to see every district.
+        <Typography variant="h6" fontWeight="bold" mb={2} sx={{ color: "#1E3A8A" }}>
+          🎯 PGI-D % vs PARAKH % — District Comparison
         </Typography>
 
-        <Box sx={{ width: "100%", overflowX: "auto" }}>
-          <Box sx={{ width: chartWidth, height: 460 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                margin={{ top: 10, right: 20, left: 0, bottom: 70 }}
-                barGap={2}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+        <ResponsiveContainer width="100%" height={420}>
+          <ScatterChart margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" />
 
-                <XAxis
-                  dataKey="District"
-                  interval={0}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                  tick={{ fontSize: 11 }}
-                />
+            <XAxis
+              type="number"
+              dataKey="x"
+              name="PGI-D Score"
+              unit="%"
+              domain={["auto", "auto"]}
+              label={{ value: "PGI-D Score (%)", position: "insideBottom", offset: -10 }}
+            />
 
-                <YAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
+            <YAxis
+              type="number"
+              dataKey="y"
+              name="PARAKH Score"
+              unit="%"
+              domain={["auto", "auto"]}
+              label={{ value: "PARAKH Score (%)", angle: -90, position: "insideLeft" }}
+            />
 
-                <Tooltip
-                  formatter={(value, name) => [value != null ? `${value}%` : "No data", name]}
-                  labelFormatter={(label) => label}
-                />
+            <ZAxis range={[80, 80]} />
 
-                <Legend wrapperStyle={{ fontSize: 12.5 }} verticalAlign="top" />
+            <Tooltip
+              cursor={{ strokeDasharray: "3 3" }}
+              formatter={(value, name) => [`${value}%`, name]}
+              labelFormatter={() => ""}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const p = payload[0].payload;
+                return (
+                  <div
+                    style={{
+                      background: "#fff",
+                      padding: 8,
+                      borderRadius: 6,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                      fontSize: 12,
+                    }}
+                  >
+                    <strong>{p.District}</strong>
+                    <div>PGI-D: {p.x}%</div>
+                    <div>PARAKH: {p.y}%</div>
+                    <div>Band: {p.Band}</div>
+                  </div>
+                );
+              }}
+            />
 
-                <Bar dataKey="PGI-D %" fill="#1E3A8A" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="PARAKH %" fill="#F0B429" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="SAT %" fill="#2E7D32" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Box>
-        </Box>
+            <Scatter data={chartData}>
+              {chartData.map((entry, index) => (
+                <Cell key={index} fill={bandColor(entry.Band)} />
+              ))}
+            </Scatter>
+          </ScatterChart>
+        </ResponsiveContainer>
       </CardContent>
     </Card>
   );

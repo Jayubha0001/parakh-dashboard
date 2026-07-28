@@ -10,7 +10,6 @@ const DashboardLayout = ({ children }) => {
 
       <Box
   component="main"
-  className="dashboard-main-content"
   sx={{
     flex: 1,
     p: 3,

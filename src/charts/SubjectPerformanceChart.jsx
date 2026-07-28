@@ -36,24 +36,20 @@ const SubjectPerformanceChart = ({ columns = [], data = [] }) => {
                 >
                   District
                 </th>
-                {columns.map((col) => {
-                  const isAverage = col.endsWith("Average");
-                  return (
-                    <th
-                      key={col}
-                      style={{
-                        background: isAverage ? "#0F172A" : "#1565C0",
-                        color: "#fff",
-                        padding: "8px",
-                        minWidth: isAverage ? 90 : 100,
-                        whiteSpace: "nowrap",
-                        borderLeft: isAverage ? "2px solid #F0B429" : "none",
-                      }}
-                    >
-                      {isAverage ? "⭐ " + col : col}
-                    </th>
-                  );
-                })}
+                {columns.map((col) => (
+                  <th
+                    key={col}
+                    style={{
+                      background: "#1565C0",
+                      color: "#fff",
+                      padding: "8px",
+                      minWidth: 100,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {col}
+                  </th>
+                ))}
               </tr>
             </thead>
 
@@ -75,7 +71,6 @@ const SubjectPerformanceChart = ({ columns = [], data = [] }) => {
 
                   {columns.map((col) => {
                     const pct = (row[col] ?? 0) * 100;
-                    const isAverage = col.endsWith("Average");
                     return (
                       <td
                         key={col}
@@ -83,10 +78,9 @@ const SubjectPerformanceChart = ({ columns = [], data = [] }) => {
                           textAlign: "center",
                           padding: "6px 4px",
                           color: "#fff",
-                          fontWeight: isAverage ? 800 : 600,
+                          fontWeight: 600,
                           background: cellColor(pct),
                           borderBottom: "1px solid #fff",
-                          borderLeft: isAverage ? "2px solid #F0B429" : "none",
                         }}
                       >
                         {pct.toFixed(1)}%

@@ -19,7 +19,7 @@ const PGIHeader = ({ overall }) => {
         boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
       }}
     >
-      <Grid container spacing={3} sx={{ alignItems: "center" }}>
+      <Grid container spacing={3} alignItems="center">
         <Grid size={{ xs: 12, md: 8 }}>
           <Typography variant="h3" fontWeight="bold">
             Gujarat PGI 2.0 Dashboard
