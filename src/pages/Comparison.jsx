@@ -7,7 +7,6 @@ import Loading from "../components/Loading";
 import CombinedBandSummary from "../components/CombinedBandSummary";
 import CombinedRankingTable from "../components/CombinedRankingTable";
 import DistrictRankingChart from "../charts/DistrictRankingChart";
-import DistrictFilterBar from "../components/DistrictFilterBar";
 import ActionItemsQueue from "../components/ActionItemsQueue";
 import DistrictCompareView from "../components/DistrictCompareView";
 
@@ -30,7 +29,8 @@ const Comparison = () => {
   const [actionItems, setActionItems] = useState([]);
   const [allDistrictNames, setAllDistrictNames] = useState([]);
   const [allDistrictItems, setAllDistrictItems] = useState([]);
-  const [district, setDistrict] = useState("All");
+  const [districtA, setDistrictA] = useState("");
+  const [districtB, setDistrictB] = useState("");
   const [pgiHeatmap, setPgiHeatmap] = useState({ categories: [], data: [] });
   const [parakhGradeWise, setParakhGradeWise] = useState([]);
   const [satGradeSem1, setSatGradeSem1] = useState({ grades: [], data: [] });
@@ -39,7 +39,8 @@ const Comparison = () => {
   useEffect(() => {
     async function fetchData() {
       const [workbook, sem1Workbook] = await Promise.all([loadExcel(), loadSATSem1Excel()]);
-      setRanking(getCombinedRankingWithSAT(workbook, sem1Workbook));
+      const combined = getCombinedRankingWithSAT(workbook, sem1Workbook);
+      setRanking(combined);
       setActionItems(getComparisonActionItems(workbook, sem1Workbook));
       setAllDistrictNames(getAllDistrictNames(workbook));
       setAllDistrictItems(getAllDistrictComparisonActionItems(workbook, sem1Workbook));
@@ -47,6 +48,10 @@ const Comparison = () => {
       setParakhGradeWise(getSheetData(workbook, "Dashboard_PARAKH"));
       setSatGradeSem1(getSATSem1GradeWise(sem1Workbook));
       setSatGradeSem2(getSATGradeWise(workbook));
+      // Default the compare widget to the top two ranked districts so the
+      // page has something to show on first load.
+      setDistrictA(combined.districts[0]?.District || "");
+      setDistrictB(combined.districts[1]?.District || "");
       setLoading(false);
     }
 
@@ -62,15 +67,17 @@ const Comparison = () => {
     );
   }
 
-  const districts = ["All", ...new Set(ranking.districts.map((d) => d.District))];
-
-  // Band distribution stays state-wide (33 districts) since a single
-  // district's band is already shown in the table/chart below; only the
-  // scatter chart and ranking table narrow to the selected district.
-  const filteredDistricts =
-    district === "All"
-      ? ranking.districts
-      : ranking.districts.filter((d) => d.District === district);
+  // Band distribution stays state-wide (33 districts) — it's a state-level
+  // summary, not something that narrows with the district picker.
+  //
+  // The ranking chart, table, and action items below all narrow to
+  // whichever two districts are picked in "Compare Two Districts" above —
+  // that's now the single control for this page, so there's no second
+  // filter here that could silently disagree with it.
+  const compareDistricts = [districtA, districtB].filter(Boolean);
+  const filteredDistricts = compareDistricts.length
+    ? ranking.districts.filter((d) => compareDistricts.includes(d.District))
+    : ranking.districts;
 
   return (
     <DashboardLayout>
@@ -78,15 +85,15 @@ const Comparison = () => {
 
       <DistrictCompareView
         districts={ranking.districts}
-        districtA={district !== "All" ? district : ranking.districts[0]?.District || ""}
-        onChangeDistrictA={(d) => setDistrict(d)}
+        districtA={districtA}
+        districtB={districtB}
+        onChangeDistrictA={setDistrictA}
+        onChangeDistrictB={setDistrictB}
         pgiHeatmap={pgiHeatmap}
         parakhGradeWise={parakhGradeWise}
         satGradeSem1={satGradeSem1}
         satGradeSem2={satGradeSem2}
       />
-
-      <DistrictFilterBar district={district} setDistrict={setDistrict} districts={districts} />
 
       <CombinedBandSummary
         bandSummary={ranking.bandSummaryWithSAT}
@@ -103,7 +110,7 @@ const Comparison = () => {
         items={actionItems}
         allDistricts={allDistrictNames}
         allItems={allDistrictItems}
-        syncDistrict={district}
+        focusDistricts={compareDistricts}
       />
     </DashboardLayout>
   );

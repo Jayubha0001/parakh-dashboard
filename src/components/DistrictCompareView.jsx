@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -90,26 +89,15 @@ const DetailTable = ({ colHeadA, colHeadB, children }) => (
 const DistrictCompareView = ({
   districts = [],
   districtA,
+  districtB,
   onChangeDistrictA,
+  onChangeDistrictB,
   pgiHeatmap = { categories: [], data: [] },
   parakhGradeWise = [],
   satGradeSem1 = { grades: [], data: [] },
   satGradeSem2 = { grades: [], data: [] },
 }) => {
   const names = districts.map((d) => d.District);
-  const [districtB, setDistrictB] = useState(names[1] || names[0] || "");
-
-  // Keep District B valid (and different from A where possible) if the
-  // district list or District A changes underneath us.
-  useEffect(() => {
-    if (!names.length) return;
-    if (!names.includes(districtB)) {
-      setDistrictB(names.find((n) => n !== districtA) || names[0]);
-    } else if (districtB === districtA && names.length > 1) {
-      setDistrictB(names.find((n) => n !== districtA) || names[0]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [names.join("|"), districtA]);
 
   const rowA = districts.find((d) => d.District === districtA);
   const rowB = districts.find((d) => d.District === districtB);
@@ -153,7 +141,7 @@ const DistrictCompareView = ({
               select
               fullWidth
               size="small"
-              label="District A (also sets the page filter below)"
+              label="District A"
               value={districtA}
               onChange={(e) => onChangeDistrictA(e.target.value)}
             >
@@ -171,7 +159,7 @@ const DistrictCompareView = ({
               size="small"
               label="District B"
               value={districtB}
-              onChange={(e) => setDistrictB(e.target.value)}
+              onChange={(e) => onChangeDistrictB(e.target.value)}
             >
               {names.map((n) => (
                 <MenuItem key={n} value={n}>
@@ -296,10 +284,13 @@ const DistrictCompareView = ({
                 <AccordionDetails>
                   {parakhA && parakhB ? (
                     <DetailTable colHeadA={districtA} colHeadB={districtB}>
-                      <DetailRow label="Foundational (Grade 3)" a={parakhA.Foundational} b={parakhB.Foundational} />
-                      <DetailRow label="Preparatory (Grade 6)" a={parakhA.Preparatory} b={parakhB.Preparatory} />
-                      <DetailRow label="Middle (Grade 9)" a={parakhA.Middle} b={parakhB.Middle} />
-                      <DetailRow label="Overall" a={parakhA.Overall} b={parakhB.Overall} />
+                      {/* Dashboard_PARAKH stores these as 0-1 fractions (e.g. 0.6 =
+                          60%), same as every other PARAKH reader in this app — multiply
+                          by 100 here too, or these rows print "0.6%" instead of "60.0%". */}
+                      <DetailRow label="Foundational (Grade 3)" a={parakhA.Foundational * 100} b={parakhB.Foundational * 100} />
+                      <DetailRow label="Preparatory (Grade 6)" a={parakhA.Preparatory * 100} b={parakhB.Preparatory * 100} />
+                      <DetailRow label="Middle (Grade 9)" a={parakhA.Middle * 100} b={parakhB.Middle * 100} />
+                      <DetailRow label="Overall" a={parakhA.Overall * 100} b={parakhB.Overall * 100} />
                     </DetailTable>
                   ) : (
                     <Typography sx={{ fontSize: 13, color: "text.secondary" }}>No PARAKH grade-wise data for one of these districts.</Typography>
@@ -347,8 +338,9 @@ const DistrictCompareView = ({
             Note: the source workbook doesn't track week-by-week data — PGI-D is one annual round, PARAKH one
             assessment cycle, and SAT is tracked per semester (Sem 1 and Sem 2 shown separately above; the
             Composite row averages both). Every chip above shows exactly which sheet/period that row's number
-            comes from. District A here is the same district selected in the filter below, so the rest of the
-            page (chart, ranking table, action items) stays in sync with whichever district you're comparing.
+            comes from. District A and District B above drive the ranking chart, table, and action items
+            further down this page too — pick your two districts here and the rest of the page narrows to
+            just those two.
           </Typography>
         </Box>
       </CardContent>

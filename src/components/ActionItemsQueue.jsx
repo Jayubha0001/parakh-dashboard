@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Box, Paper, Typography, Chip, TextField, MenuItem } from "@mui/material";
+import { colors } from "../theme/theme";
 
 const PRIORITY_STYLES = {
   CRITICAL: { bar: "#D32F2F", chipBg: "#FDE2E1", chipText: "#C0392B", icon: "🔺" },
@@ -63,16 +64,20 @@ const DistrictDetailCard = ({ item }) => {
   );
 };
 
-const ActionItemsQueue = ({ items = [], allDistricts = [], allItems = [], syncDistrict = "All" }) => {
+const ActionItemsQueue = ({ items = [], allDistricts = [], allItems = [], syncDistrict = "All", focusDistricts = [] }) => {
   const [selectedDistrict, setSelectedDistrict] = useState("");
 
-  // If the page's own District filter picks a specific district, mirror
-  // that choice here automatically so this panel doesn't feel disconnected
-  // from the filter someone just used above it. Choosing "All Districts"
-  // in that filter clears the selection below.
+  // Priority order for what this panel shows by default:
+  // 1) the two districts picked in "Compare Two Districts" above (focusDistricts)
+  // 2) the page's own District filter, if set to one specific district
+  // Picking a district from the dropdown below always overrides both.
   useEffect(() => {
-    setSelectedDistrict(syncDistrict !== "All" ? syncDistrict : "");
-  }, [syncDistrict]);
+    if (focusDistricts.length) {
+      setSelectedDistrict((prev) => (focusDistricts.includes(prev) ? prev : focusDistricts[0]));
+    } else {
+      setSelectedDistrict(syncDistrict !== "All" ? syncDistrict : "");
+    }
+  }, [syncDistrict, focusDistricts.join("|")]);
 
   const source = allItems.length ? allItems : items;
   const detail = selectedDistrict
@@ -84,9 +89,10 @@ const ActionItemsQueue = ({ items = [], allDistricts = [], allItems = [], syncDi
       {/* Header banner */}
       <Box
         sx={{
-          background: "linear-gradient(120deg, #F97316 0%, #FB923C 100%)",
+          background: `linear-gradient(120deg, ${colors.navy} 0%, ${colors.navyLight} 100%)`,
           color: "#fff",
           p: 3,
+          borderTop: `4px solid ${colors.gold}`,
         }}
       >
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 2 }}>
@@ -94,7 +100,7 @@ const ActionItemsQueue = ({ items = [], allDistricts = [], allItems = [], syncDi
             <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22 }}>
               🎯 Top Action Items — District Priority Queue
             </Typography>
-            <Typography sx={{ fontSize: 13, opacity: 0.9, mt: 0.5 }}>
+            <Typography sx={{ fontSize: 13, opacity: 0.85, mt: 0.5 }}>
               Select a district (or use the District filter above) to see its priority action plan
             </Typography>
           </Box>
@@ -121,6 +127,24 @@ const ActionItemsQueue = ({ items = [], allDistricts = [], allItems = [], syncDi
             </TextField>
           )}
         </Box>
+
+        {focusDistricts.length > 1 && (
+          <Box sx={{ display: "flex", gap: 1, mt: 2, flexWrap: "wrap" }}>
+            {focusDistricts.map((d) => (
+              <Chip
+                key={d}
+                label={d}
+                onClick={() => setSelectedDistrict(d)}
+                sx={{
+                  fontWeight: 700,
+                  bgcolor: selectedDistrict === d ? colors.gold : "rgba(255,255,255,0.14)",
+                  color: selectedDistrict === d ? colors.navy : "#fff",
+                  "&:hover": { bgcolor: selectedDistrict === d ? colors.goldLight : "rgba(255,255,255,0.22)" },
+                }}
+              />
+            ))}
+          </Box>
+        )}
       </Box>
 
       <Box sx={{ p: { xs: 1.5, sm: 2.5 }, bgcolor: "#F5F6FA" }}>

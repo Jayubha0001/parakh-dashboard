@@ -7,6 +7,7 @@ import {
   ListItemText,
   Toolbar,
   Typography,
+  Box,
 } from "@mui/material";
 
 import { NavLink } from "react-router-dom";
@@ -17,6 +18,7 @@ import FactCheckIcon from "@mui/icons-material/FactCheck";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import DescriptionIcon from "@mui/icons-material/Description";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+import { colors } from "../theme/theme";
 
 const drawerWidth = 240;
 
@@ -66,55 +68,85 @@ const Sidebar = () => {
         width: drawerWidth,
         "& .MuiDrawer-paper": {
           width: drawerWidth,
-          background: "#0F172A",
+          background: colors.navy,
           color: "white",
+          borderRight: "none",
         },
       }}
     >
-      <Toolbar>
-        <Typography variant="h6" fontWeight="bold">
+      <Toolbar sx={{ gap: 1.2 }}>
+        <Box
+          sx={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            background: `linear-gradient(135deg, ${colors.gold}, ${colors.goldLight})`,
+          }}
+        />
+        <Typography
+          sx={{
+            fontFamily: '"Fraunces", serif',
+            fontWeight: 700,
+            fontSize: 20,
+            letterSpacing: 0.3,
+          }}
+        >
           PARAKH
         </Typography>
       </Toolbar>
 
-      <List>
-  {menuItems.map((item) => (
-    <ListItem key={item.text} disablePadding>
+      <List sx={{ px: 1.5 }}>
+        {menuItems.map((item) => (
+          <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+            <ListItemButton
+              component={NavLink}
+              to={item.path}
+              sx={{
+                color: "rgba(255,255,255,0.85)",
+                textDecoration: "none",
+                borderRadius: 2,
+                pl: 1.5,
+                transition: "background-color 0.15s ease, color 0.15s ease",
+                outline: "none",
 
-      <ListItemButton
-        component={NavLink}
-        to={item.path}
-        sx={{
-          color: "white",
-          textDecoration: "none",
+                "&.active": {
+                  backgroundColor: "rgba(240,180,41,0.14)",
+                  color: "#fff",
+                  fontWeight: 600,
+                  borderLeft: `3px solid ${colors.gold}`,
+                  pl: "9px",
+                },
 
-          "&.active": {
-            backgroundColor: "#1976d2",
-            borderLeft: "5px solid #FFD54F",
-          },
+                "&.active .MuiListItemIcon-root": {
+                  color: colors.goldLight,
+                },
 
-          "&:hover": {
-            backgroundColor: "#1E293B",
-          },
-        }}
-      >
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.06)",
+                },
 
-        <ListItemIcon
-          sx={{
-            color: "white",
-            minWidth: 40,
-          }}
-        >
-          {item.icon}
-        </ListItemIcon>
+                // Keyboard/click focus should read as "gold", the app's own
+                // accent, rather than the browser's default blue ring.
+                "&:focus, &:focus-visible": {
+                  outline: "none",
+                  boxShadow: `inset 0 0 0 1px ${colors.gold}`,
+                },
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  color: "inherit",
+                  minWidth: 40,
+                }}
+              >
+                {item.icon}
+              </ListItemIcon>
 
-        <ListItemText primary={item.text} />
-
-      </ListItemButton>
-
-    </ListItem>
-  ))}
-</List>
+              <ListItemText primary={item.text} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
     </Drawer>
   );
 };

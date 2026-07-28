@@ -1,6 +1,17 @@
 import { Box, Grid, Typography } from "@mui/material";
 import { colors, fontDisplay, fontMono } from "../theme/theme";
 
+// A thin diamond-lattice line pattern, evoking the geometric weave of
+// Patola silk (Patan, Gujarat) — a specific, real reference rather than a
+// generic decorative texture, kept faint enough to read as craftsmanship
+// in the background rather than compete with the headline.
+const PATOLA_PATTERN = `data:image/svg+xml,${encodeURIComponent(`
+  <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
+    <path d="M28 0 L56 28 L28 56 L0 28 Z" fill="none" stroke="${colors.goldLight}" stroke-width="0.75" opacity="0.35"/>
+    <path d="M28 14 L42 28 L28 42 L14 28 Z" fill="none" stroke="${colors.goldLight}" stroke-width="0.75" opacity="0.35"/>
+  </svg>
+`)}`;
+
 const Header = () => {
   return (
     <Box
@@ -15,6 +26,39 @@ const Header = () => {
         boxShadow: "0 10px 30px rgba(15,23,42,0.25)",
       }}
     >
+      {/* Patola-lattice signature texture, confined to the right third so
+          it reads as an accent motif behind the crest, not wallpaper. */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          right: 0,
+          width: { xs: "45%", md: "38%" },
+          backgroundImage: `url("${PATOLA_PATTERN}")`,
+          backgroundSize: "56px 56px",
+          maskImage: "linear-gradient(90deg, transparent 0%, black 35%)",
+          WebkitMaskImage: "linear-gradient(90deg, transparent 0%, black 35%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Faint radial highlight behind the logo — adds depth to the navy
+          panel without competing with the text on the left. */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "-20%",
+          right: "-10%",
+          width: 420,
+          height: 420,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${colors.navyLight} 0%, transparent 70%)`,
+          opacity: 0.6,
+          pointerEvents: "none",
+        }}
+      />
+
       {/* Gold hairline signature - marks this as the state ranking system */}
       <Box
         sx={{
@@ -27,7 +71,7 @@ const Header = () => {
         }}
       />
 
-      <Grid container spacing={1.5} sx={{ alignItems: "center" }}>
+      <Grid container spacing={1.5} sx={{ alignItems: "center", position: "relative" }}>
         <Grid size={{ xs: 12, md: 8 }}>
           <Typography
             sx={{
@@ -92,7 +136,7 @@ const Header = () => {
         </Grid>
 
         <Grid size={{ xs: 12 }}>
-          <Box sx={{ display: "flex", gap: -1, mt: -1, flexWrap: "wrap" }}>
+          <Box sx={{ display: "flex", mt: -1, flexWrap: "wrap" }}>
             <Typography sx={{ fontSize: 13, opacity: 0.75, letterSpacing: 1 }}>
               Assessment Cycle: 2024 PARAKH Mastery · PGI-D 2.0 · PM SHRI · SAT Analytics
             </Typography>
