@@ -71,7 +71,7 @@ const CombinedRankingTable = ({ data = [] }) => {
             color: "#16233B",
           }}
         >
-          Combined PGI-D + PARAKH Ranking — All 33 Districts
+          Combined PGI-D + PARAKH + SAT Ranking — All 33 Districts
         </Typography>
 
         <TextField
@@ -105,6 +105,9 @@ const CombinedRankingTable = ({ data = [] }) => {
                   PARAKH %
                 </TableCell>
                 <TableCell align="center" sx={{ fontWeight: 700, bgcolor: "#0F172A", color: "#fff" }}>
+                  SAT % (Sem1+2 avg)
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 700, bgcolor: "#0F172A", color: "#fff" }}>
                   Composite %
                 </TableCell>
                 <TableCell align="center" sx={{ fontWeight: 700, bgcolor: "#0F172A", color: "#fff" }}>
@@ -121,7 +124,7 @@ const CombinedRankingTable = ({ data = [] }) => {
                   sx={isPriorityDistrict(row.District) ? { bgcolor: "#FFFBEB" } : undefined}
                 >
                   <TableCell>
-                    <RankBadge rank={row.Rank} />
+                    <RankBadge rank={row.RankWithSAT ?? row.Rank} />
                   </TableCell>
                   <TableCell sx={{ fontWeight: 500 }}>
                     {row.District}
@@ -133,19 +136,22 @@ const CombinedRankingTable = ({ data = [] }) => {
                   <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
                     {row.PARAKHScore.toFixed(1)}%
                   </TableCell>
+                  <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
+                    {row.SATScore != null ? `${row.SATScore.toFixed(1)}%` : "—"}
+                  </TableCell>
                   <TableCell
                     align="center"
                     sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700 }}
                   >
-                    {row.CompositeScore.toFixed(1)}%
+                    {(row.CompositeWithSAT ?? row.CompositeScore).toFixed(1)}%
                   </TableCell>
                   <TableCell align="center">
                     <Tooltip title={row.PriorityNote || ""} arrow>
                       <Chip
-                        label={row.Band}
+                        label={row.BandWithSAT ?? row.Band}
                         size="small"
                         sx={{
-                          bgcolor: bandColor(row.Band),
+                          bgcolor: bandColor(row.BandWithSAT ?? row.Band),
                           color: "#fff",
                           fontWeight: "bold",
                         }}

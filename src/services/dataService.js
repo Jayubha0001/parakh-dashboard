@@ -623,28 +623,58 @@ const buildComparisonDistrictAction = (districtName, combined) => {
   const row = combined.districts.find((d) => d.District === districtName);
   if (!row) return null;
 
-  const gap = row.PGIDScore - row.PARAKHScore;
-  const weakerSide = gap >= 0 ? "PARAKH Learning Outcomes" : "PGI-D Governance";
+  const compositeScore = row.CompositeWithSAT ?? row.CompositeScore;
+  const rank = row.RankWithSAT ?? row.Rank;
+  const band = row.BandWithSAT ?? row.Band;
 
-  const priority = row.Band?.startsWith("Low")
-    ? "CRITICAL"
-    : row.Band?.startsWith("Needs")
-    ? "HIGH"
-    : "MEDIUM";
+  // Compare all three indicators side by side (SAT may be missing for a
+  // handful of districts, so only compare what's actually available).
+  const indicators = [
+    { label: "PGI-D Governance", score: row.PGIDScore },
+    { label: "PARAKH Learning Outcomes", score: row.PARAKHScore },
+    { label: "SAT Performance", score: row.SATScore },
+  ].filter((i) => i.score != null);
+
+  const sorted = [...indicators].sort((a, b) => a.score - b.score);
+  const weakest = sorted[0];
+  const strongest = sorted[sorted.length - 1];
+  const middle = sorted.length === 3 ? sorted[1] : null;
+  const gap = strongest.score - weakest.score;
+
+  const priority = band?.startsWith("Low") ? "CRITICAL" : band?.startsWith("Needs") ? "HIGH" : "MEDIUM";
+
+  const description = `Composite ${compositeScore.toFixed(1)}% (Rank ${rank}/33) · PGI-D ${row.PGIDScore.toFixed(1)}%${
+    row.PARAKHScore != null ? ` vs PARAKH ${row.PARAKHScore.toFixed(1)}%` : ""
+  }${row.SATScore != null ? ` vs SAT ${row.SATScore.toFixed(1)}%` : ""} · Widest gap: ${gap.toFixed(1)} pts (${weakest.label} weakest)`;
+
+  const recommendation =
+    `Lining up PGI-D, PARAKH, and SAT side by side for ${districtName}, ${weakest.label} is clearly the weakest ` +
+    `of the three at ${weakest.score.toFixed(1)}%, trailing ${strongest.label} at ${strongest.score.toFixed(1)}%` +
+    `${middle ? ` and ${middle.label} at ${middle.score.toFixed(1)}%` : ""} by a gap of ${gap.toFixed(1)} points — ` +
+    `and that gap is what's pulling the composite score down to ${compositeScore.toFixed(1)}% and Rank ${rank}/33 overall. ` +
+    `Prioritize resources and monitoring toward closing this specific gap first, rather than spreading effort evenly across all three; ` +
+    `pushing further on ${strongest.label}, which is already the strongest of the three, will give diminishing returns compared to ` +
+    `lifting the weakest indicator toward the district's own average. ` +
+    `Set a concrete short-cycle target for the weak indicator — for example, aim to close at least a third of this gap before the ` +
+    `next round — and assign a specific owner for that plan (subject coordinator for SAT/PARAKH gaps, block-level officer for PGI-D ` +
+    `governance gaps) so the action doesn't stay generic. ` +
+    `Track that one indicator separately going forward so progress on it isn't masked by movement on the other two. ` +
+    `Re-run this three-way comparison once the next PGI-D round, PARAKH cycle, or SAT semester refreshes (whichever comes first) to ` +
+    `confirm the gap is actually narrowing, not just shifting to a different weak spot.`;
 
   return {
     priority,
     icon: "⚖️",
     title: `${districtName} — Composite Priority`,
-    description: `Composite ${row.CompositeScore.toFixed(1)}% (Rank ${row.Rank}/33) · PGI-D ${row.PGIDScore.toFixed(1)}% vs PARAKH ${row.PARAKHScore.toFixed(1)}% · Gap: ${Math.abs(gap).toFixed(1)} pts`,
-    recommendation: `${weakerSide} is the weaker lever here — prioritize resources toward closing that gap before the other, since pushing further on the already-stronger side gives diminishing returns. Re-check this comparison after the next assessment cycle to confirm the gap is actually narrowing, not just shifting.`,
+    description,
+    recommendation,
     district: districtName,
   };
 };
 
-export const getComparisonActionItems = (workbook) => {
+export const getComparisonActionItems = (workbook, sem1Workbook) => {
 
-  const combined = getCombinedRanking(workbook);
+  const combined = getCombinedRankingWithSAT(workbook, sem1Workbook);
 
   const items = PRIORITY_DISTRICTS
     .map((districtName) => buildComparisonDistrictAction(districtName, combined))
@@ -860,9 +890,9 @@ export const getAllDistrictPGIActionItems = (workbook) => {
 
 };
 
-export const getAllDistrictComparisonActionItems = (workbook) => {
+export const getAllDistrictComparisonActionItems = (workbook, sem1Workbook) => {
 
-  const combined = getCombinedRanking(workbook);
+  const combined = getCombinedRankingWithSAT(workbook, sem1Workbook);
 
   return combined.districts
     .map((d) => buildComparisonDistrictAction(d.District, combined))
@@ -1030,6 +1060,113 @@ export const getCombinedRanking = (workbook) => {
     }));
 
   return { weights, districts, bandSummary };
+
+};
+
+// -----------------------------
+// Performance Band lookup (from "Grading_Scale" sheet, Min % Score column):
+// 0-39.9 Low Performing, 40-59.9 Needs Improvement, 60-74.9 Average,
+// 75-89.9 Good, 90-100 High Performing. Reproduced here (rather than read
+// from the sheet each time) so any recomputed composite score — e.g. once
+// SAT is folded in below — can be re-classified into a band client-side.
+// -----------------------------
+
+export const getBandFromScore = (score) => {
+  if (score >= 90) return "High Performing";
+  if (score >= 75) return "Good";
+  if (score >= 60) return "Average";
+  if (score >= 40) return "Needs Improvement";
+  return "Low Performing";
+};
+
+// -----------------------------
+// Combined PGI-D + PARAKH + SAT Ranking — three-way comparison.
+// Extends getCombinedRanking() with each district's SAT % (from "SAT
+// District Wise", Semester 2) and recomputes a 3-way composite score
+// (equal 1/3 weights by default) + re-ranks + re-bands on that score.
+// The original PGI-D+PARAKH-only fields (CompositeScore, Band, Rank) are
+// kept untouched alongside the new ones so existing callers/screens that
+// only care about the 2-way number don't break.
+//
+// Each returned district row also carries `sources`, labelling exactly
+// which sheet/period each number came from (there's no week-by-week data
+// in the source workbook — PGI-D is one annual round, PARAKH one
+// assessment cycle, SAT one semester — so "source" is the closest stand-in
+// for "which week is this indicator from").
+// -----------------------------
+
+export const getCombinedRankingWithSAT = (workbook, sem1Workbook) => {
+
+  const base = getCombinedRanking(workbook);
+
+  const sem2Ranking = getSATDistrictRanking(workbook);
+  const sem2ByDistrict = Object.fromEntries(sem2Ranking.map((d) => [d.District, d]));
+
+  const sem1Ranking = sem1Workbook ? getSATSem1DistrictRanking(sem1Workbook) : [];
+  const sem1ByDistrict = Object.fromEntries(sem1Ranking.map((d) => [d.District, d]));
+
+  const weights = { pgid: 1 / 3, parakh: 1 / 3, sat: 1 / 3 };
+
+  const sources = {
+    pgid: "PGI-D 2.0 (annual round)",
+    parakh: "PARAKH Survey (latest cycle)",
+    satSem1: "SAT — Semester 1",
+    satSem2: "SAT — Semester 2",
+    sat: "SAT — Sem 1 & Sem 2 average",
+  };
+
+  const districts = base.districts.map((d) => {
+    const sem1 = sem1ByDistrict[d.District];
+    const sem2 = sem2ByDistrict[d.District];
+
+    const SATSem1Score = sem1 ? sem1.PercentAchieved : null;
+    const SATSem2Score = sem2 ? sem2.PercentAchieved : null;
+
+    // Composite SAT figure = average of whichever semesters are actually
+    // available for this district, so a missing semester doesn't zero it out.
+    const satScoresPresent = [SATSem1Score, SATSem2Score].filter((v) => v != null);
+    const SATScore = satScoresPresent.length
+      ? satScoresPresent.reduce((a, b) => a + b, 0) / satScoresPresent.length
+      : null;
+
+    const CompositeWithSAT =
+      SATScore != null
+        ? d.PGIDScore * weights.pgid + d.PARAKHScore * weights.parakh + SATScore * weights.sat
+        : d.CompositeScore; // fall back to the 2-way score if a district has no SAT row at all
+
+    return {
+      ...d,
+      SATSem1Score,
+      SATSem1Rank: sem1 ? sem1.Rank : null,
+      SATSem2Score,
+      SATSem2Rank: sem2 ? sem2.Rank : null,
+      SATScore,
+      SATRank: sem2 ? sem2.Rank : null,
+      CompositeWithSAT,
+      BandWithSAT: getBandFromScore(CompositeWithSAT),
+      sources,
+    };
+  });
+
+  const districtsRanked = [...districts]
+    .sort((a, b) => b.CompositeWithSAT - a.CompositeWithSAT)
+    .map((d, index) => ({ ...d, RankWithSAT: index + 1 }));
+
+  // Re-tally the band summary against the new 3-way band so
+  // CombinedBandSummary reflects PGI-D+PARAKH+SAT, not just PGI-D+PARAKH.
+  const bandOrder = ["Low Performing", "Needs Improvement", "Average", "Good", "High Performing"];
+  const bandSummaryWithSAT = bandOrder.map((band) => ({
+    band,
+    count: districtsRanked.filter((d) => d.BandWithSAT === band).length,
+  }));
+
+  return {
+    weights,
+    districts: districtsRanked,
+    bandSummary: base.bandSummary,
+    bandSummaryWithSAT,
+    sources,
+  };
 
 };
 
