@@ -78,8 +78,7 @@ const Comparison = () => {
 
       <DistrictCompareView
         districts={ranking.districts}
-        districtA={district !== "All" ? district : ranking.districts[0]?.District || ""}
-        onChangeDistrictA={(d) => setDistrict(d)}
+        defaultDistrictA={ranking.districts[0]?.District || ""}
         pgiHeatmap={pgiHeatmap}
         parakhGradeWise={parakhGradeWise}
         satGradeSem1={satGradeSem1}
