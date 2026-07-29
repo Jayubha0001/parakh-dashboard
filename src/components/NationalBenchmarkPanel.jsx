@@ -1,17 +1,25 @@
-import { useState } from "react";
 import {
   Box,
   Card,
   CardContent,
   Typography,
-  Tabs,
-  Tab,
+  Grid,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   Chip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+} from "recharts";
 
 import { PARAKH_NATIONAL_BENCHMARKS } from "../constants/parakhNationalBenchmarks";
 
@@ -19,6 +27,8 @@ import { PARAKH_NATIONAL_BENCHMARKS } from "../constants/parakhNationalBenchmark
 // used in the "PARAKH_Subject_Performance" sheet, so a selected district's
 // own score can be looked up and shown alongside Gujarat/National.
 const GRADE_LABEL = { G3: "Grade 3", G6: "Grade 6", G9: "Grade 9" };
+const GRADE_SHORT = { G3: "G3", G6: "G6", G9: "G9" };
+const GRADES = ["G3", "G6", "G9"];
 
 const SUBJECT_COLUMN_ALIASES = {
   Language: "Language",
@@ -34,61 +44,10 @@ const BAR_COLORS = {
   national: "#8B94A8",
 };
 
-const ThreeWayRow = ({ name, state, national, district }) => {
-  const bars = [
-    district != null && { label: "District", value: district, color: BAR_COLORS.district },
-    { label: "Gujarat", value: state, color: BAR_COLORS.state },
-    { label: "National", value: national, color: BAR_COLORS.national },
-  ].filter(Boolean);
-
-  return (
-    <Box sx={{ mb: 2 }}>
-      <Typography sx={{ fontSize: 12.5, fontWeight: 600, mb: 0.5 }}>{name}</Typography>
-
-      {bars.map((b) => (
-        <Box key={b.label} sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.4 }}>
-          <Typography sx={{ fontSize: 10.5, width: 56, flexShrink: 0, color: "text.secondary" }}>
-            {b.label}
-          </Typography>
-          <Box sx={{ flex: 1, height: 8, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
-            <Box sx={{ width: `${Math.min(b.value, 100)}%`, height: "100%", bgcolor: b.color }} />
-          </Box>
-          <Typography
-            sx={{
-              fontFamily: '"IBM Plex Mono", monospace',
-              fontSize: 11.5,
-              fontWeight: 700,
-              width: 38,
-              textAlign: "right",
-              color: b.color === BAR_COLORS.national ? "#5B6B85" : b.color,
-            }}
-          >
-            {b.value}%
-          </Typography>
-        </Box>
-      ))}
-    </Box>
-  );
-};
-
-const Section = ({ title, rows, defaultOpen = false }) => (
-  <Accordion defaultExpanded={defaultOpen} disableGutters sx={{ mb: 1, "&:before": { display: "none" } }}>
-    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-      <Typography sx={{ fontWeight: 600, fontSize: 14 }}>{title}</Typography>
-    </AccordionSummary>
-    <AccordionDetails>
-      {rows.map((r) => (
-        <ThreeWayRow key={r.name} {...r} />
-      ))}
-    </AccordionDetails>
-  </Accordion>
-);
-
 // Looks up a district's own value for a PDF benchmark row (e.g. "Language",
 // "Mathematics — Boys", "Language — Rural") against the matching per-district
 // sheet data already loaded on the PARAKH page.
 const buildDistrictRows = (rows, gradeKey, district, subjectData, genderData, locationData, managementData, socialGroupData) => {
-
   if (!district || district === "All") {
     return rows;
   }
@@ -140,8 +99,77 @@ const buildDistrictRows = (rows, gradeKey, district, subjectData, genderData, lo
 
     return { ...row, district: districtValue };
   });
-
 };
+
+// Same three-way comparison (District / Gujarat / National) as before, but
+// merged across all three grades into a single lookup keyed by row name, so
+// each subject/group shows one combined chart instead of needing a grade
+// tab to switch between three separate copies of the same row.
+const combineAcrossGrades = (sectionKey, district, subjectData, genderData, locationData, managementData, socialGroupData) => {
+  const byName = new Map();
+
+  GRADES.forEach((gradeKey) => {
+    const raw = PARAKH_NATIONAL_BENCHMARKS[gradeKey][sectionKey] || [];
+    const enriched = buildDistrictRows(raw, gradeKey, district, subjectData, genderData, locationData, managementData, socialGroupData);
+
+    enriched.forEach((row) => {
+      if (!byName.has(row.name)) byName.set(row.name, { name: row.name, points: [] });
+      byName.get(row.name).points.push({
+        grade: GRADE_SHORT[gradeKey],
+        district: row.district ?? null,
+        Gujarat: row.state,
+        National: row.national,
+      });
+    });
+  });
+
+  return [...byName.values()];
+};
+
+// One standing (vertical) bar chart per subject/group, grades along the
+// X-axis, so all three grades are visible together without a tab click.
+const BenchmarkChart = ({ item, showDistrict }) => {
+  const data = item.points.map((p) => ({
+    grade: p.grade,
+    ...(showDistrict && p.district != null ? { District: p.district } : {}),
+    Gujarat: p.Gujarat,
+    National: p.National,
+  }));
+
+  return (
+    <Box sx={{ height: 200 }}>
+      <Typography sx={{ fontSize: 12.5, fontWeight: 600, mb: 0.5, textAlign: "center" }}>{item.name}</Typography>
+      <ResponsiveContainer width="100%" height="88%">
+        <BarChart data={data} margin={{ top: 5, right: 8, left: -18, bottom: 0 }} barGap={3}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="grade" tick={{ fontSize: 11 }} />
+          <YAxis domain={[0, 100]} unit="%" tick={{ fontSize: 10 }} />
+          <RechartsTooltip formatter={(value) => `${value}%`} />
+          {showDistrict && <Bar dataKey="District" fill={BAR_COLORS.district} radius={[3, 3, 0, 0]} barSize={14} />}
+          <Bar dataKey="Gujarat" fill={BAR_COLORS.state} radius={[3, 3, 0, 0]} barSize={14} />
+          <Bar dataKey="National" fill={BAR_COLORS.national} radius={[3, 3, 0, 0]} barSize={14} />
+        </BarChart>
+      </ResponsiveContainer>
+    </Box>
+  );
+};
+
+const Section = ({ title, items, showDistrict, defaultOpen = false }) => (
+  <Accordion defaultExpanded={defaultOpen} disableGutters sx={{ mb: 1, "&:before": { display: "none" } }}>
+    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+      <Typography sx={{ fontWeight: 600, fontSize: 14 }}>{title}</Typography>
+    </AccordionSummary>
+    <AccordionDetails>
+      <Grid container spacing={2}>
+        {items.map((item) => (
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.name}>
+            <BenchmarkChart item={item} showDistrict={showDistrict} />
+          </Grid>
+        ))}
+      </Grid>
+    </AccordionDetails>
+  </Accordion>
+);
 
 const NationalBenchmarkPanel = ({
   district = "All",
@@ -151,11 +179,13 @@ const NationalBenchmarkPanel = ({
   managementData = [],
   socialGroupData = [],
 }) => {
-  const [grade, setGrade] = useState("G3");
-  const raw = PARAKH_NATIONAL_BENCHMARKS[grade];
+  const showDistrict = district !== "All";
 
-  const withDistrict = (rows) =>
-    buildDistrictRows(rows, grade, district, subjectData, genderData, locationData, managementData, socialGroupData);
+  const combine = (sectionKey) =>
+    combineAcrossGrades(sectionKey, district, subjectData, genderData, locationData, managementData, socialGroupData);
+
+  const totalSchools = GRADES.reduce((s, g) => s + PARAKH_NATIONAL_BENCHMARKS[g].participation.schools, 0);
+  const totalStudents = GRADES.reduce((s, g) => s + PARAKH_NATIONAL_BENCHMARKS[g].participation.students, 0);
 
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
@@ -166,16 +196,17 @@ const NationalBenchmarkPanel = ({
           </Typography>
 
           <Chip
-            label={`${raw.participation.schools.toLocaleString()} schools · ${raw.participation.students.toLocaleString()} students`}
+            label={`${totalSchools.toLocaleString()} schools · ${totalStudents.toLocaleString()} students · Grades 3, 6 & 9`}
             size="small"
             sx={{ bgcolor: "#F5F6FA", fontWeight: 600 }}
           />
         </Box>
 
         <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 2 }}>
-          Source: NCERT / Ministry of Education (State Report) + this app's district-level Excel data.
+          Source: NCERT / Ministry of Education (State Report) + this app's district-level Excel data. Each chart below
+          shows Grade 3, 6 and 9 side by side, so all three stages are visible at once — no grade tab needed.
           <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 2, ml: 1.5, flexWrap: "wrap" }}>
-            {district !== "All" && (
+            {showDistrict && (
               <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.6 }}>
                 <Box sx={{ width: 10, height: 10, bgcolor: "#F0B429", borderRadius: "2px" }} /> {district}
               </Box>
@@ -189,17 +220,11 @@ const NationalBenchmarkPanel = ({
           </Box>
         </Typography>
 
-        <Tabs value={grade} onChange={(e, v) => setGrade(v)} sx={{ mb: 2, borderBottom: "1px solid #E4E7F0" }}>
-          <Tab label="Grade 3 (Foundational)" value="G3" sx={{ textTransform: "none", fontWeight: 600 }} />
-          <Tab label="Grade 6 (Preparatory)" value="G6" sx={{ textTransform: "none", fontWeight: 600 }} />
-          <Tab label="Grade 9 (Middle)" value="G9" sx={{ textTransform: "none", fontWeight: 600 }} />
-        </Tabs>
-
-        <Section title="📚 By Subject" rows={withDistrict(raw.subject)} defaultOpen />
-        <Section title="🚻 By Gender" rows={withDistrict(raw.gender)} />
-        <Section title="🏘️ By Location (Rural/Urban)" rows={withDistrict(raw.location)} />
-        <Section title="🏫 By School Management Type" rows={withDistrict(raw.management)} />
-        <Section title="🤝 By Social Group" rows={withDistrict(raw.socialGroup)} />
+        <Section title="📚 By Subject" items={combine("subject")} showDistrict={showDistrict} defaultOpen />
+        <Section title="🚻 By Gender" items={combine("gender")} showDistrict={showDistrict} />
+        <Section title="🏘️ By Location (Rural/Urban)" items={combine("location")} showDistrict={showDistrict} />
+        <Section title="🏫 By School Management Type" items={combine("management")} showDistrict={showDistrict} />
+        <Section title="🤝 By Social Group" items={combine("socialGroup")} showDistrict={showDistrict} />
       </CardContent>
     </Card>
   );

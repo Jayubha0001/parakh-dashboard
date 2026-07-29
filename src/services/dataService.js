@@ -569,12 +569,14 @@ const buildPARAKHDistrictAction = (districtName, parakhData, subjectHeatmap) => 
   const subjRow = subjectHeatmap.data.find((d) => d.District === districtName);
   let weakestSubjectCol = null;
   let weakestSubjectPct = 101;
+  const subjectPcts = [];
 
   if (subjRow) {
     subjectHeatmap.columns
       .filter((c) => !c.endsWith("Average"))
       .forEach((col) => {
         const pct = (subjRow[col] || 0) * 100;
+        subjectPcts.push({ col, pct });
         if (pct < weakestSubjectPct) {
           weakestSubjectPct = pct;
           weakestSubjectCol = col;
@@ -583,6 +585,21 @@ const buildPARAKHDistrictAction = (districtName, parakhData, subjectHeatmap) => 
   }
 
   const subjectName = weakestSubjectCol ? weakestSubjectCol.split(" - ")[1] : null;
+
+  // Every stage and subject under the Watch/Support line (45%), not just
+  // the single weakest of each — a district can be behind on more than one
+  // front (a grade band AND a subject) at the same time.
+  const weakAreas = [
+    ...stages
+      .filter((s) => s.value * 100 < 45)
+      .map((s) => ({ label: s.label, pct: s.value * 100, recommendation: null })),
+    ...subjectPcts
+      .filter((s) => s.pct < 45)
+      .map((s) => {
+        const name = s.col.split(" - ")[1] || s.col;
+        return { label: s.col, pct: s.pct, recommendation: PARAKH_SUBJECT_RECOMMENDATIONS[name] || null };
+      }),
+  ].sort((a, b) => a.pct - b.pct);
 
   const priority =
     row.Overall < 0.4 ? "CRITICAL" : row.Overall < 0.46 ? "HIGH" : "MEDIUM";
@@ -598,6 +615,7 @@ const buildPARAKHDistrictAction = (districtName, parakhData, subjectHeatmap) => 
     district: districtName,
     percent: row.Overall * 100,
     metric: "PARAKH Mastery",
+    weakAreas,
   };
 
 };
@@ -784,17 +802,27 @@ const buildDistrictAction = (districtName, combined, heatmap) => {
 
   let weakestCategory = null;
   let weakestPct = 101;
+  const categoryPcts = [];
 
   if (heatRow) {
     heatmap.categories.forEach((cat) => {
       const max = PGI_CATEGORY_MAX[cat] || 100;
       const pct = max ? ((heatRow[cat] || 0) / max) * 100 : 0;
+      categoryPcts.push({ cat, pct });
       if (pct < weakestPct) {
         weakestPct = pct;
         weakestCategory = cat;
       }
     });
   }
+
+  // Every PGI-D category under the Watch/Support line (45%), not just the
+  // single weakest one — a district can be behind on several categories
+  // at once and all of them deserve a line in the action plan.
+  const weakAreas = categoryPcts
+    .filter((c) => c.pct < 45)
+    .sort((a, b) => a.pct - b.pct)
+    .map((c) => ({ label: c.cat, pct: c.pct, recommendation: PGI_CATEGORY_RECOMMENDATIONS[c.cat] || null }));
 
   return {
     priority: levelForBand(row.Band),
@@ -813,6 +841,7 @@ const buildDistrictAction = (districtName, combined, heatmap) => {
     metric: "Composite Score",
     weakestCategory,
     weakestPct,
+    weakAreas,
   };
 
 };
@@ -1500,6 +1529,19 @@ const buildSATDistrictAction = (districtName, satRanking, satDistrictSubject) =>
     ? [...subjectRows].sort((a, b) => a.PercentAchieved - b.PercentAchieved)[0]
     : null;
 
+  // Every subject under the Watch/Support line (45%), not just the single
+  // weakest one — a district can be behind on more than one subject at once.
+  const weakAreas = subjectRows
+    .filter((s) => s.PercentAchieved < 45)
+    .sort((a, b) => a.PercentAchieved - b.PercentAchieved)
+    .map((s) => ({
+      label: s.subject,
+      pct: s.PercentAchieved,
+      recommendation:
+        SAT_SUBJECT_RECOMMENDATIONS[s.subject] ||
+        "Run targeted remedial sessions focused on this district's weakest Learning Outcomes.",
+    }));
+
   const priority =
     row.PercentAchieved < 45 ? "CRITICAL" : row.PercentAchieved < 55 ? "HIGH" : "MEDIUM";
 
@@ -1521,6 +1563,7 @@ const buildSATDistrictAction = (districtName, satRanking, satDistrictSubject) =>
     rank: row.Rank,
     total: satRanking.length,
     metric: "SAT Score",
+    weakAreas,
   };
 
 };

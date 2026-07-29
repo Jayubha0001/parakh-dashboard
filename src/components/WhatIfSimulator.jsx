@@ -200,6 +200,28 @@ const WhatIfSimulator = ({ item, metricLabel = "Score" }) => {
           </Box>
         </Box>
       )}
+
+      {item.weakAreas?.length > 0 && (
+        <Box sx={{ mt: 2, p: 2, borderRadius: 2, bgcolor: "#FDEAEA", border: "1px solid #F5C2C2" }}>
+          <Typography sx={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5, color: "#B71C1C", textTransform: "uppercase" }}>
+            📌 All weak areas in {item.district} ({item.weakAreas.length})
+          </Typography>
+          <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 0.5, mb: 1 }}>
+            Every area below is under 45% — not just the single weakest one — so nothing behind gets missed.
+          </Typography>
+          <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
+            {item.weakAreas.map((w, i) => (
+              <Box component="li" key={i} sx={{ mb: 1 }}>
+                <Typography sx={{ fontSize: 13.5, color: "#16233B" }}>
+                  <strong>{w.label}</strong>{" "}
+                  <span style={{ fontFamily: fontMono, fontWeight: 700, color: "#B71C1C" }}>({w.pct.toFixed(1)}%)</span>
+                  {w.recommendation && <> — {w.recommendation}</>}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 };
