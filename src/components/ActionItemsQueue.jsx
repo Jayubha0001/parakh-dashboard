@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Box, Paper, Typography, Chip, TextField, MenuItem } from "@mui/material";
 import { colors } from "../theme/theme";
+import WhatIfSimulator from "./WhatIfSimulator";
 
 const PRIORITY_STYLES = {
   CRITICAL: { bar: "#D32F2F", chipBg: "#FDE2E1", chipText: "#C0392B", icon: "🔺" },
@@ -149,7 +150,10 @@ const ActionItemsQueue = ({ items = [], allDistricts = [], allItems = [], syncDi
 
       <Box sx={{ p: { xs: 1.5, sm: 2.5 }, bgcolor: "#F5F6FA" }}>
         {detail ? (
-          <DistrictDetailCard item={detail} />
+          <>
+            <DistrictDetailCard item={detail} />
+            <WhatIfSimulator item={detail} metricLabel={detail.metric || "Score"} />
+          </>
         ) : (
           <Box sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>
             <Typography sx={{ fontSize: 14 }}>

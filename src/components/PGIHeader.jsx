@@ -1,4 +1,5 @@
 import { Box, Grid, Typography, Paper, Chip } from "@mui/material";
+import { colors, fontDisplay, fontMono } from "../theme/theme";
 
 const gradeColor = (grade = "") => {
   if (grade.startsWith("Daksh") || grade.startsWith("Utkarsh")) return "#2E7D32";
@@ -11,51 +12,76 @@ const PGIHeader = ({ overall }) => {
   return (
     <Box
       sx={{
-        background: "linear-gradient(135deg,#4A148C,#7B1FA2)",
+        background: `linear-gradient(120deg, ${colors.navy} 0%, ${colors.navyLight} 100%)`,
         borderRadius: 4,
         color: "#fff",
-        p: 4,
+        p: { xs: 2.5, md: 3.5 },
         mb: 4,
-        boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
+        position: "relative",
+        overflow: "hidden",
+        boxShadow: "0 10px 30px rgba(15,23,42,0.25)",
       }}
     >
+      <Box
+        sx={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 4,
+          background: `linear-gradient(90deg, ${colors.gold}, ${colors.goldLight})`,
+        }}
+      />
+
       <Grid container spacing={3} sx={{ alignItems: "center" }}>
         <Grid size={{ xs: 12, md: 8 }}>
-          <Typography variant="h3" fontWeight="bold">
+          <Typography
+            sx={{
+              fontFamily: fontMono,
+              fontSize: 12,
+              letterSpacing: 2,
+              textTransform: "uppercase",
+              color: colors.goldLight,
+              fontWeight: 600,
+            }}
+          >
+            🏛️ Performance Grading Index — State &amp; District
+          </Typography>
+
+          <Typography sx={{ fontFamily: fontDisplay, fontWeight: 700, fontSize: { xs: 26, md: 34 }, mt: 0.3 }}>
             Gujarat PGI 2.0 Dashboard
           </Typography>
 
-          <Typography sx={{ mt: 1, opacity: 0.9, fontSize: 18 }}>
-            Performance Grading Index — State & District (PGI-D)
-          </Typography>
-
-          <Typography sx={{ mt: 2, fontSize: 16 }}>
-            🏛️ 6 Domains • 33 Districts • Out of 1000 (State) / 600 (District)
+          <Typography sx={{ mt: 1.5, opacity: 0.85, fontSize: 15 }}>
+            6 Domains · 33 Districts · Scored out of 1000 (State) / 600 (District)
           </Typography>
         </Grid>
 
         <Grid size={{ xs: 12, md: 4 }}>
           <Paper
+            elevation={0}
             sx={{
-              p: 3,
+              p: 2.5,
               borderRadius: 3,
               textAlign: "center",
-              bgcolor: "rgba(255,255,255,0.15)",
+              bgcolor: "rgba(255,255,255,0.10)",
+              border: "1px solid rgba(255,255,255,0.18)",
               color: "#fff",
               backdropFilter: "blur(8px)",
             }}
           >
-            <Typography fontSize={15}>Gujarat State Overall Score</Typography>
+            <Typography sx={{ fontSize: 13, opacity: 0.8 }}>Gujarat State Overall Score</Typography>
 
-            <Typography variant="h3" fontWeight="bold">
+            <Typography sx={{ fontFamily: fontDisplay, fontWeight: 700, fontSize: 40, mt: 0.5 }}>
               {overall?.score?.toFixed(1) ?? "-"}
-              <Typography component="span" fontSize={18} sx={{ opacity: 0.8 }}>
+              <Typography component="span" sx={{ fontSize: 16, opacity: 0.75 }}>
                 {" "}/ {overall?.maxWeight ?? 1000}
               </Typography>
             </Typography>
 
             <Chip
               label={`${overall?.grade || "-"} · ${overall?.percentAchieved?.toFixed(1) ?? 0}%`}
+              size="small"
               sx={{
                 mt: 1,
                 bgcolor: gradeColor(overall?.grade),

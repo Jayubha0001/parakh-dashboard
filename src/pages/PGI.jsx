@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Box } from "@mui/material";
 
 import DashboardLayout from "../components/DashboardLayout";
+import Header from "../components/Header";
 import PGIHeader from "../components/PGIHeader";
 import PGIKPICards from "../components/PGIKPICards";
 import PGIDomainCards from "../components/PGIDomainCards";
@@ -84,6 +85,7 @@ const PGI = () => {
 
   return (
     <DashboardLayout>
+      <Header />
       <PGIHeader overall={stateSummary.overall} />
 
       <PGIKPICards

@@ -1,6 +1,7 @@
-import { Card, CardContent, Typography, Box } from "@mui/material";
+import { Card, CardContent, Typography, Box, Chip } from "@mui/material";
+import { colors, fontDisplay, fontMono } from "../theme/theme";
 
-// Max weight for each PGI-D category (used to compute % for color scaling)
+// Max weight for each PGI-D category (used to compute % for colour scaling)
 const CATEGORY_MAX = {
   "Outcomes (/290)": 290,
   "Classroom Transaction (/90)": 90,
@@ -10,23 +11,36 @@ const CATEGORY_MAX = {
   "Governance (/84)": 84,
 };
 
-const cellColor = (value, max) => {
-  const pct = max ? (value / max) * 100 : 0;
-  if (pct >= 71) return "#2E7D32"; // Atti-Uttam and above
-  if (pct >= 51) return "#66BB6A"; // Prachesta-1
-  if (pct >= 31) return "#FB8C00"; // Prachesta-2/3
-  return "#D32F2F"; // Akanshi
+// Same four-tier PGI-D grading brackets the rest of the PGI page already
+// uses (Akanshi / Prachesta / Utkarsh / Atti-Uttam), just read as bands here.
+const BAND = {
+  strong: { min: 71, bg: "#E6F4EA", text: "#1B5E20", bar: "#2E7D32" },
+  good: { min: 51, bg: "#EEF7EE", text: "#2E7D32", bar: "#66BB6A" },
+  watch: { min: 31, bg: "#FFF3E0", text: "#B15C00", bar: "#FB8C00" },
+  support: { min: -Infinity, bg: "#FDEAEA", text: "#B71C1C", bar: "#D32F2F" },
 };
+
+const bandFor = (pct) =>
+  pct >= BAND.strong.min ? BAND.strong : pct >= BAND.good.min ? BAND.good : pct >= BAND.watch.min ? BAND.watch : BAND.support;
 
 const HeatMapChart = ({ categories = [], data = [] }) => {
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 4 }}>
+    <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
       <CardContent>
-        <Typography variant="h6" fontWeight="bold" mb={2}>
-          🌡️ Category-wise Score Heat-map (% of max, by District)
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 2 }}>
+          <Typography sx={{ fontFamily: fontDisplay, fontWeight: 600, fontSize: 17, color: colors.ink }}>
+            🌡️ Category-wise Score Heat-map (% of max, by District)
+          </Typography>
 
-        <Box sx={{ overflowX: "auto" }}>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <Chip size="small" label={`≥${BAND.strong.min}% Atti-Uttam+`} sx={{ bgcolor: BAND.strong.bg, color: BAND.strong.text, fontWeight: 600, fontSize: 11 }} />
+            <Chip size="small" label={`${BAND.good.min}–70% Utkarsh`} sx={{ bgcolor: BAND.good.bg, color: BAND.good.text, fontWeight: 600, fontSize: 11 }} />
+            <Chip size="small" label={`${BAND.watch.min}–50% Prachesta`} sx={{ bgcolor: BAND.watch.bg, color: BAND.watch.text, fontWeight: 600, fontSize: 11 }} />
+            <Chip size="small" label={`<${BAND.watch.min}% Akanshi`} sx={{ bgcolor: BAND.support.bg, color: BAND.support.text, fontWeight: 600, fontSize: 11 }} />
+          </Box>
+        </Box>
+
+        <Box sx={{ overflowX: "auto", borderRadius: 2, border: "1px solid #E4E7F0" }}>
           <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12 }}>
             <thead>
               <tr>
@@ -34,12 +48,16 @@ const HeatMapChart = ({ categories = [], data = [] }) => {
                   style={{
                     position: "sticky",
                     left: 0,
-                    background: "#6A1B9A",
+                    background: colors.navy,
                     color: "#fff",
-                    padding: "8px",
+                    padding: "10px 12px",
                     textAlign: "left",
-                    minWidth: 140,
+                    minWidth: 150,
                     zIndex: 1,
+                    fontFamily: fontMono,
+                    letterSpacing: 0.5,
+                    fontSize: 11,
+                    textTransform: "uppercase",
                   }}
                 >
                   District
@@ -48,11 +66,15 @@ const HeatMapChart = ({ categories = [], data = [] }) => {
                   <th
                     key={cat}
                     style={{
-                      background: "#6A1B9A",
+                      background: colors.navy,
                       color: "#fff",
-                      padding: "8px",
-                      minWidth: 110,
+                      padding: "10px 8px",
+                      minWidth: 128,
                       whiteSpace: "nowrap",
+                      fontFamily: fontMono,
+                      letterSpacing: 0.5,
+                      fontSize: 11,
+                      textTransform: "uppercase",
                     }}
                   >
                     {cat}
@@ -62,16 +84,17 @@ const HeatMapChart = ({ categories = [], data = [] }) => {
             </thead>
 
             <tbody>
-              {data.map((row) => (
-                <tr key={row.District}>
+              {data.map((row, i) => (
+                <tr key={row.District} style={{ background: i % 2 === 1 ? "#FAFBFD" : "#fff" }}>
                   <td
                     style={{
                       position: "sticky",
                       left: 0,
-                      background: "#fff",
-                      padding: "6px 8px",
+                      background: "inherit",
+                      padding: "8px 12px",
                       fontWeight: 600,
-                      borderBottom: "1px solid #eee",
+                      color: colors.ink,
+                      borderBottom: "1px solid #EEF0F5",
                     }}
                   >
                     {row.District}
@@ -80,7 +103,8 @@ const HeatMapChart = ({ categories = [], data = [] }) => {
                   {categories.map((cat) => {
                     const max = CATEGORY_MAX[cat] || 100;
                     const value = row[cat] ?? 0;
-                    const pct = max ? ((value / max) * 100).toFixed(0) : 0;
+                    const pct = max ? (value / max) * 100 : 0;
+                    const band = bandFor(pct);
 
                     return (
                       <td
@@ -88,14 +112,52 @@ const HeatMapChart = ({ categories = [], data = [] }) => {
                         title={`${value} / ${max}`}
                         style={{
                           textAlign: "center",
-                          padding: "6px 4px",
-                          color: "#fff",
-                          fontWeight: 600,
-                          background: cellColor(value, max),
-                          borderBottom: "1px solid #fff",
+                          padding: "6px 8px",
+                          borderBottom: "1px solid #EEF0F5",
                         }}
                       >
-                        {pct}%
+                        <Box
+                          sx={{
+                            position: "relative",
+                            borderRadius: 1.5,
+                            bgcolor: band.bg,
+                            overflow: "hidden",
+                            height: 22,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              bottom: 0,
+                              width: `${Math.min(100, Math.max(0, pct))}%`,
+                              bgcolor: band.bar,
+                            }}
+                          />
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              zIndex: 1,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              whiteSpace: "nowrap",
+                              fontFamily: fontMono,
+                              fontWeight: 700,
+                              fontSize: 12,
+                              color: "#16233B",
+                              textShadow:
+                                "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 3px #fff",
+                            }}
+                          >
+                            {pct.toFixed(0)}%
+                          </Box>
+                        </Box>
                       </td>
                     );
                   })}

@@ -531,6 +531,7 @@ export const getPGIActionItems = (workbook) => {
         ...item,
         icon: "🏛️",
         title: `${districtName} — PGI-D 2.0 Focus`,
+        metric: "PGI-D Score",
       };
     })
     .filter(Boolean);
@@ -595,6 +596,8 @@ const buildPARAKHDistrictAction = (districtName, parakhData, subjectHeatmap) => 
     }`,
     recommendation: subjectName ? PARAKH_SUBJECT_RECOMMENDATIONS[subjectName] : null,
     district: districtName,
+    percent: row.Overall * 100,
+    metric: "PARAKH Mastery",
   };
 
 };
@@ -803,8 +806,11 @@ const buildDistrictAction = (districtName, combined, heatmap) => {
     recommendation: weakestCategory ? PGI_CATEGORY_RECOMMENDATIONS[weakestCategory] : null,
     district: districtName,
     compositeScore: row.CompositeScore,
+    percent: row.CompositeScore,
     rank: row.Rank,
+    total: 33,
     band: row.Band,
+    metric: "Composite Score",
     weakestCategory,
     weakestPct,
   };
@@ -884,7 +890,7 @@ export const getAllDistrictPGIActionItems = (workbook) => {
     .map((d) => {
       const item = buildPGIDistrictAction(d.District, combined, heatmap);
       if (!item) return null;
-      return { ...item, icon: "🏛️", title: `${d.District} — PGI-D 2.0 Focus` };
+      return { ...item, icon: "🏛️", title: `${d.District} — PGI-D 2.0 Focus`, metric: "PGI-D Score" };
     })
     .filter(Boolean);
 
@@ -1511,6 +1517,10 @@ const buildSATDistrictAction = (districtName, satRanking, satDistrictSubject) =>
         "Run targeted remedial sessions focused on this district's weakest Learning Outcomes."
       : null,
     district: districtName,
+    percent: row.PercentAchieved,
+    rank: row.Rank,
+    total: satRanking.length,
+    metric: "SAT Score",
   };
 
 };

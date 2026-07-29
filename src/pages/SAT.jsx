@@ -13,11 +13,13 @@ import {
 } from "recharts";
 
 import DashboardLayout from "../components/DashboardLayout";
+import Header from "../components/Header";
 import SATHeatMapChart from "../components/SATHeatMapChart";
 import SATSemesterComparison from "../components/SATSemesterComparison";
 import Loading from "../components/Loading";
 import DistrictFilterBar from "../components/DistrictFilterBar";
 import ActionItemsQueue from "../components/ActionItemsQueue";
+import { colors, fontDisplay, fontMono } from "../theme/theme";
 
 import {
   loadExcel,
@@ -72,7 +74,11 @@ const SAT = () => {
   // Which semester's data drives the state-average/KPI/grade-wise/
   // subject-wise/heat-map/table sections below. The Semester Comparison
   // section further down always shows both semesters together.
-  const [semester, setSemester] = useState("sem2");
+  //
+  // Defaults to "All" (pooled Sem 1 + Sem 2) — the page opens on the
+  // combined picture rather than silently pre-picking Semester 2, so the
+  // first thing a viewer sees is the full-year state, not one semester.
+  const [semester, setSemester] = useState("all");
 
   useEffect(() => {
     async function fetchData() {
@@ -323,21 +329,47 @@ const SAT = () => {
 
   return (
     <DashboardLayout>
-      {/* Header */}
+      <Header />
+
+      {/* Page hero */}
       <Box
         sx={{
-          background: "linear-gradient(135deg, #6A1B9A 0%, #4A148C 100%)",
+          background: `linear-gradient(120deg, ${colors.navy} 0%, ${colors.navyLight} 100%)`,
           borderRadius: 4,
           color: "#fff",
           p: 4,
           mb: 4,
-          boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
+          position: "relative",
+          overflow: "hidden",
+          boxShadow: "0 10px 30px rgba(15,23,42,0.25)",
         }}
       >
-        <Grid container spacing={3} sx={{ alignItems: "center" }}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 4,
+            background: `linear-gradient(90deg, ${colors.gold}, ${colors.goldLight})`,
+          }}
+        />
+        <Grid container spacing={3} sx={{ alignItems: "center", position: "relative" }}>
           <Grid size={{ xs: 12, md: 8 }}>
-            <Typography variant="h3" fontWeight="bold">
-              📝 Gujarat SAT Dashboard
+            <Typography
+              sx={{
+                fontFamily: fontMono,
+                fontSize: 12,
+                letterSpacing: 2,
+                textTransform: "uppercase",
+                color: colors.goldLight,
+                fontWeight: 600,
+              }}
+            >
+              📝 SAT Analytics
+            </Typography>
+            <Typography sx={{ fontFamily: fontDisplay, fontWeight: 700, fontSize: { xs: 26, md: 34 }, mt: 0.3 }}>
+              Gujarat SAT Dashboard
             </Typography>
             <Typography sx={{ mt: 1, opacity: 0.85 }}>
               Semester Assessment Test — {semester === "all" ? "Both Semesters (Combined)" : semester === "sem1" ? "Semester 1" : "Semester 2"}
@@ -362,11 +394,11 @@ const SAT = () => {
                   px: 2,
                 },
                 "& .MuiToggleButton-root.Mui-selected": {
-                  bgcolor: "#fff",
-                  color: "#4A148C",
+                  bgcolor: colors.gold,
+                  color: colors.navy,
                 },
                 "& .MuiToggleButton-root.Mui-selected:hover": {
-                  bgcolor: "#f0e6f7",
+                  bgcolor: colors.goldLight,
                 },
               }}
             >
@@ -379,7 +411,8 @@ const SAT = () => {
           <Grid size={{ xs: 12, md: 4 }}>
             <Box
               sx={{
-                bgcolor: "rgba(255,255,255,0.12)",
+                bgcolor: "rgba(255,255,255,0.10)",
+                border: "1px solid rgba(255,255,255,0.18)",
                 borderRadius: 3,
                 p: 2.5,
                 textAlign: "center",
@@ -398,7 +431,7 @@ const SAT = () => {
       {/* KPI Cards */}
       <Grid container spacing={2} mb={2}>
         {[
-          { label: "State Average", value: `${satSummary.stateAverage.toFixed(1)}%`, accent: "#6A1B9A" },
+          { label: "State Average", value: `${satSummary.stateAverage.toFixed(1)}%`, accent: colors.gold },
           { label: "Districts Assessed", value: satSummary.totalDistricts, accent: "#1976D2" },
           { label: "Top District", value: topDistrict?.District || "-", sub: `${topDistrict?.PercentAchieved?.toFixed(1) || 0}%`, accent: "#2E7D32" },
           { label: "Needs Support", value: lowestDistrict?.District || "-", sub: `${lowestDistrict?.PercentAchieved?.toFixed(1) || 0}%`, accent: "#D32F2F" },
@@ -435,7 +468,7 @@ const SAT = () => {
                   <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{grade}</Typography>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Box sx={{ flex: 1, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
-                      <Box sx={{ width: `${Math.min(avg, 100)}%`, height: "100%", bgcolor: "#6A1B9A" }} />
+                      <Box sx={{ width: `${Math.min(avg, 100)}%`, height: "100%", bgcolor: colors.gold }} />
                     </Box>
                     <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 700, width: 34 }}>
                       {avg.toFixed(0)}%
@@ -553,8 +586,8 @@ const SAT = () => {
               <YAxis domain={[0, 100]} />
               <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
               <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: 12 }} />
-              <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
-              <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
+              <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
+              <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -575,10 +608,10 @@ const SAT = () => {
                 <YAxis domain={[0, 100]} />
                 <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
                 <Legend />
-                <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={30}>
+                <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={30}>
                   <LabelList dataKey="Sem 1" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 10, fontWeight: "bold", fill: "#555" }} />
                 </Bar>
-                <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={30}>
+                <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={30}>
                   <LabelList dataKey="Sem 2" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 10, fontWeight: "bold", fill: "#333" }} />
                 </Bar>
               </BarChart>
@@ -602,10 +635,10 @@ const SAT = () => {
                 <YAxis domain={[0, 100]} />
                 <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
                 <Legend />
-                <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={22}>
+                <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={22}>
                   <LabelList dataKey="Sem 1" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#555" }} />
                 </Bar>
-                <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={22}>
+                <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={22}>
                   <LabelList dataKey="Sem 2" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#333" }} />
                 </Bar>
               </BarChart>

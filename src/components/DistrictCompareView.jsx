@@ -84,6 +84,8 @@ const DetailRow = ({ label, a, b, unit = "%" }) => {
 // The chart half of each detail box: same rows as the table next to it,
 // drawn as a grouped bar chart so the gap between the two districts is
 // visible at a glance instead of only readable from numbers in a table.
+// Standing (vertical) columns, not lying-down bars — matches every other
+// chart in the app.
 const DetailChart = ({ rows, colHeadA, colHeadB }) => {
   const chartData = rows.map((r) => ({
     name: r.label,
@@ -92,16 +94,22 @@ const DetailChart = ({ rows, colHeadA, colHeadB }) => {
   }));
 
   return (
-    <Box sx={{ width: "100%", height: Math.max(220, rows.length * 46) }}>
+    <Box sx={{ width: "100%", height: 320 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 24, left: 0, bottom: 5 }} barGap={4}>
-          <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-          <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
-          <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 11 }} />
+        <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: rows.length > 4 ? 70 : 30 }} barGap={4}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 11 }}
+            angle={rows.length > 4 ? -30 : 0}
+            textAnchor={rows.length > 4 ? "end" : "middle"}
+            interval={0}
+          />
+          <YAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
           <RechartsTooltip formatter={(value) => (value == null ? "No data" : `${value}%`)} />
           <Legend wrapperStyle={{ fontSize: 12 }} />
-          <Bar dataKey={colHeadA} fill="#1E3A8A" radius={[0, 3, 3, 0]} barSize={14} />
-          <Bar dataKey={colHeadB} fill="#F0B429" radius={[0, 3, 3, 0]} barSize={14} />
+          <Bar dataKey={colHeadA} fill="#1E3A8A" radius={[3, 3, 0, 0]} barSize={rows.length > 6 ? 14 : 22} />
+          <Bar dataKey={colHeadB} fill="#F0B429" radius={[3, 3, 0, 0]} barSize={rows.length > 6 ? 14 : 22} />
         </BarChart>
       </ResponsiveContainer>
     </Box>

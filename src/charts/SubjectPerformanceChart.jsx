@@ -1,24 +1,33 @@
-import { Card, CardContent, Typography, Box } from "@mui/material";
+import { Card, CardContent, Typography, Box, Chip } from "@mui/material";
+import { colors, fontDisplay, fontMono } from "../theme/theme";
 
-const cellColor = (pct) => {
-  if (pct >= 45) return "#2E7D32"; // Green - High
-  if (pct >= 40) return "#FB8C00"; // Orange - Medium
-  return "#D32F2F"; // Red - Low
+// Same three-band read as the rest of the app's heat-maps, just at the
+// thresholds this particular indicator (subject mastery %) already used.
+const BAND = {
+  strong: { min: 45, bg: "#E6F4EA", text: "#1B5E20", bar: "#2E7D32" },
+  watch: { min: 40, bg: "#FFF3E0", text: "#B15C00", bar: "#FB8C00" },
+  support: { min: -Infinity, bg: "#FDEAEA", text: "#B71C1C", bar: "#D32F2F" },
 };
+
+const bandFor = (pct) => (pct >= BAND.strong.min ? BAND.strong : pct >= BAND.watch.min ? BAND.watch : BAND.support);
 
 const SubjectPerformanceChart = ({ columns = [], data = [] }) => {
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 4 }}>
+    <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
       <CardContent>
-        <Typography variant="h6" fontWeight="bold" mb={1} sx={{ color: "#1E3A8A" }}>
-          📚 Subject-wise Mastery Heat-map (% students at mastery, by District)
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 2 }}>
+          <Typography sx={{ fontFamily: fontDisplay, fontWeight: 600, fontSize: 17, color: colors.ink }}>
+            📚 Subject-wise Mastery Heat-map (% students at mastery, by District)
+          </Typography>
 
-        <Typography fontSize={12} color="text.secondary" mb={2}>
-          🟢 High (≥45%) · 🟠 Medium (40–44.99%) · 🔴 Low (&lt;40%)
-        </Typography>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <Chip size="small" label={`≥${BAND.strong.min}% High`} sx={{ bgcolor: BAND.strong.bg, color: BAND.strong.text, fontWeight: 600, fontSize: 11 }} />
+            <Chip size="small" label={`${BAND.watch.min}–44.99% Medium`} sx={{ bgcolor: BAND.watch.bg, color: BAND.watch.text, fontWeight: 600, fontSize: 11 }} />
+            <Chip size="small" label={`<${BAND.watch.min}% Low`} sx={{ bgcolor: BAND.support.bg, color: BAND.support.text, fontWeight: 600, fontSize: 11 }} />
+          </Box>
+        </Box>
 
-        <Box sx={{ overflowX: "auto" }}>
+        <Box sx={{ overflowX: "auto", borderRadius: 2, border: "1px solid #E4E7F0" }}>
           <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12 }}>
             <thead>
               <tr>
@@ -26,12 +35,16 @@ const SubjectPerformanceChart = ({ columns = [], data = [] }) => {
                   style={{
                     position: "sticky",
                     left: 0,
-                    background: "#1565C0",
+                    background: colors.navy,
                     color: "#fff",
-                    padding: "8px",
+                    padding: "10px 12px",
                     textAlign: "left",
-                    minWidth: 140,
+                    minWidth: 150,
                     zIndex: 1,
+                    fontFamily: fontMono,
+                    letterSpacing: 0.5,
+                    fontSize: 11,
+                    textTransform: "uppercase",
                   }}
                 >
                   District
@@ -42,12 +55,16 @@ const SubjectPerformanceChart = ({ columns = [], data = [] }) => {
                     <th
                       key={col}
                       style={{
-                        background: isAverage ? "#0F172A" : "#1565C0",
+                        background: isAverage ? colors.navyLight : colors.navy,
                         color: "#fff",
-                        padding: "8px",
-                        minWidth: isAverage ? 90 : 100,
+                        padding: "10px 8px",
+                        minWidth: isAverage ? 100 : 112,
                         whiteSpace: "nowrap",
-                        borderLeft: isAverage ? "2px solid #F0B429" : "none",
+                        fontFamily: fontMono,
+                        letterSpacing: 0.5,
+                        fontSize: 11,
+                        textTransform: "uppercase",
+                        borderLeft: isAverage ? `2px solid ${colors.gold}` : "none",
                       }}
                     >
                       {isAverage ? "⭐ " + col : col}
@@ -58,16 +75,17 @@ const SubjectPerformanceChart = ({ columns = [], data = [] }) => {
             </thead>
 
             <tbody>
-              {data.map((row) => (
-                <tr key={row.District}>
+              {data.map((row, i) => (
+                <tr key={row.District} style={{ background: i % 2 === 1 ? "#FAFBFD" : "#fff" }}>
                   <td
                     style={{
                       position: "sticky",
                       left: 0,
-                      background: "#fff",
-                      padding: "6px 8px",
+                      background: "inherit",
+                      padding: "8px 12px",
                       fontWeight: 600,
-                      borderBottom: "1px solid #eee",
+                      color: colors.ink,
+                      borderBottom: "1px solid #EEF0F5",
                     }}
                   >
                     {row.District}
@@ -76,20 +94,60 @@ const SubjectPerformanceChart = ({ columns = [], data = [] }) => {
                   {columns.map((col) => {
                     const pct = (row[col] ?? 0) * 100;
                     const isAverage = col.endsWith("Average");
+                    const band = bandFor(pct);
+
                     return (
                       <td
                         key={col}
                         style={{
                           textAlign: "center",
-                          padding: "6px 4px",
-                          color: "#fff",
-                          fontWeight: isAverage ? 800 : 600,
-                          background: cellColor(pct),
-                          borderBottom: "1px solid #fff",
-                          borderLeft: isAverage ? "2px solid #F0B429" : "none",
+                          padding: "6px 8px",
+                          borderBottom: "1px solid #EEF0F5",
+                          borderLeft: isAverage ? `2px solid ${colors.gold}` : "none",
                         }}
                       >
-                        {pct.toFixed(1)}%
+                        <Box
+                          sx={{
+                            position: "relative",
+                            borderRadius: 1.5,
+                            bgcolor: band.bg,
+                            overflow: "hidden",
+                            height: 22,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              bottom: 0,
+                              width: `${Math.min(100, Math.max(0, pct))}%`,
+                              bgcolor: band.bar,
+                            }}
+                          />
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              zIndex: 1,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              whiteSpace: "nowrap",
+                              fontFamily: fontMono,
+                              fontWeight: isAverage ? 800 : 700,
+                              fontSize: 12,
+                              color: "#16233B",
+                              textShadow:
+                                "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 3px #fff",
+                            }}
+                          >
+                            {pct.toFixed(1)}%
+                          </Box>
+                        </Box>
                       </td>
                     );
                   })}
