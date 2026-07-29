@@ -165,6 +165,51 @@ const DistrictCompareView = ({
   const sat2A = satGradeSem2.data.find((d) => d.District === districtA);
   const sat2B = satGradeSem2.data.find((d) => d.District === districtB);
 
+  // One combined "weak spots" list across all three detail boxes above —
+  // same treatment as the Reports page's Weakest Indicators list, just
+  // scoped to whichever two districts are being compared here. A row
+  // counts as weak if EITHER district is under 45% on it.
+  const weakCompareRows = [];
+  if (pgiA && pgiB) {
+    pgiHeatmap.categories.forEach((cat) => {
+      const a = pgiA[cat];
+      const b = pgiB[cat];
+      if ((a != null && a < 45) || (b != null && b < 45)) {
+        weakCompareRows.push({ section: "PGI-D 2.0", label: cat, a, b });
+      }
+    });
+  }
+  if (parakhA && parakhB) {
+    [
+      { label: "Foundational (Grade 3)", a: parakhA.Foundational * 100, b: parakhB.Foundational * 100 },
+      { label: "Preparatory (Grade 6)", a: parakhA.Preparatory * 100, b: parakhB.Preparatory * 100 },
+      { label: "Middle (Grade 9)", a: parakhA.Middle * 100, b: parakhB.Middle * 100 },
+    ].forEach((r) => {
+      if (r.a < 45 || r.b < 45) weakCompareRows.push({ section: "PARAKH", ...r });
+    });
+  }
+  if (sat1A && sat1B) {
+    satGradeSem1.grades.forEach((g) => {
+      const a = sat1A[g];
+      const b = sat1B[g];
+      if ((a != null && a < 45) || (b != null && b < 45)) {
+        weakCompareRows.push({ section: "SAT — Sem 1", label: g, a, b });
+      }
+    });
+  }
+  if (sat2A && sat2B) {
+    satGradeSem2.grades.forEach((g) => {
+      const a = sat2A[g];
+      const b = sat2B[g];
+      if ((a != null && a < 45) || (b != null && b < 45)) {
+        weakCompareRows.push({ section: "SAT — Sem 2", label: g, a, b });
+      }
+    });
+  }
+  weakCompareRows.sort(
+    (r1, r2) => Math.min(r1.a ?? 999, r1.b ?? 999) - Math.min(r2.a ?? 999, r2.b ?? 999)
+  );
+
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
       <CardContent>
@@ -426,6 +471,51 @@ const DistrictCompareView = ({
                 </AccordionDetails>
               </Accordion>
             </Box>
+
+            {weakCompareRows.length > 0 && (
+              <Box sx={{ mt: 3, p: 2.5, borderRadius: 2, bgcolor: "#FFFBEF", border: "1px dashed #F0B429" }}>
+                <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 16, color: "#16233B", mb: 0.5 }}>
+                  🎯 Action Points — Weakest Indicators ({weakCompareRows.length})
+                </Typography>
+                <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 1.5 }}>
+                  Every indicator below is under 45% for {districtA}, {districtB}, or both — pulled together from
+                  the PGI-D, PARAKH, and SAT sections above, weakest first.
+                </Typography>
+
+                <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
+                  {weakCompareRows.map((row, i) => (
+                    <Box component="li" key={i} sx={{ mb: 1.2 }}>
+                      <Typography sx={{ fontSize: 13.5, color: "#16233B" }}>
+                        <strong>{row.label}</strong>{" "}
+                        <span style={{ color: "#5B6B85", fontSize: 12 }}>({row.section})</span> —{" "}
+                        {districtA}:{" "}
+                        <span
+                          style={{
+                            fontFamily: '"IBM Plex Mono", monospace',
+                            fontWeight: 700,
+                            color: row.a != null && row.a < 45 ? "#B71C1C" : "#16233B",
+                          }}
+                        >
+                          {row.a != null ? `${row.a.toFixed(1)}%` : "—"}
+                        </span>
+                        {" · "}
+                        {districtB}:{" "}
+                        <span
+                          style={{
+                            fontFamily: '"IBM Plex Mono", monospace',
+                            fontWeight: 700,
+                            color: row.b != null && row.b < 45 ? "#B71C1C" : "#16233B",
+                          }}
+                        >
+                          {row.b != null ? `${row.b.toFixed(1)}%` : "—"}
+                        </span>
+                        .
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
           </>
         )}
 

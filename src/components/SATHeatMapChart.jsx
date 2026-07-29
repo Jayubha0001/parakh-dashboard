@@ -12,10 +12,20 @@ const BAND = {
 
 const bandFor = (pct) => (pct >= BAND.strong.min ? BAND.strong : pct >= BAND.watch.min ? BAND.watch : BAND.support);
 
+// Same cleanup as dataService's cleanSubjectLabel — kept local here so this
+// is a display-only concern; `col` itself (used to look up row[col]) is
+// left untouched.
+const displayLabel = (col = "") => col.replace(/\s*\(Gujarati Medium\)/gi, "").trim();
+
 // Generic District x Column percentage heat-map. `data` rows look like
 // { District, [column]: percentValue, ... } — used for both the SAT
-// Grade-wise and Subject-wise breakdowns.
-const SATHeatMapChart = ({ title, icon = "🌡️", columns = [], data = [] }) => {
+// Grade-wise and Subject-wise breakdowns. When `data2` is also passed (with
+// `label`/`label2`), each cell shows both periods stacked instead of
+// needing two separate full-width tables one after another.
+const SATHeatMapChart = ({ title, icon = "🌡️", columns = [], data = [], data2 = null, label = "S1", label2 = "S2" }) => {
+  const dual = Boolean(data2);
+  const data2ByDistrict = dual ? Object.fromEntries(data2.map((r) => [r.District, r])) : {};
+
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
       <CardContent>
@@ -68,98 +78,127 @@ const SATHeatMapChart = ({ title, icon = "🌡️", columns = [], data = [] }) =
                       textTransform: "uppercase",
                     }}
                   >
-                    {col}
+                    {displayLabel(col)}
                   </th>
                 ))}
               </tr>
             </thead>
 
             <tbody>
-              {data.map((row, i) => (
-                <tr key={row.District} style={{ background: i % 2 === 1 ? "#FAFBFD" : "#fff" }}>
-                  <td
-                    style={{
-                      position: "sticky",
-                      left: 0,
-                      background: "inherit",
-                      padding: "8px 12px",
-                      fontWeight: 600,
-                      color: colors.ink,
-                      borderBottom: "1px solid #EEF0F5",
-                    }}
-                  >
-                    {row.District}
-                  </td>
+              {data.map((row, i) => {
+                const row2 = dual ? data2ByDistrict[row.District] : null;
 
-                  {columns.map((col) => {
-                    const pct = row[col] ?? 0;
-                    const band = bandFor(pct);
+                return (
+                  <tr key={row.District} style={{ background: i % 2 === 1 ? "#FAFBFD" : "#fff" }}>
+                    <td
+                      style={{
+                        position: "sticky",
+                        left: 0,
+                        background: "inherit",
+                        padding: "8px 12px",
+                        fontWeight: 600,
+                        color: colors.ink,
+                        borderBottom: "1px solid #EEF0F5",
+                      }}
+                    >
+                      {row.District}
+                    </td>
 
-                    return (
-                      <td
-                        key={col}
-                        style={{
-                          textAlign: "center",
-                          padding: "6px 8px",
-                          borderBottom: "1px solid #EEF0F5",
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            position: "relative",
-                            borderRadius: 1.5,
-                            bgcolor: band.bg,
-                            overflow: "hidden",
-                            height: 22,
+                    {columns.map((col) => {
+                      const pct = row[col] ?? 0;
+                      const pct2 = dual ? row2?.[col] ?? null : null;
+
+                      return (
+                        <td
+                          key={col}
+                          style={{
+                            textAlign: "center",
+                            padding: "6px 8px",
+                            borderBottom: "1px solid #EEF0F5",
                           }}
                         >
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              top: 0,
-                              left: 0,
-                              bottom: 0,
-                              width: `${Math.min(100, Math.max(0, pct))}%`,
-                              bgcolor: band.bar,
-                            }}
-                          />
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              top: 0,
-                              left: 0,
-                              right: 0,
-                              bottom: 0,
-                              zIndex: 1,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              whiteSpace: "nowrap",
-                              fontFamily: fontMono,
-                              fontWeight: 700,
-                              fontSize: 12,
-                              color: "#16233B",
-                              // A white halo around the number, not a pct-based
-                              // colour switch — that way it stays readable no
-                              // matter whether it lands on the filled or
-                              // unfilled part of the bar.
-                              textShadow:
-                                "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 3px #fff",
-                            }}
-                          >
-                            {pct.toFixed(0)}%
-                          </Box>
-                        </Box>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+                          {dual ? (
+                            <Box sx={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                              <Pill pct={pct} prefix={label} height={18} fontSize={10.5} />
+                              <Pill pct={pct2} prefix={label2} height={18} fontSize={10.5} />
+                            </Box>
+                          ) : (
+                            <Pill pct={pct} height={22} fontSize={12} />
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </Box>
       </CardContent>
     </Card>
+  );
+};
+
+// One coloured, proportional-fill percentage cell. `prefix` (e.g. "S1")
+// is shown before the number when two periods are stacked in one cell,
+// so it's clear which row is which without a second header.
+const Pill = ({ pct, prefix, height = 22, fontSize = 12 }) => {
+  if (pct == null) {
+    return (
+      <Box sx={{ borderRadius: 1.5, bgcolor: "#F0F1F5", height, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Typography sx={{ fontSize: fontSize - 1, color: "#9AA5B1" }}>—</Typography>
+      </Box>
+    );
+  }
+
+  const band = bandFor(pct);
+
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        borderRadius: 1.5,
+        bgcolor: band.bg,
+        overflow: "hidden",
+        height,
+      }}
+    >
+      <Box
+        sx={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          bottom: 0,
+          width: `${Math.min(100, Math.max(0, pct))}%`,
+          bgcolor: band.bar,
+        }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          whiteSpace: "nowrap",
+          fontFamily: fontMono,
+          fontWeight: 700,
+          fontSize,
+          color: "#16233B",
+          // A white halo around the number, not a pct-based colour switch —
+          // that way it stays readable no matter whether it lands on the
+          // filled or unfilled part of the bar.
+          textShadow: "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 3px #fff",
+        }}
+      >
+        {prefix ? `${prefix} ` : ""}
+        {pct.toFixed(0)}%
+      </Box>
+    </Box>
   );
 };
 

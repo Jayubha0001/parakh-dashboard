@@ -1519,6 +1519,13 @@ const SAT_SUBJECT_RECOMMENDATIONS = {
   Sanskrit: "Add daily shloka recitation and basic-grammar practice sessions to build fluency gradually. Keep sessions short and consistent — 10 minutes a day outperforms one long weekly session for language retention.",
 };
 
+// The source Excel's subject names carry a "(Gujarati Medium)" suffix
+// that's needed to disambiguate the underlying data column, but reads as
+// clutter in every place the subject name is shown to a person — this
+// strips it for display only; the raw subject string (used as the actual
+// lookup key everywhere) is untouched.
+export const cleanSubjectLabel = (name = "") => name.replace(/\s*\(Gujarati Medium\)/gi, "").trim();
+
 const buildSATDistrictAction = (districtName, satRanking, satDistrictSubject) => {
 
   const row = satRanking.find((d) => d.District === districtName);
@@ -1535,7 +1542,7 @@ const buildSATDistrictAction = (districtName, satRanking, satDistrictSubject) =>
     .filter((s) => s.PercentAchieved < 45)
     .sort((a, b) => a.PercentAchieved - b.PercentAchieved)
     .map((s) => ({
-      label: s.subject,
+      label: cleanSubjectLabel(s.subject),
       pct: s.PercentAchieved,
       recommendation:
         SAT_SUBJECT_RECOMMENDATIONS[s.subject] ||
@@ -1551,7 +1558,7 @@ const buildSATDistrictAction = (districtName, satRanking, satDistrictSubject) =>
     title: `${districtName} — SAT Focus`,
     description: `SAT Overall Score ${row.PercentAchieved.toFixed(1)}% (Rank ${row.Rank}/${satRanking.length})${
       weakestSubject
-        ? ` · Weakest subject: ${weakestSubject.subject} (${weakestSubject.PercentAchieved.toFixed(0)}%)`
+        ? ` · Weakest subject: ${cleanSubjectLabel(weakestSubject.subject)} (${weakestSubject.PercentAchieved.toFixed(0)}%)`
         : ""
     }`,
     recommendation: weakestSubject

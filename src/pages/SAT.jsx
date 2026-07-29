@@ -39,6 +39,7 @@ import {
   getSATSem1SubjectHeatmap,
   getSATSem1ActionItems,
   getAllDistrictSATSem1ActionItems,
+  cleanSubjectLabel,
 } from "../services/dataService";
 
 const SAT = () => {
@@ -302,7 +303,7 @@ const SAT = () => {
       const sem2Value = satSubjectWiseSem2.find((s) => s.subject === subject)?.PercentAchieved;
 
       return {
-        subject,
+        subject: cleanSubjectLabel(subject),
         "Sem 1": sem1Value != null ? Number(sem1Value.toFixed(1)) : null,
         "Sem 2": sem2Value != null ? Number(sem2Value.toFixed(1)) : null,
       };
@@ -329,104 +330,48 @@ const SAT = () => {
 
   return (
     <DashboardLayout>
-      <Header />
-
-      {/* Page hero */}
-      <Box
-        sx={{
-          background: `linear-gradient(120deg, ${colors.navy} 0%, ${colors.navyLight} 100%)`,
-          borderRadius: 4,
-          color: "#fff",
-          p: 4,
-          mb: 4,
-          position: "relative",
-          overflow: "hidden",
-          boxShadow: "0 10px 30px rgba(15,23,42,0.25)",
+      <Header
+        pageIcon="📝"
+        pageEyebrow="SAT Analytics"
+        pageTitle="Gujarat SAT Dashboard"
+        pageSubtitle={`Semester Assessment Test — ${
+          semester === "all" ? "Both Semesters (Combined)" : semester === "sem1" ? "Semester 1" : "Semester 2"
+        } · ${satSummary.totalDistricts} Districts · District / Grade / Subject / Learning-Outcome level breakdown`}
+        statChip={{
+          label: "Gujarat State Overall Score",
+          value: satSummary.stateAverage.toFixed(1),
+          suffix: "%",
         }}
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 4,
-            background: `linear-gradient(90deg, ${colors.gold}, ${colors.goldLight})`,
-          }}
-        />
-        <Grid container spacing={3} sx={{ alignItems: "center", position: "relative" }}>
-          <Grid size={{ xs: 12, md: 8 }}>
-            <Typography
-              sx={{
-                fontFamily: fontMono,
-                fontSize: 12,
-                letterSpacing: 2,
-                textTransform: "uppercase",
-                color: colors.goldLight,
+        controls={
+          <ToggleButtonGroup
+            value={semester}
+            exclusive
+            size="small"
+            onChange={(e, value) => value && setSemester(value)}
+            sx={{
+              bgcolor: "rgba(255,255,255,0.12)",
+              "& .MuiToggleButton-root": {
+                color: "#fff",
+                border: "1px solid rgba(255,255,255,0.3)",
                 fontWeight: 600,
-              }}
-            >
-              📝 SAT Analytics
-            </Typography>
-            <Typography sx={{ fontFamily: fontDisplay, fontWeight: 700, fontSize: { xs: 26, md: 34 }, mt: 0.3 }}>
-              Gujarat SAT Dashboard
-            </Typography>
-            <Typography sx={{ mt: 1, opacity: 0.85 }}>
-              Semester Assessment Test — {semester === "all" ? "Both Semesters (Combined)" : semester === "sem1" ? "Semester 1" : "Semester 2"}
-            </Typography>
-            <Typography sx={{ mt: 1, opacity: 0.75, fontSize: 14 }}>
-              {satSummary.totalDistricts} Districts · District / Grade / Subject / Learning-Outcome level breakdown
-            </Typography>
-
-            <ToggleButtonGroup
-              value={semester}
-              exclusive
-              size="small"
-              onChange={(e, value) => value && setSemester(value)}
-              sx={{
-                mt: 2,
-                bgcolor: "rgba(255,255,255,0.12)",
-                "& .MuiToggleButton-root": {
-                  color: "#fff",
-                  border: "1px solid rgba(255,255,255,0.3)",
-                  fontWeight: 600,
-                  fontSize: 13,
-                  px: 2,
-                },
-                "& .MuiToggleButton-root.Mui-selected": {
-                  bgcolor: colors.gold,
-                  color: colors.navy,
-                },
-                "& .MuiToggleButton-root.Mui-selected:hover": {
-                  bgcolor: colors.goldLight,
-                },
-              }}
-            >
-              <ToggleButton value="all">All</ToggleButton>
-              <ToggleButton value="sem1">Semester 1</ToggleButton>
-              <ToggleButton value="sem2">Semester 2</ToggleButton>
-            </ToggleButtonGroup>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Box
-              sx={{
-                bgcolor: "rgba(255,255,255,0.10)",
-                border: "1px solid rgba(255,255,255,0.18)",
-                borderRadius: 3,
-                p: 2.5,
-                textAlign: "center",
-              }}
-            >
-              <Typography sx={{ fontSize: 13, opacity: 0.8 }}>Gujarat State Overall Score</Typography>
-              <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 44 }}>
-                {satSummary.stateAverage.toFixed(1)}
-                <Typography component="span" sx={{ fontSize: 18 }}>%</Typography>
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
-      </Box>
+                fontSize: 13,
+                px: 2,
+              },
+              "& .MuiToggleButton-root.Mui-selected": {
+                bgcolor: colors.gold,
+                color: colors.navy,
+              },
+              "& .MuiToggleButton-root.Mui-selected:hover": {
+                bgcolor: colors.goldLight,
+              },
+            }}
+          >
+            <ToggleButton value="all">All</ToggleButton>
+            <ToggleButton value="sem1">Semester 1</ToggleButton>
+            <ToggleButton value="sem2">Semester 2</ToggleButton>
+          </ToggleButtonGroup>
+        }
+      />
 
       {/* KPI Cards */}
       <Grid container spacing={2} mb={2}>
@@ -649,38 +594,34 @@ const SAT = () => {
 
       <SATHeatMapChart
         icon="📊"
-        title={`District x Grade — SAT Score Heat-map (%) · Semester 2${district !== "All" ? ` · ${district}` : ""}`}
-        columns={satGradeWiseSem2.grades}
+        title={`District x Grade — SAT Score Heat-map (%)${
+          semester === "all" ? " · Semester 1 vs Semester 2" : semester === "sem1" ? " · Semester 1" : " · Semester 2"
+        }${district !== "All" ? ` · ${district}` : ""}`}
+        columns={semester === "sem1" ? satGradeWiseSem1.grades : satGradeWiseSem2.grades}
         data={
-          district !== "All"
+          semester === "sem1"
+            ? gradeHeatmapDataSem1
+            : district !== "All"
             ? satGradeWiseSem2.data.filter((d) => d.District === district)
             : satGradeWiseSem2.data
         }
-      />
-
-      <SATHeatMapChart
-        icon="📊"
-        title={`District x Grade — SAT Score Heat-map (%) · Semester 1${district !== "All" ? ` · ${district}` : ""}`}
-        columns={satGradeWiseSem1.grades}
-        data={gradeHeatmapDataSem1}
+        data2={semester === "all" ? gradeHeatmapDataSem1 : null}
       />
 
       <SATHeatMapChart
         icon="📘"
-        title={`District x Subject — SAT Score Heat-map (%) · Semester 2${district !== "All" ? ` · ${district}` : ""}`}
-        columns={satSubjectHeatmapSem2.subjects}
+        title={`District x Subject — SAT Score Heat-map (%)${
+          semester === "all" ? " · Semester 1 vs Semester 2" : semester === "sem1" ? " · Semester 1" : " · Semester 2"
+        }${district !== "All" ? ` · ${district}` : ""}`}
+        columns={semester === "sem1" ? satSubjectHeatmapSem1.subjects : satSubjectHeatmapSem2.subjects}
         data={
-          district !== "All"
+          semester === "sem1"
+            ? subjectHeatmapDataSem1
+            : district !== "All"
             ? satSubjectHeatmapSem2.data.filter((d) => d.District === district)
             : satSubjectHeatmapSem2.data
         }
-      />
-
-      <SATHeatMapChart
-        icon="📘"
-        title={`District x Subject — SAT Score Heat-map (%) · Semester 1${district !== "All" ? ` · ${district}` : ""}`}
-        columns={satSubjectHeatmapSem1.subjects}
-        data={subjectHeatmapDataSem1}
+        data2={semester === "all" ? subjectHeatmapDataSem1 : null}
       />
 
       <ActionItemsQueue

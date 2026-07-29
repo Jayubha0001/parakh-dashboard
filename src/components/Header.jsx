@@ -1,4 +1,4 @@
-import { Box, Grid, Typography } from "@mui/material";
+import { Box, Grid, Typography, Chip } from "@mui/material";
 import { colors, fontDisplay, fontMono } from "../theme/theme";
 
 // A thin diamond-lattice line pattern, evoking the geometric weave of
@@ -12,7 +12,14 @@ const PATOLA_PATTERN = `data:image/svg+xml,${encodeURIComponent(`
   </svg>
 `)}`;
 
-const Header = () => {
+// One header for the whole app. Pages that just need the app-wide masthead
+// (Dashboard, PARAKH, Comparison, PM Shri, Reports) call <Header /> with no
+// props. Pages that used to stack a second, page-specific hero underneath
+// it (PGI, SAT) instead pass pageTitle/pageSubtitle/statChip/controls here,
+// so there's exactly one navy header block on screen, not two.
+const Header = ({ pageEyebrow, pageIcon, pageTitle, pageSubtitle, statChip, controls }) => {
+  const isPageMode = Boolean(pageTitle);
+
   return (
     <Box
       sx={{
@@ -83,65 +90,107 @@ const Header = () => {
               fontWeight: 600,
             }}
           >
-            Reach to Teach Foundation · Government of Gujarat
+            {pageEyebrow || "Reach to Teach Foundation · Government of Gujarat"}
           </Typography>
 
           <Typography
             sx={{
               fontFamily: fontDisplay,
               fontWeight: 700,
-              fontSize: { xs: 26, md: 36 },
+              fontSize: { xs: 24, md: 32 },
               mt: 0.3,
               lineHeight: 1.15,
             }}
           >
-            PARAKH + PGI + SAT Performance Gujarat
+            {pageIcon ? `${pageIcon} ` : ""}
+            {pageTitle || "PARAKH + PGI + SAT Performance Gujarat"}
           </Typography>
 
-          <Typography sx={{ mt: 1.5, opacity: 0.85, fontSize: 16 }}>
-            Tracking learning outcomes and governance quality across every district
+          <Typography sx={{ mt: 1.2, opacity: 0.85, fontSize: 15 }}>
+            {pageSubtitle || "Tracking learning outcomes and governance quality across every district"}
           </Typography>
 
-          <Box sx={{ display: "flex", gap: 2, mt: 1, flexWrap: "wrap" }}>
-            {[
-              ["33", "Districts"],
-              ["3", "Grades — G3 · G6 · G9"],
-              ["6", "PGI Domains"],
-              ["8", "SAT Subjects"],
-            ].map(([num, label]) => (
-              <Box key={label} sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
-                <Typography sx={{ fontFamily: fontMono, fontWeight: 700, fontSize: 20, color: colors.goldLight }}>
-                  {num}
-                </Typography>
-                <Typography sx={{ fontSize: 13, opacity: 0.8 }}>{label}</Typography>
-              </Box>
-            ))}
-          </Box>
+          {controls && <Box sx={{ mt: 1.5 }}>{controls}</Box>}
+
+          {/* App-wide stats row only shows on the default masthead — a
+              page already showing its own hero (PGI, SAT) has its own more
+              relevant stat cards just below, so repeating these here would
+              just be a second copy of the same idea. */}
+          {!isPageMode && (
+            <Box sx={{ display: "flex", gap: 2, mt: 1, flexWrap: "wrap" }}>
+              {[
+                ["33", "Districts"],
+                ["3", "Grades — G3 · G6 · G9"],
+                ["6", "PGI Domains"],
+                ["8", "SAT Subjects"],
+              ].map(([num, label]) => (
+                <Box key={label} sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+                  <Typography sx={{ fontFamily: fontMono, fontWeight: 700, fontSize: 20, color: colors.goldLight }}>
+                    {num}
+                  </Typography>
+                  <Typography sx={{ fontSize: 13, opacity: 0.8 }}>{label}</Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
         </Grid>
 
         <Grid size={{ xs: 12, md: 4 }} sx={{ display: "flex", justifyContent: { xs: "flex-start", md: "flex-end" } }}>
-          <Box
-            component="img"
-            src="/logo-reach-to-teach.png"
-            alt="Reach to Teach Foundation"
-            sx={{
-              height: 150,
-              width: 150,
-              borderRadius: 0.5,
-              bgcolor: "#fff",
-              p: 1,
-              flexShrink: 1,
-            }}
-          />
+          {statChip ? (
+            <Box
+              sx={{
+                p: 2.5,
+                borderRadius: 3,
+                textAlign: "center",
+                bgcolor: "rgba(255,255,255,0.10)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                minWidth: 220,
+              }}
+            >
+              <Typography sx={{ fontSize: 13, opacity: 0.8 }}>{statChip.label}</Typography>
+              <Typography sx={{ fontFamily: fontDisplay, fontWeight: 700, fontSize: 36, mt: 0.3 }}>
+                {statChip.value}
+                {statChip.suffix && (
+                  <Typography component="span" sx={{ fontSize: 15, opacity: 0.75 }}>
+                    {" "}
+                    {statChip.suffix}
+                  </Typography>
+                )}
+              </Typography>
+              {statChip.badge && (
+                <Chip
+                  label={statChip.badge}
+                  size="small"
+                  sx={{ mt: 1, bgcolor: colors.gold, color: colors.navy, fontWeight: 700 }}
+                />
+              )}
+            </Box>
+          ) : (
+            <Box
+              component="img"
+              src="/logo-reach-to-teach.png"
+              alt="Reach to Teach Foundation"
+              sx={{
+                height: 150,
+                width: 150,
+                borderRadius: 0.5,
+                bgcolor: "#fff",
+                p: 1,
+                flexShrink: 1,
+              }}
+            />
+          )}
         </Grid>
 
-        <Grid size={{ xs: 12 }}>
-          <Box sx={{ display: "flex", mt: -1, flexWrap: "wrap" }}>
-            <Typography sx={{ fontSize: 13, opacity: 0.75, letterSpacing: 1 }}>
-              Assessment Cycle: 2024 PARAKH Mastery · PGI-D 2.0 · PM SHRI · SAT Analytics
-            </Typography>
-          </Box>
-        </Grid>
+        {!isPageMode && (
+          <Grid size={{ xs: 12 }}>
+            <Box sx={{ display: "flex", mt: -1, flexWrap: "wrap" }}>
+              <Typography sx={{ fontSize: 13, opacity: 0.75, letterSpacing: 1 }}>
+                Assessment Cycle: 2024 PARAKH Mastery · PGI-D 2.0 · PM SHRI · SAT Analytics
+              </Typography>
+            </Box>
+          </Grid>
+        )}
       </Grid>
     </Box>
   );

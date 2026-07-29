@@ -3,7 +3,6 @@ import { Box } from "@mui/material";
 
 import DashboardLayout from "../components/DashboardLayout";
 import Header from "../components/Header";
-import PGIHeader from "../components/PGIHeader";
 import PGIKPICards from "../components/PGIKPICards";
 import PGIDomainCards from "../components/PGIDomainCards";
 import PGITable from "../components/PGITable";
@@ -85,8 +84,18 @@ const PGI = () => {
 
   return (
     <DashboardLayout>
-      <Header />
-      <PGIHeader overall={stateSummary.overall} />
+      <Header
+        pageIcon="🏛️"
+        pageEyebrow="Performance Grading Index — State & District"
+        pageTitle="Gujarat PGI 2.0 Dashboard"
+        pageSubtitle="6 Domains · 33 Districts · Scored out of 1000 (State) / 600 (District)"
+        statChip={{
+          label: "Gujarat State Overall Score",
+          value: stateSummary.overall?.score?.toFixed(1) ?? "-",
+          suffix: `/ ${stateSummary.overall?.maxWeight ?? 1000}`,
+          badge: `${stateSummary.overall?.grade || "-"} · ${stateSummary.overall?.percentAchieved?.toFixed(1) ?? 0}%`,
+        }}
+      />
 
       <PGIKPICards
         overall={stateSummary.overall}
