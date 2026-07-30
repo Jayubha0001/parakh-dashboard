@@ -1417,7 +1417,52 @@ export const getSATWeakestLOs = (workbook, limit = 10) => {
 };
 
 // -----------------------------
-// SAT — Subject-wise performance PER DISTRICT (aggregated across all
+// SAT — full Learning-Outcome breakdown for ONE district (every LO across
+// every subject, Sem1+Sem2 combined) — same "full indicator breakdown"
+// treatment as PGI-D's 70 indicators and PARAKH's competencies, just for
+// SAT's own grain of detail.
+// -----------------------------
+
+export const getSATDistrictLOBreakdown = (workbook, districtName) => {
+
+  const worksheet = workbook.Sheets["SAT District Grade Sub Lo Wise"];
+  if (!worksheet || !districtName || districtName === "All") return [];
+
+  const rows = XLSX.utils.sheet_to_json(worksheet, {
+    header: 1,
+    defval: "",
+  });
+
+  const totals = {};
+
+  rows.slice(1).forEach((r) => {
+    const district = r[0];
+    if (district !== districtName) return;
+
+    const subject = r[2];
+    const loCode = r[3];
+    const indicator = r[4];
+    const totalMarks = Number(r[5]) || 0;
+    const obtainedMarks = Number(r[6]) || 0;
+
+    if (!loCode || typeof loCode !== "string") return;
+
+    const key = `${subject}__${loCode}`;
+    if (!totals[key]) {
+      totals[key] = { subject: cleanSubjectLabel(subject), loCode, indicator, totalMarks: 0, obtainedMarks: 0 };
+    }
+    totals[key].totalMarks += totalMarks;
+    totals[key].obtainedMarks += obtainedMarks;
+  });
+
+  return Object.values(totals).map((t) => ({
+    ...t,
+    pct: t.totalMarks ? (t.obtainedMarks / t.totalMarks) * 100 : 0,
+  }));
+
+};
+
+
 // grades for that district) — used to find each district's weakest
 // subject for the SAT Action Items.
 // -----------------------------

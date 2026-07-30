@@ -17,10 +17,15 @@ const bandFor = (pct) => (pct >= BAND.strong.min ? BAND.strong : pct >= BAND.wat
 // left untouched.
 const displayLabel = (col = "") => col.replace(/\s*\(Gujarati Medium\)/gi, "").trim();
 
+const average = (rows, col) => {
+  const values = rows.map((r) => r[col]).filter((v) => typeof v === "number");
+  return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+};
+
 // Generic District x Column percentage heat-map. `data` rows look like
 // { District, [column]: percentValue, ... } — used for both the SAT
 // Grade-wise and Subject-wise breakdowns. When `data2` is also passed (with
-// `label`/`label2`), each cell shows both periods stacked instead of
+// `label`/`label2`), each cell shows both periods side by side instead of
 // needing two separate full-width tables one after another.
 const SATHeatMapChart = ({ title, icon = "🌡️", columns = [], data = [], data2 = null, label = "S1", label2 = "S2" }) => {
   const dual = Boolean(data2);
@@ -70,7 +75,7 @@ const SATHeatMapChart = ({ title, icon = "🌡️", columns = [], data = [], dat
                       background: colors.navy,
                       color: "#fff",
                       padding: "10px 8px",
-                      minWidth: 112,
+                      minWidth: dual ? 150 : 112,
                       whiteSpace: "nowrap",
                       fontFamily: fontMono,
                       letterSpacing: 0.5,
@@ -118,9 +123,9 @@ const SATHeatMapChart = ({ title, icon = "🌡️", columns = [], data = [], dat
                           }}
                         >
                           {dual ? (
-                            <Box sx={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                              <Pill pct={pct} prefix={label} height={18} fontSize={10.5} />
-                              <Pill pct={pct2} prefix={label2} height={18} fontSize={10.5} />
+                            <Box sx={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                              <DualPill label={label} pct={pct} />
+                              <DualPill label={label2} pct={pct2} />
                             </Box>
                           ) : (
                             <Pill pct={pct} height={22} fontSize={12} />
@@ -132,6 +137,48 @@ const SATHeatMapChart = ({ title, icon = "🌡️", columns = [], data = [], dat
                 );
               })}
             </tbody>
+
+            {/* State Average — same coloured-pill treatment as every
+                district row, but pinned as the last row with a distinct
+                background so it reads as a summary line, not one more
+                district. */}
+            <tfoot>
+              <tr style={{ background: "#EFF3FB", borderTop: `2px solid ${colors.navy}` }}>
+                <td
+                  style={{
+                    position: "sticky",
+                    left: 0,
+                    background: "#EFF3FB",
+                    padding: "8px 12px",
+                    fontWeight: 800,
+                    color: colors.navy,
+                    fontFamily: fontMono,
+                    fontSize: 11,
+                    letterSpacing: 0.5,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  ⭐ State Average
+                </td>
+                {columns.map((col) => {
+                  const avg = average(data, col);
+                  const avg2 = dual ? average(data2, col) : null;
+
+                  return (
+                    <td key={col} style={{ textAlign: "center", padding: "6px 8px" }}>
+                      {dual ? (
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <DualPill label={label} pct={avg} bold />
+                          <DualPill label={label2} pct={avg2} bold />
+                        </Box>
+                      ) : (
+                        <Pill pct={avg ?? 0} height={22} fontSize={12} bold />
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            </tfoot>
           </table>
         </Box>
       </CardContent>
@@ -139,10 +186,32 @@ const SATHeatMapChart = ({ title, icon = "🌡️", columns = [], data = [], dat
   );
 };
 
-// One coloured, proportional-fill percentage cell. `prefix` (e.g. "S1")
-// is shown before the number when two periods are stacked in one cell,
-// so it's clear which row is which without a second header.
-const Pill = ({ pct, prefix, height = 22, fontSize = 12 }) => {
+// One row of a dual-semester cell: a small fixed-width period label
+// ("S1"/"S2") sitting OUTSIDE the pill, so the pill itself has its full
+// width free for the number — nothing crammed together fighting for space.
+const DualPill = ({ label, pct, bold = false }) => (
+  <Box sx={{ display: "flex", alignItems: "center", gap: "6px" }}>
+    <Typography
+      sx={{
+        fontFamily: fontMono,
+        fontSize: 10,
+        fontWeight: 700,
+        color: "#5B6B85",
+        width: 16,
+        flexShrink: 0,
+        textAlign: "right",
+      }}
+    >
+      {label}
+    </Typography>
+    <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Pill pct={pct} height={20} fontSize={11.5} bold={bold} />
+    </Box>
+  </Box>
+);
+
+// One coloured, proportional-fill percentage cell.
+const Pill = ({ pct, height = 22, fontSize = 12, bold = false }) => {
   if (pct == null) {
     return (
       <Box sx={{ borderRadius: 1.5, bgcolor: "#F0F1F5", height, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -161,6 +230,7 @@ const Pill = ({ pct, prefix, height = 22, fontSize = 12 }) => {
         bgcolor: band.bg,
         overflow: "hidden",
         height,
+        border: bold ? `1px solid ${band.bar}` : "none",
       }}
     >
       <Box
@@ -186,7 +256,7 @@ const Pill = ({ pct, prefix, height = 22, fontSize = 12 }) => {
           justifyContent: "center",
           whiteSpace: "nowrap",
           fontFamily: fontMono,
-          fontWeight: 700,
+          fontWeight: bold ? 800 : 700,
           fontSize,
           color: "#16233B",
           // A white halo around the number, not a pct-based colour switch —
@@ -195,7 +265,6 @@ const Pill = ({ pct, prefix, height = 22, fontSize = 12 }) => {
           textShadow: "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 3px #fff",
         }}
       >
-        {prefix ? `${prefix} ` : ""}
         {pct.toFixed(0)}%
       </Box>
     </Box>

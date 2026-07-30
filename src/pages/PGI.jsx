@@ -11,6 +11,8 @@ import HeatMapChart from "../charts/HeatMapChart";
 import Loading from "../components/Loading";
 import DistrictFilterBar from "../components/DistrictFilterBar";
 import ActionItemsQueue from "../components/ActionItemsQueue";
+import { PGIIndicatorSection } from "../components/DistrictDeepDive";
+import { Card, CardContent, Typography } from "@mui/material";
 
 import {
   loadExcel,
@@ -20,6 +22,7 @@ import {
   getPGIActionItems,
   getAllDistrictNames,
   getAllDistrictPGIActionItems,
+  getDistrictPGIIndicators,
 } from "../services/dataService";
 
 const PGI = () => {
@@ -31,6 +34,7 @@ const PGI = () => {
   const [actionItems, setActionItems] = useState([]);
   const [allDistrictNames, setAllDistrictNames] = useState([]);
   const [allDistrictItems, setAllDistrictItems] = useState([]);
+  const [districtIndicators, setDistrictIndicators] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -48,6 +52,23 @@ const PGI = () => {
 
     fetchData();
   }, []);
+
+  // Full 70-indicator breakdown for whichever district is picked in the
+  // filter bar above — loadExcel() is cached, so this is cheap even though
+  // it looks like a second load.
+  useEffect(() => {
+    if (district === "All") {
+      setDistrictIndicators(null);
+      return;
+    }
+    let cancelled = false;
+    loadExcel().then((workbook) => {
+      if (!cancelled) setDistrictIndicators(getDistrictPGIIndicators(workbook, district));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [district]);
 
   const sortedByScore = [...districtRanking].sort(
     (a, b) => b.PercentAchieved - a.PercentAchieved
@@ -121,6 +142,21 @@ const PGI = () => {
       <PGITable data={filteredSorted} />
 
       <HeatMapChart categories={heatmap.categories} data={filteredHeatmapData} />
+
+      {district !== "All" && districtIndicators?.overall && (
+        <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+          <CardContent>
+            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
+              🔎 {district} — Full Indicator Breakdown (70 Indicators)
+            </Typography>
+            <PGIIndicatorSection
+              indicators={districtIndicators.indicators}
+              domainSummary={districtIndicators.domainSummary}
+              overall={districtIndicators.overall}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <ActionItemsQueue
         items={actionItems}

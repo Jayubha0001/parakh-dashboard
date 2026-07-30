@@ -46,7 +46,7 @@ const groupIndicatorsByCategory = (indicators, domainSummary) => {
   });
 };
 
-const PGIIndicatorSection = ({ indicators = [], domainSummary = [], overall }) => {
+export const PGIIndicatorSection = ({ indicators = [], domainSummary = [], overall }) => {
   const groups = groupIndicatorsByCategory(indicators, domainSummary);
 
   // Anything below the PGI-D "Akanshi" cut-off (31%) is a genuine weak
@@ -171,6 +171,126 @@ const PGIIndicatorSection = ({ indicators = [], domainSummary = [], overall }) =
                     {item.score.toFixed(2)} / {item.weight} ({item.pct.toFixed(1)}%)
                   </span>
                   . Needs a targeted push to cross the 31% Akanshi line before the next assessment cycle.
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+// Full SAT Learning-Outcome breakdown for one district, grouped by subject
+// — same visual treatment as PGIIndicatorSection above, just for SAT's own
+// grain of detail (LOs instead of PGI-D indicators). Weak cut-off here is
+// 45%, matching the Watch/Support line used everywhere else SAT % shows up
+// (SATHeatMapChart, WhatIfSimulator), unlike PGI-D's own 31% Akanshi line.
+export const SATLOBreakdownSection = ({ los = [] }) => {
+  const subjects = [...new Set(los.map((l) => l.subject))];
+  const groups = subjects.map((subject) => ({
+    subject,
+    items: los.filter((l) => l.subject === subject),
+  }));
+
+  const weakLOs = los.filter((l) => l.pct < 45).sort((a, b) => a.pct - b.pct);
+
+  if (los.length === 0) {
+    return (
+      <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
+        No Learning-Outcome level data available for this district.
+      </Typography>
+    );
+  }
+
+  return (
+    <Box>
+      {groups.map((g) => {
+        const avgPct = g.items.reduce((s, i) => s + i.pct, 0) / (g.items.length || 1);
+
+        return (
+          <Accordion key={g.subject} disableGutters sx={{ mb: 1, "&:before": { display: "none" } }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center", pr: 2 }}>
+                <Typography sx={{ fontWeight: 600, fontSize: 14 }}>{g.subject}</Typography>
+                <Typography
+                  sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, fontSize: 13, color: scoreColor(avgPct) }}
+                >
+                  Avg {avgPct.toFixed(1)}%
+                </Typography>
+              </Box>
+            </AccordionSummary>
+
+            <AccordionDetails sx={{ p: 0 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ bgcolor: "#F5F6FA" }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>LO Code</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Learning Outcome</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
+                      Score
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {g.items.map((item, idx) => {
+                    const isWeak = item.pct < 45;
+                    return (
+                      <TableRow key={idx} hover sx={isWeak ? { bgcolor: "#FDEAEA" } : undefined}>
+                        <TableCell sx={{ fontSize: 12, color: "text.secondary", whiteSpace: "nowrap" }}>
+                          {item.loCode}
+                        </TableCell>
+                        <TableCell sx={{ fontSize: 12.5 }}>
+                          {item.indicator}
+                          {isWeak && (
+                            <Chip
+                              label="Weak"
+                              size="small"
+                              sx={{ ml: 1, height: 18, fontSize: 10, fontWeight: 700, bgcolor: "#D32F2F", color: "#fff" }}
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell
+                          align="center"
+                          sx={{
+                            fontFamily: '"IBM Plex Mono", monospace',
+                            fontSize: 12.5,
+                            fontWeight: 700,
+                            color: isWeak ? "#B71C1C" : "inherit",
+                          }}
+                        >
+                          {item.obtainedMarks.toFixed(1)} / {item.totalMarks} ({item.pct.toFixed(1)}%)
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </AccordionDetails>
+          </Accordion>
+        );
+      })}
+
+      {weakLOs.length > 0 && (
+        <Box sx={{ mt: 3, p: 2.5, borderRadius: 2, bgcolor: "#FFFBEF", border: "1px dashed #F0B429" }}>
+          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 16, color: "#16233B", mb: 0.5 }}>
+            🎯 Action Points — Weakest Learning Outcomes ({weakLOs.length})
+          </Typography>
+          <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 1.5 }}>
+            Every Learning Outcome below is under 45% — the specific SAT lines dragging this district's subject
+            scores down, weakest first.
+          </Typography>
+
+          <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
+            {weakLOs.map((item, i) => (
+              <Box component="li" key={i} sx={{ mb: 1.2 }}>
+                <Typography sx={{ fontSize: 13.5, color: "#16233B" }}>
+                  <strong>{item.indicator}</strong>{" "}
+                  <span style={{ color: "#5B6B85", fontSize: 12 }}>({item.subject})</span> — currently{" "}
+                  <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, color: "#B71C1C" }}>
+                    {item.obtainedMarks.toFixed(1)} / {item.totalMarks} ({item.pct.toFixed(1)}%)
+                  </span>
+                  . Needs a targeted push before the next assessment cycle.
                 </Typography>
               </Box>
             ))}
@@ -332,12 +452,64 @@ const CompetencyTable = ({ data = [] }) => {
   );
 };
 
-const DistrictDeepDive = ({ pgiDetail, competencies }) => {
+// The stage dropdown + weak-highlighted competency table + Action Points,
+// as one reusable block — used both inside DistrictDeepDive (Reports page)
+// and directly on the PARAKH page itself for whichever district is
+// currently selected there.
+export const PARAKHCompetencySection = ({ competencies }) => {
   const [tab, setTab] = useState(0);
 
   const stageLabels = ["Foundational (Grade 3)", "Preparatory (Grade 6)", "Middle (Grade 9)"];
   const stageData = [competencies.g3, competencies.g6, competencies.g9];
 
+  return (
+    <Box>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 2 }}>
+        <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Stage</Typography>
+        <TextField
+          select
+          size="small"
+          value={tab}
+          onChange={(e) => setTab(Number(e.target.value))}
+          className="no-print"
+          sx={{ minWidth: 220 }}
+        >
+          {stageLabels.map((label, i) => (
+            <MenuItem key={label} value={i}>
+              {label}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Box>
+
+      {/* All 3 stages are always in the DOM. On screen only the selected
+          stage is shown; the "print-show-all" class (see index.css) forces
+          every stage to be visible when printing, so a report card
+          never leaves out G3/G6/G9 data just because a different stage
+          was selected on screen. */}
+      {stageLabels.map((label, i) => (
+        <Box
+          key={label}
+          className="print-show-all"
+          sx={{ display: tab === i ? "block" : "none", overflowX: "auto" }}
+        >
+          {tab !== i && (
+            <Typography
+              className="print-only-label"
+              sx={{ display: "none", fontWeight: 700, fontSize: 14, mt: 3, mb: 1 }}
+              component="div"
+            >
+              {label}
+            </Typography>
+          )}
+          <CompetencyTable data={stageData[i] || []} />
+        </Box>
+      ))}
+    </Box>
+  );
+};
+
+const DistrictDeepDive = ({ pgiDetail, competencies }) => {
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 3, border: "1px solid #E4E7F0" }} elevation={0}>
       <CardContent>
@@ -359,47 +531,7 @@ const DistrictDeepDive = ({ pgiDetail, competencies }) => {
           📖 PARAKH — Competency-wise Mastery vs National Benchmark
         </Typography>
 
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 2 }}>
-          <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Stage</Typography>
-          <TextField
-            select
-            size="small"
-            value={tab}
-            onChange={(e) => setTab(Number(e.target.value))}
-            className="no-print"
-            sx={{ minWidth: 220 }}
-          >
-            {stageLabels.map((label, i) => (
-              <MenuItem key={label} value={i}>
-                {label}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Box>
-
-        {/* All 3 stages are always in the DOM. On screen only the selected
-            stage is shown; the "print-show-all" class (see index.css) forces
-            every stage to be visible when printing, so a report card
-            never leaves out G3/G6/G9 data just because a different stage
-            was selected on screen. */}
-        {stageLabels.map((label, i) => (
-          <Box
-            key={label}
-            className={tab === i ? "print-show-all" : "print-show-all"}
-            sx={{ display: tab === i ? "block" : "none", overflowX: "auto" }}
-          >
-            {tab !== i && (
-              <Typography
-                className="print-only-label"
-                sx={{ display: "none", fontWeight: 700, fontSize: 14, mt: 3, mb: 1 }}
-                component="div"
-              >
-                {label}
-              </Typography>
-            )}
-            <CompetencyTable data={stageData[i] || []} />
-          </Box>
-        ))}
+        <PARAKHCompetencySection competencies={competencies} />
       </CardContent>
     </Card>
   );

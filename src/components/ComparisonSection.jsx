@@ -12,6 +12,7 @@ import {
   TableRow,
   TableCell,
   TableContainer,
+  TableFooter,
   Paper,
   TextField,
   InputAdornment,
@@ -202,6 +203,39 @@ const ComparisonSection = ({
                 </TableRow>
               ))}
             </TableBody>
+
+            <TableFooter>
+              <TableRow sx={{ bgcolor: "#EFF3FB", "& td": { borderTop: `2px solid ${colors.navy}` } }}>
+                <TableCell sx={{ fontWeight: 800, color: colors.navy, fontFamily: fontMono, fontSize: 11, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                  ⭐ State Average
+                </TableCell>
+                {columns.map((col) => {
+                  const gap = isGapColumn(col);
+                  const vals = data.map((d) => d[col]).filter((v) => !isNaN(v));
+                  const avgPct = vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length) * 100 : 0;
+
+                  return (
+                    <TableCell key={col} align="center">
+                      {gap ? (
+                        <Chip
+                          label={`${avgPct >= 0 ? "▲" : "▼"} ${Math.abs(avgPct).toFixed(1)}%`}
+                          size="small"
+                          sx={{
+                            bgcolor: avgPct < 0 ? "#FDEAEA" : "#E6F4EA",
+                            color: avgPct < 0 ? "#B71C1C" : "#1B5E20",
+                            fontFamily: fontMono,
+                            fontWeight: 800,
+                            fontSize: 12,
+                          }}
+                        />
+                      ) : (
+                        <PillCell pct={avgPct} />
+                      )}
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            </TableFooter>
           </Table>
         </TableContainer>
       </CardContent>

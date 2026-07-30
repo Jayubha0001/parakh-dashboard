@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Box, Grid } from "@mui/material";
+import { Box, Grid, Card, CardContent, Typography } from "@mui/material";
 
 import DashboardLayout from "../components/DashboardLayout";
 import Header from "../components/Header";
@@ -10,6 +10,7 @@ import ContextualSummaryCards from "../components/ContextualSummaryCards";
 import DistrictFilterBar from "../components/DistrictFilterBar";
 import ActionItemsQueue from "../components/ActionItemsQueue";
 import NationalBenchmarkPanel from "../components/NationalBenchmarkPanel";
+import { PARAKHCompetencySection } from "../components/DistrictDeepDive";
 
 import {
   loadExcel,
@@ -22,6 +23,7 @@ import {
   getPARAKHActionItems,
   getAllDistrictNames,
   getAllDistrictPARAKHActionItems,
+  getDistrictCompetencies,
 } from "../services/dataService";
 
 const PARAKH = () => {
@@ -37,6 +39,7 @@ const PARAKH = () => {
   const [allDistrictNames, setAllDistrictNames] = useState([]);
   const [allDistrictItems, setAllDistrictItems] = useState([]);
   const [district, setDistrict] = useState("All");
+  const [competencies, setCompetencies] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -57,6 +60,27 @@ const PARAKH = () => {
 
     fetchData();
   }, []);
+
+  // Full competency-wise breakdown for whichever district is picked —
+  // loadExcel() is cached, so re-calling it here is cheap.
+  useEffect(() => {
+    if (district === "All") {
+      setCompetencies(null);
+      return;
+    }
+    let cancelled = false;
+    loadExcel().then((workbook) => {
+      if (cancelled) return;
+      setCompetencies({
+        g3: getDistrictCompetencies(workbook, "PARAKH_Foundational_G3", district),
+        g6: getDistrictCompetencies(workbook, "PARAKH_Preparatory_G6", district),
+        g9: getDistrictCompetencies(workbook, "PARAKH_Middle_G9", district),
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [district]);
 
   if (loading) {
     return (
@@ -136,6 +160,17 @@ const PARAKH = () => {
           />
         </Grid>
       </Grid>
+
+      {district !== "All" && competencies && (
+        <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+          <CardContent>
+            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
+              📖 {district} — Competency-wise Mastery vs National Benchmark
+            </Typography>
+            <PARAKHCompetencySection competencies={competencies} />
+          </CardContent>
+        </Card>
+      )}
 
       <ContextualSummaryCards data={contextual.data} />
 

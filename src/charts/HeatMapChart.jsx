@@ -23,6 +23,41 @@ const BAND = {
 const bandFor = (pct) =>
   pct >= BAND.strong.min ? BAND.strong : pct >= BAND.good.min ? BAND.good : pct >= BAND.watch.min ? BAND.watch : BAND.support;
 
+const average = (rows, getValue) => {
+  const values = rows.map(getValue).filter((v) => typeof v === "number" && !Number.isNaN(v));
+  return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+};
+
+const Pill = ({ pct, bold = false }) => {
+  const band = bandFor(pct);
+  return (
+    <Box sx={{ position: "relative", borderRadius: 1.5, bgcolor: band.bg, overflow: "hidden", height: 22, border: bold ? `1px solid ${band.bar}` : "none" }}>
+      <Box sx={{ position: "absolute", top: 0, left: 0, bottom: 0, width: `${Math.min(100, Math.max(0, pct))}%`, bgcolor: band.bar }} />
+      <Box
+        sx={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          whiteSpace: "nowrap",
+          fontFamily: fontMono,
+          fontWeight: bold ? 800 : 700,
+          fontSize: 12,
+          color: "#16233B",
+          textShadow: "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 3px #fff",
+        }}
+      >
+        {pct.toFixed(0)}%
+      </Box>
+    </Box>
+  );
+};
+
 const HeatMapChart = ({ categories = [], data = [] }) => {
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
@@ -104,7 +139,6 @@ const HeatMapChart = ({ categories = [], data = [] }) => {
                     const max = CATEGORY_MAX[cat] || 100;
                     const value = row[cat] ?? 0;
                     const pct = max ? (value / max) * 100 : 0;
-                    const band = bandFor(pct);
 
                     return (
                       <td
@@ -116,54 +150,43 @@ const HeatMapChart = ({ categories = [], data = [] }) => {
                           borderBottom: "1px solid #EEF0F5",
                         }}
                       >
-                        <Box
-                          sx={{
-                            position: "relative",
-                            borderRadius: 1.5,
-                            bgcolor: band.bg,
-                            overflow: "hidden",
-                            height: 22,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              top: 0,
-                              left: 0,
-                              bottom: 0,
-                              width: `${Math.min(100, Math.max(0, pct))}%`,
-                              bgcolor: band.bar,
-                            }}
-                          />
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              top: 0,
-                              left: 0,
-                              right: 0,
-                              bottom: 0,
-                              zIndex: 1,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              whiteSpace: "nowrap",
-                              fontFamily: fontMono,
-                              fontWeight: 700,
-                              fontSize: 12,
-                              color: "#16233B",
-                              textShadow:
-                                "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 3px #fff",
-                            }}
-                          >
-                            {pct.toFixed(0)}%
-                          </Box>
-                        </Box>
+                        <Pill pct={pct} />
                       </td>
                     );
                   })}
                 </tr>
               ))}
             </tbody>
+
+            <tfoot>
+              <tr style={{ background: "#EFF3FB", borderTop: `2px solid ${colors.navy}` }}>
+                <td
+                  style={{
+                    position: "sticky",
+                    left: 0,
+                    background: "#EFF3FB",
+                    padding: "8px 12px",
+                    fontWeight: 800,
+                    color: colors.navy,
+                    fontFamily: fontMono,
+                    fontSize: 11,
+                    letterSpacing: 0.5,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  ⭐ State Average
+                </td>
+                {categories.map((cat) => {
+                  const max = CATEGORY_MAX[cat] || 100;
+                  const avgPct = average(data, (r) => (max ? ((r[cat] ?? 0) / max) * 100 : 0));
+                  return (
+                    <td key={cat} style={{ textAlign: "center", padding: "6px 8px" }}>
+                      <Pill pct={avgPct} bold />
+                    </td>
+                  );
+                })}
+              </tr>
+            </tfoot>
           </table>
         </Box>
       </CardContent>

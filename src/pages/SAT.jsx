@@ -40,7 +40,9 @@ import {
   getSATSem1ActionItems,
   getAllDistrictSATSem1ActionItems,
   cleanSubjectLabel,
+  getSATDistrictLOBreakdown,
 } from "../services/dataService";
+import { SATLOBreakdownSection } from "../components/DistrictDeepDive";
 
 const SAT = () => {
   const [loading, setLoading] = useState(true);
@@ -71,6 +73,7 @@ const SAT = () => {
 
   const [satSemesterComparison, setSatSemesterComparison] = useState([]);
   const [district, setDistrict] = useState("All");
+  const [loBreakdown, setLoBreakdown] = useState(null);
 
   // Which semester's data drives the state-average/KPI/grade-wise/
   // subject-wise/heat-map/table sections below. The Semester Comparison
@@ -109,6 +112,22 @@ const SAT = () => {
 
     fetchData();
   }, []);
+
+  // Full Learning-Outcome breakdown for whichever district is picked —
+  // loadExcel() is cached, so re-calling it here is cheap.
+  useEffect(() => {
+    if (district === "All") {
+      setLoBreakdown(null);
+      return;
+    }
+    let cancelled = false;
+    loadExcel().then((workbook) => {
+      if (!cancelled) setLoBreakdown(getSATDistrictLOBreakdown(workbook, district));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [district]);
 
   // -----------------------------
   // Combined "All" dataset — both semesters' percentages averaged
@@ -623,6 +642,17 @@ const SAT = () => {
         }
         data2={semester === "all" ? subjectHeatmapDataSem1 : null}
       />
+
+      {district !== "All" && loBreakdown?.length > 0 && (
+        <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+          <CardContent>
+            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
+              🔎 {district} — Full Learning-Outcome Breakdown
+            </Typography>
+            <SATLOBreakdownSection los={loBreakdown} />
+          </CardContent>
+        </Card>
+      )}
 
       <ActionItemsQueue
         items={satActionItems}
