@@ -7,7 +7,7 @@ import PGIKPICards from "../components/PGIKPICards";
 import PGIDomainCards from "../components/PGIDomainCards";
 import PGITable from "../components/PGITable";
 import PGIRankingChart from "../charts/PGIRankingChart";
-import HeatMapChart from "../charts/HeatMapChart";
+import HeatMapTable from "../components/HeatMapTable";
 import Loading from "../components/Loading";
 import DistrictFilterBar from "../components/DistrictFilterBar";
 import ActionItemsQueue from "../components/ActionItemsQueue";
@@ -24,6 +24,25 @@ import {
   getAllDistrictPGIActionItems,
   getDistrictPGIIndicators,
 } from "../services/dataService";
+
+// Max weight for each PGI-D category (used to compute % for colour scaling)
+const CATEGORY_MAX = {
+  "Outcomes (/290)": 290,
+  "Classroom Transaction (/90)": 90,
+  "Infrastructure (/51)": 51,
+  "Safety & Protection (/35)": 35,
+  "Digital Learning (/50)": 50,
+  "Governance (/84)": 84,
+};
+
+// Same four-tier PGI-D grading brackets the rest of the PGI page uses
+// (Akanshi / Prachesta / Utkarsh / Atti-Uttam).
+const PGI_BANDS = [
+  { min: 71, bg: "#E6F4EA", text: "#1B5E20", bar: "#2E7D32", label: "≥71% Atti-Uttam+" },
+  { min: 51, bg: "#EEF7EE", text: "#2E7D32", bar: "#66BB6A", label: "51–70% Utkarsh" },
+  { min: 31, bg: "#FFF3E0", text: "#B15C00", bar: "#FB8C00", label: "31–50% Prachesta" },
+  { min: -Infinity, bg: "#FDEAEA", text: "#B71C1C", bar: "#D32F2F", label: "<31% Akanshi" },
+];
 
 const PGI = () => {
   const [loading, setLoading] = useState(true);
@@ -136,12 +155,24 @@ const PGI = () => {
       </Box>
 
       <Box mt={1}>
-        <PGIRankingChart data={filteredSorted} />
+        <PGIRankingChart data={filteredSorted} allData={districtRanking} />
       </Box>
 
-      <PGITable data={filteredSorted} />
+      <PGITable data={filteredSorted} allData={districtRanking} />
 
-      <HeatMapChart categories={heatmap.categories} data={filteredHeatmapData} allData={heatmap.data} />
+      <HeatMapTable
+        icon="🌡️"
+        title="Category-wise Score Heat-map (% of max, by District)"
+        bands={PGI_BANDS}
+        columns={heatmap.categories}
+        data={filteredHeatmapData}
+        allData={heatmap.data}
+        getValue={(row, cat) => {
+          const max = CATEGORY_MAX[cat] || 100;
+          return max ? ((row[cat] ?? 0) / max) * 100 : 0;
+        }}
+        cellTitle={(row, cat) => `${row[cat] ?? 0} / ${CATEGORY_MAX[cat] || 100}`}
+      />
 
       {district !== "All" && districtIndicators?.overall && (
         <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>

@@ -1,5 +1,3 @@
-import { useState } from "react";
-import SearchIcon from "@mui/icons-material/Search";
 import {
   Card,
   CardContent,
@@ -12,8 +10,6 @@ import {
   TableCell,
   TableContainer,
   Paper,
-  TextField,
-  InputAdornment,
   Chip,
   Tooltip,
 } from "@mui/material";
@@ -53,12 +49,6 @@ const RankBadge = ({ rank }) => {
 };
 
 const CombinedRankingTable = ({ data = [] }) => {
-  const [search, setSearch] = useState("");
-
-  const filteredRows = data.filter((row) =>
-    row.District.toLowerCase().includes(search.toLowerCase())
-  );
-
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
       <CardContent>
@@ -73,24 +63,6 @@ const CombinedRankingTable = ({ data = [] }) => {
         >
           Combined PGI-D + PARAKH + SAT Ranking — All 33 Districts
         </Typography>
-
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Search District..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{ mb: 2 }}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
 
         <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 500, border: "1px solid #E4E7F0" }}>
           <Table size="small" stickyHeader>
@@ -117,7 +89,7 @@ const CombinedRankingTable = ({ data = [] }) => {
             </TableHead>
 
             <TableBody>
-              {filteredRows.map((row) => (
+              {data.map((row) => (
                 <TableRow
                   key={row.District}
                   hover

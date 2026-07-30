@@ -14,7 +14,7 @@ import {
 
 import DashboardLayout from "../components/DashboardLayout";
 import Header from "../components/Header";
-import SATHeatMapChart from "../components/SATHeatMapChart";
+import HeatMapTable from "../components/HeatMapTable";
 import SATSemesterComparison from "../components/SATSemesterComparison";
 import Loading from "../components/Loading";
 import DistrictFilterBar from "../components/DistrictFilterBar";
@@ -43,6 +43,15 @@ import {
   getSATDistrictLOBreakdown,
 } from "../services/dataService";
 import { SATLOBreakdownSection } from "../components/DistrictDeepDive";
+
+// Three-band read, same thresholds as the rest of the app's band colouring
+// (Strong / Watch / Needs Support) so this table means the same thing as
+// every other coloured chip in the dashboard.
+const SAT_BANDS = [
+  { min: 60, bg: "#E6F4EA", text: "#1B5E20", bar: "#2E7D32", label: "≥60% Strong" },
+  { min: 45, bg: "#FFF3E0", text: "#B15C00", bar: "#FB8C00", label: "45–59% Watch" },
+  { min: -Infinity, bg: "#FDEAEA", text: "#B71C1C", bar: "#D32F2F", label: "<45% Needs Support" },
+];
 
 const SAT = () => {
   const [loading, setLoading] = useState(true);
@@ -363,7 +372,7 @@ const SAT = () => {
         pageIcon="📝"
         pageEyebrow="SAT Analytics"
         pageTitle="Gujarat SAT Dashboard"
-        pageSubtitle={`Semester Assessment Test — ${
+        pageSubtitle={`Summetive Assessment Test — ${
           semester === "all" ? "Both Semesters (Combined)" : semester === "sem1" ? "Semester 1" : "Semester 2"
         } · ${satSummary.totalDistricts} Districts · District / Grade / Subject / Learning-Outcome level breakdown`}
         statChip={{
@@ -621,24 +630,28 @@ const SAT = () => {
         </Card>
       )}
 
-      <SATHeatMapChart
+      <HeatMapTable
         icon="📊"
         title={`District x Grade — SAT Score Heat-map (%)${
           semester === "all" ? " · Semester 1 vs Semester 2" : semester === "sem1" ? " · Semester 1" : " · Semester 2"
         }${district !== "All" ? ` · ${district}` : ""}`}
+        bands={SAT_BANDS}
         columns={semester === "sem2" ? satGradeWiseSem2.grades : satGradeWiseSem1.grades}
+        columnLabel={cleanSubjectLabel}
         data={semester === "sem2" ? gradeHeatmapDataSem2 : gradeHeatmapDataSem1}
         data2={semester === "all" ? gradeHeatmapDataSem2 : null}
         allData={semester === "sem2" ? satGradeWiseSem2.data : satGradeWiseSem1.data}
         allData2={satGradeWiseSem2.data}
       />
 
-      <SATHeatMapChart
+      <HeatMapTable
         icon="📘"
         title={`District x Subject — SAT Score Heat-map (%)${
           semester === "all" ? " · Semester 1 vs Semester 2" : semester === "sem1" ? " · Semester 1" : " · Semester 2"
         }${district !== "All" ? ` · ${district}` : ""}`}
+        bands={SAT_BANDS}
         columns={semester === "sem2" ? satSubjectHeatmapSem2.subjects : satSubjectHeatmapSem1.subjects}
+        columnLabel={cleanSubjectLabel}
         data={semester === "sem2" ? subjectHeatmapDataSem2 : subjectHeatmapDataSem1}
         data2={semester === "all" ? subjectHeatmapDataSem2 : null}
         allData={semester === "sem2" ? satSubjectHeatmapSem2.data : satSubjectHeatmapSem1.data}

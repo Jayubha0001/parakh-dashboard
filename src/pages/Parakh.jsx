@@ -4,7 +4,7 @@ import { Box, Grid, Card, CardContent, Typography } from "@mui/material";
 import DashboardLayout from "../components/DashboardLayout";
 import Header from "../components/Header";
 import Loading from "../components/Loading";
-import SubjectPerformanceChart from "../charts/SubjectPerformanceChart";
+import HeatMapTable from "../components/HeatMapTable";
 import ComparisonSection from "../components/ComparisonSection";
 import ContextualSummaryCards from "../components/ContextualSummaryCards";
 import DistrictFilterBar from "../components/DistrictFilterBar";
@@ -25,6 +25,14 @@ import {
   getAllDistrictPARAKHActionItems,
   getDistrictCompetencies,
 } from "../services/dataService";
+
+// Same three-band read as the rest of the app's heat-maps, just at the
+// thresholds this particular indicator (subject mastery %) uses.
+const SUBJECT_BANDS = [
+  { min: 45, bg: "#E6F4EA", text: "#1B5E20", bar: "#2E7D32", label: "≥45% High" },
+  { min: 40, bg: "#FFF3E0", text: "#B15C00", bar: "#FB8C00", label: "40–44.99% Medium" },
+  { min: -Infinity, bg: "#FDEAEA", text: "#B71C1C", bar: "#D32F2F", label: "<40% Low" },
+];
 
 const PARAKH = () => {
   const [loading, setLoading] = useState(true);
@@ -115,7 +123,16 @@ const PARAKH = () => {
         socialGroupData={socialGroup.data}
       />
 
-      <SubjectPerformanceChart columns={subject.columns} data={byDistrict(subject.data)} allData={subject.data} />
+      <HeatMapTable
+        icon="📚"
+        title="Subject-wise Mastery Heat-map (% students at mastery, by District)"
+        bands={SUBJECT_BANDS}
+        columns={subject.columns}
+        data={byDistrict(subject.data)}
+        allData={subject.data}
+        isAverageColumn={(col) => col.endsWith("Average")}
+        getValue={(row, col) => (row[col] ?? 0) * 100}
+      />
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 6 }}>

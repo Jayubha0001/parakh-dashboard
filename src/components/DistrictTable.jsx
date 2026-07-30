@@ -1,6 +1,3 @@
-import { useState, useMemo } from "react";
-
-import SearchIcon from "@mui/icons-material/Search";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 
@@ -15,17 +12,11 @@ import {
   TableCell,
   TableContainer,
   Paper,
-  TextField,
-  InputAdornment,
 } from "@mui/material";
 import { isPriorityDistrict } from "../utils/priorityDistricts";
 import PriorityChip from "./PriorityChip";
 
 const DistrictTable = ({ data }) => {
-        const [search, setSearch] = useState("");
-        const filteredRows = data.filter((row) =>
-  row.District.toLowerCase().includes(search.toLowerCase())
-);
   return (
     <Card
       sx={{
@@ -43,23 +34,6 @@ const DistrictTable = ({ data }) => {
         >
           📋 District Performance Table
         </Typography>
-<TextField
-  fullWidth
-  size="small"
-  placeholder="Search District..."
-  value={search}
-  onChange={(e) => setSearch(e.target.value)}
-  sx={{ mb: 2 }}
-  slotProps={{
-    input: {
-      startAdornment: (
-        <InputAdornment position="start">
-          <SearchIcon />
-        </InputAdornment>
-      ),
-    },
-  }}
-/>
         <TableContainer component={Paper}>
 
           <Table size="small">
@@ -102,7 +76,7 @@ const DistrictTable = ({ data }) => {
 
             <TableBody>
 
-              {filteredRows.map((row) => (
+              {data.map((row) => (
 
                 <TableRow
                   key={row.Rank}

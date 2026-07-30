@@ -17,13 +17,29 @@ const barColor = (score) => {
   return "#D32F2F";
 };
 
-const PGIRankingChart = ({ data = [] }) => {
+// When `data` has been narrowed to a single district (allData is the full,
+// unfiltered ranking and is longer than data), a "Gujarat State Average" bar
+// is appended so the one district can actually be compared against
+// something — same behaviour the Dashboard page's own PGI chart already
+// had, now shared here instead of being a second, inconsistent copy.
+const PGIRankingChart = ({ data = [], allData = null }) => {
+  const isFiltered = data.length === 1 && Array.isArray(allData) && allData.length > data.length;
+
   const chartData = [...data]
     .sort((a, b) => b.PercentAchieved - a.PercentAchieved)
     .map((d) => ({
       District: d.District,
       Score: Number(d.PercentAchieved.toFixed(1)),
     }));
+
+  if (isFiltered) {
+    const stateAverage = allData.reduce((sum, d) => sum + d.PercentAchieved, 0) / allData.length;
+    chartData.push({
+      District: "Gujarat State Average",
+      Score: Number(stateAverage.toFixed(1)),
+      isAverage: true,
+    });
+  }
 
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 4 }}>
@@ -50,7 +66,7 @@ const PGIRankingChart = ({ data = [] }) => {
 
             <Bar dataKey="Score" barSize={20} radius={[6, 6, 0, 0]}>
               {chartData.map((entry, index) => (
-                <Cell key={index} fill={barColor(entry.Score)} />
+                <Cell key={index} fill={entry.isAverage ? "#0F172A" : barColor(entry.Score)} />
               ))}
 
               <LabelList

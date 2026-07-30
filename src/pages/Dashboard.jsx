@@ -1,4 +1,3 @@
-import SearchIcon from "@mui/icons-material/Search";
 import DistrictTable from "../components/DistrictTable";
 import { useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
@@ -15,11 +14,9 @@ import {
   TableHead,
   TableRow,
   Paper,
-  TextField,
   Button,
   ToggleButtonGroup,
   ToggleButton,
-InputAdornment,
 } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
@@ -40,6 +37,7 @@ import Header from "../components/Header";
 import DashboardLayout from "../components/DashboardLayout";
 import FilterBar from "../components/FilterBar";
 import PGITable from "../components/PGITable";
+import PGIRankingChart from "../charts/PGIRankingChart";
 import SATSemesterComparison from "../components/SATSemesterComparison";
 import ActionItemsQueue from "../components/ActionItemsQueue";
 import NationalBenchmarkPanel from "../components/NationalBenchmarkPanel";
@@ -393,18 +391,6 @@ const pgiStateAverage =
   pgiRanking.length > 0
     ? pgiRanking.reduce((sum, d) => sum + d.PercentAchieved, 0) / pgiRanking.length
     : 0;
-
-const pgiChartData =
-  district !== "All"
-    ? [
-        ...pgiChartAll.filter((d) => d.District === district),
-        {
-          District: "Gujarat State Average",
-          Score: Number(pgiStateAverage.toFixed(1)),
-          isAverage: true,
-        },
-      ]
-    : pgiChartAll;
 
 const pgiTableDataAll = [...pgiRanking]
   .sort((a, b) => b.PercentAchieved - a.PercentAchieved)
@@ -995,68 +981,9 @@ const satSubjectComparisonChartData = (() => {
   </Grid>
 </Paper>
 
-<Card elevation={3}>
-  <CardContent>
-    <Typography
-      sx={{
-        fontFamily: '"Fraunces", serif',
-        fontWeight: 600,
-        fontSize: 18,
-        mb: 2,
-        color: "#16233B",
-      }}
-    >
-      District-wise PGI-D 2.0 Overall Performance (%)
-    </Typography>
+<PGIRankingChart data={pgiTableData} allData={pgiTableDataAll} />
 
-    <ResponsiveContainer width="100%" height={420}>
-      <BarChart
-        data={pgiChartData}
-        margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-
-        <XAxis
-          dataKey="District"
-          angle={-45}
-          textAnchor="end"
-          interval={0}
-          tick={{ fontSize: 10 }}
-        />
-
-        <YAxis domain={[0, 100]} />
-
-        <Tooltip formatter={(value) => `${value}%`} />
-
-        <Bar dataKey="Score" barSize={20} radius={[6, 6, 0, 0]}>
-          {pgiChartData.map((entry, index) => (
-            <Cell
-              key={index}
-              fill={
-                entry.isAverage
-                  ? "#0F172A"
-                  : entry.Score >= 61
-                  ? "#2E7D32"
-                  : entry.Score >= 31
-                  ? "#FB8C00"
-                  : "#D32F2F"
-              }
-            />
-          ))}
-
-          <LabelList
-            dataKey="Score"
-            position="top"
-            formatter={(value) => `${value}%`}
-            style={{ fontSize: 11, fontWeight: "bold", fill: "#333" }}
-          />
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  </CardContent>
-</Card>
-
-<PGITable data={pgiTableData} />
+<PGITable data={pgiTableData} allData={pgiTableDataAll} />
 
 {/* SAT — Student Assessment Test */}
 <Box mt={5} mb={2}>

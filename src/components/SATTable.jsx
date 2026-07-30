@@ -1,5 +1,3 @@
-import { useState } from "react";
-import SearchIcon from "@mui/icons-material/Search";
 import {
   Card,
   CardContent,
@@ -11,8 +9,6 @@ import {
   TableCell,
   TableContainer,
   Paper,
-  TextField,
-  InputAdornment,
   Chip,
 } from "@mui/material";
 import { isPriorityDistrict } from "../utils/priorityDistricts";
@@ -25,36 +21,12 @@ const satGradeColor = (pct) => {
 };
 
 const SATTable = ({ data = [] }) => {
-  const [search, setSearch] = useState("");
-
-  const filteredRows = data.filter((row) =>
-    row.District.toLowerCase().includes(search.toLowerCase())
-  );
-
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 4 }}>
       <CardContent>
         <Typography variant="h6" fontWeight="bold" mb={2}>
           📝 District-wise SAT Ranking
         </Typography>
-
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Search District..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{ mb: 2 }}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
 
         <TableContainer component={Paper}>
           <Table size="small">
@@ -69,7 +41,7 @@ const SATTable = ({ data = [] }) => {
             </TableHead>
 
             <TableBody>
-              {filteredRows.map((row) => (
+              {data.map((row) => (
                 <TableRow
                   key={row.District}
                   hover

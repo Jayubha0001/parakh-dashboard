@@ -1,5 +1,3 @@
-import { useState } from "react";
-import SearchIcon from "@mui/icons-material/Search";
 import {
   Card,
   CardContent,
@@ -11,20 +9,36 @@ import {
   TableCell,
   TableContainer,
   Paper,
-  TextField,
-  InputAdornment,
   Chip,
 } from "@mui/material";
 import { gradeColor } from "./PGIHeader";
 import { isPriorityDistrict } from "../utils/priorityDistricts";
 import PriorityChip from "./PriorityChip";
 
-const PGITable = ({ data = [] }) => {
-  const [search, setSearch] = useState("");
+const avg = (values) => {
+  const nums = values.filter((v) => typeof v === "number");
+  return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : null;
+};
 
-  const filteredRows = data.filter((row) =>
-    row.District.toLowerCase().includes(search.toLowerCase())
-  );
+// State Average is always computed from the FULL (unfiltered) ranking —
+// picking one district in the filter narrows which row(s) the table
+// shows, but the summary line underneath should still read "how does
+// Gujarat as a whole compare", not "average of the one row left on screen".
+// Same logic as the SAT semester-comparison table, so both pages behave
+// the same way when a district is selected.
+const buildStateAverageRow = (allRows) => {
+  if (!allRows?.length) return null;
+
+  return {
+    District: "⭐ State Average",
+    Score: avg(allRows.map((d) => d.Score)),
+    PercentAchieved: avg(allRows.map((d) => d.PercentAchieved)),
+    isStateAverage: true,
+  };
+};
+
+const PGITable = ({ data = [], allData = null }) => {
+  const stateAverageRow = buildStateAverageRow(allData || data);
 
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 4 }}>
@@ -32,24 +46,6 @@ const PGITable = ({ data = [] }) => {
         <Typography variant="h6" fontWeight="bold" mb={2}>
           📋 District-wise PGI-D 2.0 Ranking (out of 600)
         </Typography>
-
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Search District..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{ mb: 2 }}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
 
         <TableContainer component={Paper}>
           <Table size="small">
@@ -70,7 +66,7 @@ const PGITable = ({ data = [] }) => {
             </TableHead>
 
             <TableBody>
-              {filteredRows.map((row, index) => (
+              {data.map((row, index) => (
                 <TableRow
                   key={row.District}
                   hover
@@ -96,6 +92,20 @@ const PGITable = ({ data = [] }) => {
                   </TableCell>
                 </TableRow>
               ))}
+
+              {stateAverageRow && (
+                <TableRow key="state-average" sx={{ bgcolor: "#EFF3FB", borderTop: "2px solid #6A1B9A" }}>
+                  <TableCell sx={{ fontWeight: 800, color: "#16233B" }}>—</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: "#16233B" }}>{stateAverageRow.District}</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 800, color: "#16233B" }}>
+                    {stateAverageRow.Score == null ? "—" : stateAverageRow.Score.toFixed(2)}
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 800, color: "#16233B" }}>
+                    {stateAverageRow.PercentAchieved == null ? "—" : `${stateAverageRow.PercentAchieved.toFixed(1)}%`}
+                  </TableCell>
+                  <TableCell align="center">—</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </TableContainer>

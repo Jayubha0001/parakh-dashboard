@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
   Card,
@@ -13,8 +12,6 @@ import {
   TableCell,
   TableContainer,
   Paper,
-  TextField,
-  InputAdornment,
 } from "@mui/material";
 import {
   ResponsiveContainer,
@@ -40,7 +37,6 @@ const PMShri = () => {
   const [loading, setLoading] = useState(true);
   const [districts, setDistricts] = useState([]);
   const [stateTotal, setStateTotal] = useState(null);
-  const [search, setSearch] = useState("");
   const [actionItems, setActionItems] = useState([]);
   const [allDistrictNames, setAllDistrictNames] = useState([]);
   const [allDistrictItems, setAllDistrictItems] = useState([]);
@@ -70,9 +66,6 @@ const PMShri = () => {
   }
 
   const sorted = [...districts].sort((a, b) => b.totalSchools - a.totalSchools);
-  const filtered = sorted.filter((d) =>
-    d.district.toLowerCase().includes(search.toLowerCase())
-  );
 
   const chartData = sorted.map((d) => ({
     District: d.district,
@@ -147,24 +140,6 @@ const PMShri = () => {
             District-wise PM Shri School Details
           </Typography>
 
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Search District..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            sx={{ mb: 2 }}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              },
-            }}
-          />
-
           <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 500, border: "1px solid #E4E7F0" }}>
             <Table size="small" stickyHeader>
               <TableHead>
@@ -184,7 +159,7 @@ const PMShri = () => {
               </TableHead>
 
               <TableBody>
-                {filtered.map((d) => (
+                {sorted.map((d) => (
                   <TableRow
                     key={d.district}
                     hover
