@@ -334,10 +334,20 @@ const SAT = () => {
       ? satGradeWiseSem1.data.filter((d) => d.District === district)
       : satGradeWiseSem1.data;
 
+  const gradeHeatmapDataSem2 =
+    district !== "All"
+      ? satGradeWiseSem2.data.filter((d) => d.District === district)
+      : satGradeWiseSem2.data;
+
   const subjectHeatmapDataSem1 =
     district !== "All"
       ? satSubjectHeatmapSem1.data.filter((d) => d.District === district)
       : satSubjectHeatmapSem1.data;
+
+  const subjectHeatmapDataSem2 =
+    district !== "All"
+      ? satSubjectHeatmapSem2.data.filter((d) => d.District === district)
+      : satSubjectHeatmapSem2.data;
 
   if (loading) {
     return (
@@ -616,15 +626,11 @@ const SAT = () => {
         title={`District x Grade — SAT Score Heat-map (%)${
           semester === "all" ? " · Semester 1 vs Semester 2" : semester === "sem1" ? " · Semester 1" : " · Semester 2"
         }${district !== "All" ? ` · ${district}` : ""}`}
-        columns={semester === "sem1" ? satGradeWiseSem1.grades : satGradeWiseSem2.grades}
-        data={
-          semester === "sem1"
-            ? gradeHeatmapDataSem1
-            : district !== "All"
-            ? satGradeWiseSem2.data.filter((d) => d.District === district)
-            : satGradeWiseSem2.data
-        }
-        data2={semester === "all" ? gradeHeatmapDataSem1 : null}
+        columns={semester === "sem2" ? satGradeWiseSem2.grades : satGradeWiseSem1.grades}
+        data={semester === "sem2" ? gradeHeatmapDataSem2 : gradeHeatmapDataSem1}
+        data2={semester === "all" ? gradeHeatmapDataSem2 : null}
+        allData={semester === "sem2" ? satGradeWiseSem2.data : satGradeWiseSem1.data}
+        allData2={satGradeWiseSem2.data}
       />
 
       <SATHeatMapChart
@@ -632,15 +638,11 @@ const SAT = () => {
         title={`District x Subject — SAT Score Heat-map (%)${
           semester === "all" ? " · Semester 1 vs Semester 2" : semester === "sem1" ? " · Semester 1" : " · Semester 2"
         }${district !== "All" ? ` · ${district}` : ""}`}
-        columns={semester === "sem1" ? satSubjectHeatmapSem1.subjects : satSubjectHeatmapSem2.subjects}
-        data={
-          semester === "sem1"
-            ? subjectHeatmapDataSem1
-            : district !== "All"
-            ? satSubjectHeatmapSem2.data.filter((d) => d.District === district)
-            : satSubjectHeatmapSem2.data
-        }
-        data2={semester === "all" ? subjectHeatmapDataSem1 : null}
+        columns={semester === "sem2" ? satSubjectHeatmapSem2.subjects : satSubjectHeatmapSem1.subjects}
+        data={semester === "sem2" ? subjectHeatmapDataSem2 : subjectHeatmapDataSem1}
+        data2={semester === "all" ? subjectHeatmapDataSem2 : null}
+        allData={semester === "sem2" ? satSubjectHeatmapSem2.data : satSubjectHeatmapSem1.data}
+        allData2={satSubjectHeatmapSem2.data}
       />
 
       {district !== "All" && loBreakdown?.length > 0 && (

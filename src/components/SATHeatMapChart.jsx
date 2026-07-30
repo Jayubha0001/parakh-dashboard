@@ -27,9 +27,21 @@ const average = (rows, col) => {
 // Grade-wise and Subject-wise breakdowns. When `data2` is also passed (with
 // `label`/`label2`), each cell shows both periods side by side instead of
 // needing two separate full-width tables one after another.
-const SATHeatMapChart = ({ title, icon = "🌡️", columns = [], data = [], data2 = null, label = "S1", label2 = "S2" }) => {
+const SATHeatMapChart = ({
+  title,
+  icon = "🌡️",
+  columns = [],
+  data = [],
+  data2 = null,
+  label = "S1",
+  label2 = "S2",
+  allData = null,
+  allData2 = null,
+}) => {
   const dual = Boolean(data2);
   const data2ByDistrict = dual ? Object.fromEntries(data2.map((r) => [r.District, r])) : {};
+  const statsSource = allData || data;
+  const statsSource2 = allData2 || data2;
 
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
@@ -161,8 +173,8 @@ const SATHeatMapChart = ({ title, icon = "🌡️", columns = [], data = [], dat
                   ⭐ State Average
                 </td>
                 {columns.map((col) => {
-                  const avg = average(data, col);
-                  const avg2 = dual ? average(data2, col) : null;
+                  const avg = average(statsSource, col);
+                  const avg2 = dual ? average(statsSource2, col) : null;
 
                   return (
                     <td key={col} style={{ textAlign: "center", padding: "6px 8px" }}>

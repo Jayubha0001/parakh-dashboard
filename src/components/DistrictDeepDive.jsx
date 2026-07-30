@@ -171,6 +171,15 @@ export const PGIIndicatorSection = ({ indicators = [], domainSummary = [], overa
                     {item.score.toFixed(2)} / {item.weight} ({item.pct.toFixed(1)}%)
                   </span>
                   . Needs a targeted push to cross the 31% Akanshi line before the next assessment cycle.
+                  {item.dataSource && (
+                    <span style={{ marginLeft: 6 }}>
+                      <Chip
+                        label={`📁 ${item.dataSource}`}
+                        size="small"
+                        sx={{ height: 18, fontSize: 10, fontWeight: 700, bgcolor: "#EEF4FD", color: "#1976D2" }}
+                      />
+                    </span>
+                  )}
                 </Typography>
               </Box>
             ))}

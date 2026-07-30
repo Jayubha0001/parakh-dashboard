@@ -32,8 +32,37 @@ const pctColor = (pct) => {
 
 const fmt = (pct) => (pct == null ? "—" : `${pct.toFixed(1)}%`);
 
+const avg = (values) => {
+  const nums = values.filter((v) => typeof v === "number");
+  return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : null;
+};
+
+// State Average is always computed from the FULL (unfiltered) dataset —
+// picking one district in the filter narrows which row(s) the table
+// shows, but the summary line underneath should still read "how does
+// Gujarat as a whole compare", not "average of the one row left on screen".
+const buildStateAverageRow = (allRows) => {
+  if (!allRows.length) return null;
+
+  const sem1Pct = avg(allRows.map((d) => d.Sem1Pct));
+  const sem2Pct = avg(allRows.map((d) => d.Sem2Pct));
+  const totalPct = avg(allRows.map((d) => d.TotalPct));
+  const changes = allRows.map((d) => d.Change).filter((v) => typeof v === "number");
+
+  return {
+    District: "⭐ State Average",
+    Rank: "—",
+    Sem1Pct: sem1Pct,
+    Sem2Pct: sem2Pct,
+    TotalPct: totalPct,
+    Change: changes.length ? changes.reduce((a, b) => a + b, 0) / changes.length : null,
+    isStateAverage: true,
+  };
+};
+
 const SATSemesterComparison = ({ data = [], district = "All" }) => {
   const rows = district !== "All" ? data.filter((d) => d.District === district) : data;
+  const stateAverageRow = buildStateAverageRow(data);
 
   const chartData = rows.map((d) => ({
     District: d.District,
@@ -131,6 +160,56 @@ const SATSemesterComparison = ({ data = [], district = "All" }) => {
                   </TableCell>
                 </TableRow>
               ))}
+
+              {stateAverageRow && (
+                <TableRow
+                  key="state-average"
+                  sx={{ bgcolor: "#EFF3FB", borderTop: "2px solid #6A1B9A" }}
+                >
+                  <TableCell sx={{ fontWeight: 800, color: "#16233B" }}>{stateAverageRow.Rank}</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: "#16233B" }}>{stateAverageRow.District}</TableCell>
+
+                  <TableCell align="center">
+                    <Chip
+                      label={fmt(stateAverageRow.Sem1Pct)}
+                      size="small"
+                      sx={{ bgcolor: pctColor(stateAverageRow.Sem1Pct), color: "#fff", fontWeight: "bold" }}
+                    />
+                  </TableCell>
+
+                  <TableCell align="center">
+                    <Chip
+                      label={fmt(stateAverageRow.Sem2Pct)}
+                      size="small"
+                      sx={{ bgcolor: pctColor(stateAverageRow.Sem2Pct), color: "#fff", fontWeight: "bold" }}
+                    />
+                  </TableCell>
+
+                  <TableCell align="center">
+                    {stateAverageRow.Change == null ? (
+                      "—"
+                    ) : (
+                      <Box
+                        component="span"
+                        sx={{
+                          fontWeight: 700,
+                          color: stateAverageRow.Change >= 0 ? "success.main" : "error.main",
+                        }}
+                      >
+                        {stateAverageRow.Change >= 0 ? "▲" : "▼"} {Math.abs(stateAverageRow.Change).toFixed(1)} pts
+                      </Box>
+                    )}
+                  </TableCell>
+
+                  <TableCell align="center">
+                    <Chip
+                      label={fmt(stateAverageRow.TotalPct)}
+                      size="small"
+                      sx={{ bgcolor: "#16233B", color: "#fff", fontWeight: "bold" }}
+                    />
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </TableContainer>

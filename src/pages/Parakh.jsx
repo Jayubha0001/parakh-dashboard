@@ -115,7 +115,7 @@ const PARAKH = () => {
         socialGroupData={socialGroup.data}
       />
 
-      <SubjectPerformanceChart columns={subject.columns} data={byDistrict(subject.data)} />
+      <SubjectPerformanceChart columns={subject.columns} data={byDistrict(subject.data)} allData={subject.data} />
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 6 }}>
@@ -124,6 +124,7 @@ const PARAKH = () => {
             icon="🚻"
             columns={gender.columns}
             data={byDistrict(gender.data)}
+            allData={gender.data}
             color="#8E24AA"
           />
         </Grid>
@@ -134,6 +135,7 @@ const PARAKH = () => {
             icon="🏘️"
             columns={location.columns}
             data={byDistrict(location.data)}
+            allData={location.data}
             color="#00897B"
           />
         </Grid>
@@ -146,6 +148,7 @@ const PARAKH = () => {
             icon="🏫"
             columns={management.columns}
             data={byDistrict(management.data)}
+            allData={management.data}
             color="#5D4037"
           />
         </Grid>
@@ -156,6 +159,7 @@ const PARAKH = () => {
             icon="🤝"
             columns={socialGroup.columns}
             data={byDistrict(socialGroup.data)}
+            allData={socialGroup.data}
             color="#C62828"
           />
         </Grid>

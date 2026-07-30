@@ -1,5 +1,3 @@
-import { useState } from "react";
-import SearchIcon from "@mui/icons-material/Search";
 import {
   Card,
   CardContent,
@@ -14,8 +12,6 @@ import {
   TableContainer,
   TableFooter,
   Paper,
-  TextField,
-  InputAdornment,
   Chip,
 } from "@mui/material";
 
@@ -24,6 +20,11 @@ import { isPriorityDistrict } from "../utils/priorityDistricts";
 import PriorityChip from "./PriorityChip";
 
 const isGapColumn = (col) => col.toLowerCase().includes("gap");
+
+const average = (rows, col) => {
+  const vals = rows.map((d) => d[col]).filter((v) => !isNaN(v));
+  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+};
 
 // Same three-band read as every other heat-map cell in the app, applied
 // here to whichever percentage column this card is showing (Boys/Girls,
@@ -62,31 +63,23 @@ const PillCell = ({ pct }) => {
   );
 };
 
+// `data` is what's actually shown as rows (already narrowed by the page's
+// district filter). `allData` is always the full, unfiltered 33-district
+// set — the "Gujarat Average" cards and the State Average footer row are
+// computed from allData, so picking a district doesn't quietly turn the
+// state average into that one district's own number.
 const ComparisonSection = ({
   title,
   icon = "📊",
   columns = [],
   data = [],
+  allData = null,
   color = "#1976D2",
 }) => {
-  const [search, setSearch] = useState("");
-
+  const statsSource = allData || data;
   const valueColumns = columns.filter((c) => !isGapColumn(c));
 
-  const averages = valueColumns.map((col) => {
-    const vals = data.map((d) => d[col]).filter((v) => !isNaN(v));
-    const avg =
-      vals.length > 0
-        ? vals.reduce((a, b) => a + b, 0) / vals.length
-        : 0;
-    return { label: col, avg };
-  });
-
-  const filteredRows = data.filter((row) =>
-    (row.District || "")
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+  const averages = valueColumns.map((col) => ({ label: col, avg: average(statsSource, col) }));
 
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0", borderTop: `4px solid ${color}` }} elevation={0}>
@@ -95,7 +88,7 @@ const ComparisonSection = ({
           {icon} {title}
         </Typography>
 
-        {/* State-level average summary */}
+        {/* State-level average summary — always from the full district set */}
         <Grid container spacing={2} mb={3}>
           {averages.map((a, i) => (
             <Grid size={{ xs: 6, sm: 4, md: Math.max(2, Math.floor(12 / averages.length)) }} key={i}>
@@ -123,24 +116,6 @@ const ComparisonSection = ({
           ))}
         </Grid>
 
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Search District..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{ mb: 2 }}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
-
         <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 420, border: "1px solid #E4E7F0", borderRadius: 2 }}>
           <Table size="small" stickyHeader>
             <TableHead>
@@ -162,7 +137,7 @@ const ComparisonSection = ({
             </TableHead>
 
             <TableBody>
-              {filteredRows.map((row, i) => (
+              {data.map((row, i) => (
                 <TableRow
                   key={row.District}
                   hover
@@ -211,8 +186,7 @@ const ComparisonSection = ({
                 </TableCell>
                 {columns.map((col) => {
                   const gap = isGapColumn(col);
-                  const vals = data.map((d) => d[col]).filter((v) => !isNaN(v));
-                  const avgPct = vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length) * 100 : 0;
+                  const avgPct = average(statsSource, col) * 100;
 
                   return (
                     <TableCell key={col} align="center">

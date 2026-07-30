@@ -371,6 +371,7 @@ export const getDistrictPGIIndicators = (workbook, districtName) => {
       domain: String(r[1] || "").trim(),
       indNo: String(r[2] || "").trim(),
       indicator: String(r[3] || "").replace(/\s+/g, " ").trim(),
+      dataSource: String(r[4] || "").trim(),
       weight: Number(r[5]) || 0,
       score: Number(r[col]) || 0,
     }));
@@ -1306,7 +1307,7 @@ export const getSATSubjectWise = (workbook) => {
 
   rows.slice(1).forEach((r) => {
     const district = r[0];
-    const subject = r[2];
+    const subject = typeof r[2] === "string" ? r[2].replace(/\s+/g, " ").trim() : r[2];
     const totalMarks = Number(r[3]) || 0;
     const obtainedMarks = Number(r[4]) || 0;
 
@@ -1388,7 +1389,7 @@ export const getSATWeakestLOs = (workbook, limit = 10) => {
 
   rows.slice(1).forEach((r) => {
     const district = r[0];
-    const subject = r[2];
+    const subject = typeof r[2] === "string" ? r[2].replace(/\s+/g, " ").trim() : r[2];
     const loCode = r[3];
     const indicator = r[4];
     const totalMarks = Number(r[5]) || 0;
@@ -1439,7 +1440,7 @@ export const getSATDistrictLOBreakdown = (workbook, districtName) => {
     const district = r[0];
     if (district !== districtName) return;
 
-    const subject = r[2];
+    const subject = typeof r[2] === "string" ? r[2].replace(/\s+/g, " ").trim() : r[2];
     const loCode = r[3];
     const indicator = r[4];
     const totalMarks = Number(r[5]) || 0;
@@ -1481,7 +1482,7 @@ export const getSATDistrictSubjectWise = (workbook) => {
 
   rows.slice(1).forEach((r) => {
     const district = r[0];
-    const subject = r[2];
+    const subject = typeof r[2] === "string" ? r[2].replace(/\s+/g, " ").trim() : r[2];
     const totalMarks = Number(r[3]) || 0;
     const obtainedMarks = Number(r[4]) || 0;
 
@@ -1581,14 +1582,32 @@ const buildSATDistrictAction = (districtName, satRanking, satDistrictSubject) =>
     ? [...subjectRows].sort((a, b) => a.PercentAchieved - b.PercentAchieved)[0]
     : null;
 
-  // Every subject under the Watch/Support line (45%), not just the single
-  // weakest one — a district can be behind on more than one subject at once.
+  // State average, per subject, computed from every district in the full
+  // dataset (satDistrictSubject isn't pre-filtered to this one district).
+  const stateAvgBySubject = {};
+  satDistrictSubject.forEach((s) => {
+    if (!stateAvgBySubject[s.subject]) stateAvgBySubject[s.subject] = { total: 0, count: 0 };
+    stateAvgBySubject[s.subject].total += s.PercentAchieved;
+    stateAvgBySubject[s.subject].count += 1;
+  });
+
+  // "Weak" here means behind the STATE AVERAGE for that specific subject —
+  // not a fixed cut-off — so a district can be above 60% overall and still
+  // show up here if the state as a whole is ahead of it on that subject.
+  // Every such subject is listed, not just the single weakest one.
   const weakAreas = subjectRows
-    .filter((s) => s.PercentAchieved < 45)
-    .sort((a, b) => a.PercentAchieved - b.PercentAchieved)
+    .map((s) => {
+      const bucket = stateAvgBySubject[s.subject];
+      const stateAvg = bucket && bucket.count ? bucket.total / bucket.count : null;
+      return { ...s, stateAvg, gap: stateAvg != null ? s.PercentAchieved - stateAvg : null };
+    })
+    .filter((s) => s.gap != null && s.gap < 0)
+    .sort((a, b) => a.gap - b.gap)
     .map((s) => ({
       label: cleanSubjectLabel(s.subject),
       pct: s.PercentAchieved,
+      stateAvg: s.stateAvg,
+      gap: s.gap,
       recommendation:
         SAT_SUBJECT_RECOMMENDATIONS[s.subject] ||
         "Run targeted remedial sessions focused on this district's weakest Learning Outcomes.",
@@ -1747,7 +1766,7 @@ export const getSATSem1DistrictSubjectWise = (sem1Workbook) => {
   rows.slice(1).forEach((r) => {
     const districtRaw = r[0];
     const classNum = r[1];
-    const subject = r[2];
+    const subject = typeof r[2] === "string" ? r[2].replace(/\s+/g, " ").trim() : r[2];
     const totalMarks = Number(r[3]) || 0;
     const obtainedMarks = Number(r[4]) || 0;
 
@@ -1796,7 +1815,7 @@ export const getSATSem1SubjectWise = (sem1Workbook) => {
   rows.slice(1).forEach((r) => {
     const districtRaw = r[0];
     const classNum = r[1];
-    const subject = r[2];
+    const subject = typeof r[2] === "string" ? r[2].replace(/\s+/g, " ").trim() : r[2];
     const totalMarks = Number(r[3]) || 0;
     const obtainedMarks = Number(r[4]) || 0;
 

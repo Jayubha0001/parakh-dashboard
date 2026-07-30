@@ -141,7 +141,7 @@ const PGI = () => {
 
       <PGITable data={filteredSorted} />
 
-      <HeatMapChart categories={heatmap.categories} data={filteredHeatmapData} />
+      <HeatMapChart categories={heatmap.categories} data={filteredHeatmapData} allData={heatmap.data} />
 
       {district !== "All" && districtIndicators?.overall && (
         <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>

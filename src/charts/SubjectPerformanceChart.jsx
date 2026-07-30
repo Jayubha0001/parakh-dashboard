@@ -46,7 +46,8 @@ const Pill = ({ pct, bold = false }) => {
   );
 };
 
-const SubjectPerformanceChart = ({ columns = [], data = [] }) => {
+const SubjectPerformanceChart = ({ columns = [], data = [], allData = null }) => {
+  const statsSource = allData || data;
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
       <CardContent>
@@ -168,7 +169,7 @@ const SubjectPerformanceChart = ({ columns = [], data = [] }) => {
                 </td>
                 {columns.map((col) => {
                   const isAverage = col.endsWith("Average");
-                  const avgPct = average(data, (r) => (r[col] ?? 0) * 100);
+                  const avgPct = average(statsSource, (r) => (r[col] ?? 0) * 100);
                   return (
                     <td key={col} style={{ textAlign: "center", padding: "6px 8px", borderLeft: isAverage ? `2px solid ${colors.gold}` : "none" }}>
                       <Pill pct={avgPct} bold />
