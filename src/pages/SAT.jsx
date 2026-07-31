@@ -43,6 +43,8 @@ import {
   getAllDistrictSATSem1ActionItems,
   cleanSubjectLabel,
   getSATDistrictLOBreakdown,
+  getSATDistrictSubjectWise,
+  getSATSem1DistrictSubjectWise,
 } from "../services/dataService";
 import { SATLOBreakdownSection } from "../components/DistrictDeepDive";
 
@@ -85,6 +87,8 @@ const SAT = () => {
   const [satSemesterComparison, setSatSemesterComparison] = useState([]);
   const [satActionItemsAll, setSatActionItemsAll] = useState([]);
   const [allDistrictSatItemsAll, setAllDistrictSatItemsAll] = useState([]);
+  const [satSubjectRowsSem1, setSatSubjectRowsSem1] = useState([]);
+  const [satSubjectRowsSem2, setSatSubjectRowsSem2] = useState([]);
   const [district, setDistrict] = useState("All");
   const [loBreakdown, setLoBreakdown] = useState(null);
 
@@ -121,6 +125,8 @@ const SAT = () => {
       setSatSemesterComparison(getSATSemesterComparison(workbook, sem1Workbook));
       setSatActionItemsAll(getSATActionItemsBothSemesters(workbook, sem1Workbook));
       setAllDistrictSatItemsAll(getAllDistrictSATActionItemsBothSemesters(workbook, sem1Workbook));
+      setSatSubjectRowsSem1(getSATSem1DistrictSubjectWise(sem1Workbook));
+      setSatSubjectRowsSem2(getSATDistrictSubjectWise(workbook));
 
       setLoading(false);
     }
@@ -338,14 +344,47 @@ const SAT = () => {
       ]),
     ];
 
+    // State average per subject = average across districts (same
+    // "average of district averages" definition used for the grade-wise
+    // chart and the weak-subjects action items), not the pooled total from
+    // getSATSubjectWise — so this line always means the same thing
+    // wherever it appears on the page.
+    const stateAvgBySubject = (rows) => {
+      const bucket = {};
+      rows.forEach((s) => {
+        if (!bucket[s.subject]) bucket[s.subject] = { total: 0, count: 0 };
+        bucket[s.subject].total += s.PercentAchieved;
+        bucket[s.subject].count += 1;
+      });
+      return Object.fromEntries(
+        Object.entries(bucket).map(([subj, b]) => [subj, b.count ? b.total / b.count : null])
+      );
+    };
+
+    const sem1StateAvg = stateAvgBySubject(satSubjectRowsSem1);
+    const sem2StateAvg = stateAvgBySubject(satSubjectRowsSem2);
+
     return subjects.map((subject) => {
-      const sem1Value = satSubjectWiseSem1.find((s) => s.subject === subject)?.PercentAchieved;
-      const sem2Value = satSubjectWiseSem2.find((s) => s.subject === subject)?.PercentAchieved;
+      const stateSem1 = sem1StateAvg[subject];
+      const stateSem2 = sem2StateAvg[subject];
+
+      let sem1Value;
+      let sem2Value;
+
+      if (district !== "All") {
+        sem1Value = satSubjectRowsSem1.find((s) => s.District === district && s.subject === subject)?.PercentAchieved;
+        sem2Value = satSubjectRowsSem2.find((s) => s.District === district && s.subject === subject)?.PercentAchieved;
+      } else {
+        sem1Value = satSubjectWiseSem1.find((s) => s.subject === subject)?.PercentAchieved;
+        sem2Value = satSubjectWiseSem2.find((s) => s.subject === subject)?.PercentAchieved;
+      }
 
       return {
         subject: cleanSubjectLabel(subject),
         "Sem 1": sem1Value != null ? Number(sem1Value.toFixed(1)) : null,
         "Sem 2": sem2Value != null ? Number(sem2Value.toFixed(1)) : null,
+        "Sem 1 (State Avg)": district !== "All" && stateSem1 != null ? Number(stateSem1.toFixed(1)) : null,
+        "Sem 2 (State Avg)": district !== "All" && stateSem2 != null ? Number(stateSem2.toFixed(1)) : null,
       };
     });
   })();
@@ -621,12 +660,12 @@ const SAT = () => {
         </Card>
       )}
 
-      {/* Subject-wise bar chart (state-wide) — Sem 1 vs Sem 2, always both */}
+      {/* Subject-wise bar chart — Sem 1 vs Sem 2, plus district-vs-state when filtered */}
       {subjectComparisonChartData.length > 0 && (
         <Card elevation={3} sx={{ mb: 3 }}>
           <CardContent>
             <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-              SAT — Subject-wise Performance (%) · Gujarat State-wide · Semester 1 vs Semester 2
+              SAT — Subject-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district} vs Gujarat State Average` : " · Gujarat State-wide"}
             </Typography>
 
             <ResponsiveContainer width="100%" height={340}>
@@ -636,11 +675,17 @@ const SAT = () => {
                 <YAxis domain={[0, 100]} />
                 <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
                 <Legend />
-                <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={22}>
+                <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 14 : 22}>
                   <LabelList dataKey="Sem 1" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#555" }} />
                 </Bar>
-                <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={22}>
+                <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 14 : 22}>
                   <LabelList dataKey="Sem 2" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#333" }} />
+                </Bar>
+                <Bar dataKey="Sem 1 (State Avg)" fill="#B7C0D1" radius={[4, 4, 0, 0]} barSize={14}>
+                  <LabelList dataKey="Sem 1 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 8, fontWeight: "bold", fill: "#555" }} />
+                </Bar>
+                <Bar dataKey="Sem 2 (State Avg)" fill="#F0D9A6" radius={[4, 4, 0, 0]} barSize={14}>
+                  <LabelList dataKey="Sem 2 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 8, fontWeight: "bold", fill: "#333" }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

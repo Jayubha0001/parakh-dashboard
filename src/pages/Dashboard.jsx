@@ -35,12 +35,13 @@ import {
 
 import Header from "../components/Header";
 import DashboardLayout from "../components/DashboardLayout";
-import FilterBar from "../components/FilterBar";
+import DistrictFilterBar from "../components/DistrictFilterBar";
 import PGITable from "../components/PGITable";
 import PGIRankingChart from "../charts/PGIRankingChart";
 import SATSemesterComparison from "../components/SATSemesterComparison";
 import ActionItemsQueue from "../components/ActionItemsQueue";
 import NationalBenchmarkPanel from "../components/NationalBenchmarkPanel";
+import { colors } from "../theme/theme";
 
 import {
   loadExcel,
@@ -65,6 +66,8 @@ import {
   getSATSem1GradeWise,
   getSATSem1StateSummary,
   getSATSem1SubjectWise,
+  getSATDistrictSubjectWise,
+  getSATSem1DistrictSubjectWise,
 } from "../services/dataService";
 
 const Dashboard = () => {
@@ -94,6 +97,8 @@ const Dashboard = () => {
   const [satGradeWiseSem1, setSatGradeWiseSem1] = useState({ grades: [], data: [] });
   const [satSummarySem1, setSatSummarySem1] = useState({ stateAverage: 0, totalDistricts: 0, gradeAverages: [] });
   const [satSubjectWiseSem1, setSatSubjectWiseSem1] = useState([]);
+  const [satSubjectRowsSem1, setSatSubjectRowsSem1] = useState([]);
+  const [satSubjectRowsSem2, setSatSubjectRowsSem2] = useState([]);
 
   const [satSemesterComparison, setSatSemesterComparison] = useState([]);
 
@@ -146,6 +151,8 @@ const Dashboard = () => {
       setSatGradeWiseSem1(getSATSem1GradeWise(sem1Workbook));
       setSatSummarySem1(getSATSem1StateSummary(sem1Workbook));
       setSatSubjectWiseSem1(getSATSem1SubjectWise(sem1Workbook));
+      setSatSubjectRowsSem1(getSATSem1DistrictSubjectWise(sem1Workbook));
+      setSatSubjectRowsSem2(getSATDistrictSubjectWise(workbook));
 
       setSatSemesterComparison(getSATSemesterComparison(workbook, sem1Workbook));
 
@@ -415,22 +422,8 @@ const pgiTableData =
 // -----------------------------
 
 // Active SAT dataset, based on the Semester 1 / Semester 2 toggle.
-const satRanking = satSemester === "sem1" ? satRankingSem1 : satRankingSem2;
 const satGradeWise = satSemester === "sem1" ? satGradeWiseSem1 : satGradeWiseSem2;
 const satSummary = satSemester === "sem1" ? satSummarySem1 : satSummarySem2;
-
-const satTop5 = satRanking.slice(0, 5).map((d) => ({
-  District: d.District,
-  Score: Number(d.PercentAchieved.toFixed(1)),
-}));
-
-const satBottom5 = [...satRanking]
-  .reverse()
-  .slice(0, 5)
-  .map((d) => ({
-    District: d.District,
-    Score: Number(d.PercentAchieved.toFixed(1)),
-  }));
 
 // -----------------------------
 // Sem 1 vs Sem 2 comparison data — always both semesters, independent
@@ -484,14 +477,42 @@ const satSubjectComparisonChartData = (() => {
     ]),
   ];
 
+  const stateAvgBySubject = (rows) => {
+    const bucket = {};
+    rows.forEach((s) => {
+      if (!bucket[s.subject]) bucket[s.subject] = { total: 0, count: 0 };
+      bucket[s.subject].total += s.PercentAchieved;
+      bucket[s.subject].count += 1;
+    });
+    return Object.fromEntries(
+      Object.entries(bucket).map(([subj, b]) => [subj, b.count ? b.total / b.count : null])
+    );
+  };
+
+  const sem1StateAvg = stateAvgBySubject(satSubjectRowsSem1);
+  const sem2StateAvg = stateAvgBySubject(satSubjectRowsSem2);
+
   return subjects.map((subject) => {
-    const sem1Value = satSubjectWiseSem1.find((s) => s.subject === subject)?.PercentAchieved;
-    const sem2Value = satSubjectWiseSem2.find((s) => s.subject === subject)?.PercentAchieved;
+    const stateSem1 = sem1StateAvg[subject];
+    const stateSem2 = sem2StateAvg[subject];
+
+    let sem1Value;
+    let sem2Value;
+
+    if (district !== "All") {
+      sem1Value = satSubjectRowsSem1.find((s) => s.District === district && s.subject === subject)?.PercentAchieved;
+      sem2Value = satSubjectRowsSem2.find((s) => s.District === district && s.subject === subject)?.PercentAchieved;
+    } else {
+      sem1Value = satSubjectWiseSem1.find((s) => s.subject === subject)?.PercentAchieved;
+      sem2Value = satSubjectWiseSem2.find((s) => s.subject === subject)?.PercentAchieved;
+    }
 
     return {
       subject,
       "Sem 1": sem1Value != null ? Number(sem1Value.toFixed(1)) : null,
       "Sem 2": sem2Value != null ? Number(sem2Value.toFixed(1)) : null,
+      "Sem 1 (State Avg)": district !== "All" && stateSem1 != null ? Number(stateSem1.toFixed(1)) : null,
+      "Sem 2 (State Avg)": district !== "All" && stateSem2 != null ? Number(stateSem2.toFixed(1)) : null,
     };
   });
 })();
@@ -754,18 +775,10 @@ const satSubjectComparisonChartData = (() => {
   </Typography>
 </Box>
 <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 2 }}>
-  District-wise mastery by grade band, filterable by District / Stage / Subject
+  District-wise mastery by grade band
 </Typography>
 
-<FilterBar
-  district={district}
-  setDistrict={setDistrict}
-  stage={stage}
-  setStage={setStage}
-  subject={subject}
-  setSubject={setSubject}
-  districts={districts}
-/>
+<DistrictFilterBar district={district} setDistrict={setDistrict} districts={districts} />
 
 <NationalBenchmarkPanel
   district={district}
@@ -1059,90 +1072,6 @@ const satSubjectComparisonChartData = (() => {
   </Grid>
 </Paper>
 
-{/* SAT Leaderboard: Top 5 / Bottom 5 */}
-<Grid container spacing={3} mb={3}>
-  {[
-    { title: "Top SAT Districts", icon: "🎯", data: satTop5, rankBase: 1, tone: "success.main" },
-    { title: "SAT — Needs Support", icon: "📉", data: satBottom5, rankBase: satSummary.totalDistricts || 33, tone: "error.main", reverse: true },
-  ].map((panel) => (
-    <Grid size={{ xs: 12, sm: 6 }} key={panel.title}>
-      <Card sx={{ borderRadius: 3, boxShadow: 3, height: "100%" }}>
-        <CardContent>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2 }}>
-            {panel.icon} {panel.title}
-          </Typography>
-
-          {panel.data.map((item, index) => {
-            const rank = panel.reverse ? panel.rankBase - index : panel.rankBase + index;
-            const medal = rank === 1 ? "#F0B429" : rank === 2 ? "#9AA5B1" : rank === 3 ? "#B08D57" : "transparent";
-            const medalText = rank <= 3 && !panel.reverse ? "#fff" : "#16233B";
-
-            return (
-              <Box
-                key={item.District}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  py: 1.1,
-                  borderBottom: index < panel.data.length - 1 ? "1px solid #EEF0F5" : "none",
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    fontFamily: '"IBM Plex Mono", monospace',
-                    bgcolor: !panel.reverse && rank <= 3 ? medal : "#F1F3F8",
-                    color: !panel.reverse && rank <= 3 ? medalText : "#5B6B85",
-                    border: !panel.reverse && rank <= 3 ? "none" : "1px solid #E4E7F0",
-                  }}
-                >
-                  {rank}
-                </Box>
-
-                <Typography sx={{ flex: 1, fontWeight: 500, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {item.District}
-                </Typography>
-
-                <Box sx={{ width: 70, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
-                  <Box
-                    sx={{
-                      width: `${Math.min(item.Score, 100)}%`,
-                      height: "100%",
-                      bgcolor: panel.reverse ? "#D32F2F" : "#2E7D32",
-                    }}
-                  />
-                </Box>
-
-                <Typography
-                  sx={{
-                    fontFamily: '"IBM Plex Mono", monospace',
-                    fontWeight: 700,
-                    fontSize: 13,
-                    width: 46,
-                    textAlign: "right",
-                    color: panel.reverse ? "error.main" : "success.main",
-                  }}
-                >
-                  {item.Score}%
-                </Typography>
-              </Box>
-            );
-          })}
-        </CardContent>
-      </Card>
-    </Grid>
-  ))}
-</Grid>
-
 {satGradeComparisonChartData.length > 0 && (
   <Card elevation={3} sx={{ mt: 3 }}>
     <CardContent>
@@ -1157,10 +1086,10 @@ const satSubjectComparisonChartData = (() => {
           <YAxis domain={[0, 100]} />
           <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
           <Legend />
-          <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 18 : 30} />
-          <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 18 : 30} />
-          <Bar dataKey="Sem 1 (State Avg)" fill="#D8DCE5" radius={[4, 4, 0, 0]} barSize={18} />
-          <Bar dataKey="Sem 2 (State Avg)" fill="#DCC4EE" radius={[4, 4, 0, 0]} barSize={18} />
+          <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 18 : 30} />
+          <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 18 : 30} />
+          <Bar dataKey="Sem 1 (State Avg)" fill="#B7C0D1" radius={[4, 4, 0, 0]} barSize={18} />
+          <Bar dataKey="Sem 2 (State Avg)" fill="#F0D9A6" radius={[4, 4, 0, 0]} barSize={18} />
         </BarChart>
       </ResponsiveContainer>
     </CardContent>
@@ -1171,7 +1100,7 @@ const satSubjectComparisonChartData = (() => {
   <Card elevation={3} sx={{ mt: 3 }}>
     <CardContent>
       <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-        SAT — Subject-wise Performance (%) · Gujarat State-wide · Semester 1 vs Semester 2
+        SAT — Subject-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district} vs Gujarat State Average` : " · Gujarat State-wide"}
       </Typography>
 
       <ResponsiveContainer width="100%" height={340}>
@@ -1181,8 +1110,10 @@ const satSubjectComparisonChartData = (() => {
           <YAxis domain={[0, 100]} />
           <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
           <Legend />
-          <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={22} />
-          <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={22} />
+          <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 14 : 22} />
+          <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 14 : 22} />
+          <Bar dataKey="Sem 1 (State Avg)" fill="#B7C0D1" radius={[4, 4, 0, 0]} barSize={14} />
+          <Bar dataKey="Sem 2 (State Avg)" fill="#F0D9A6" radius={[4, 4, 0, 0]} barSize={14} />
         </BarChart>
       </ResponsiveContainer>
     </CardContent>
