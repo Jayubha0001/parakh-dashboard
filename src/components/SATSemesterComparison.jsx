@@ -64,7 +64,9 @@ const SATSemesterComparison = ({ data = [], district = "All" }) => {
   const rows = district !== "All" ? data.filter((d) => d.District === district) : data;
   const stateAverageRow = buildStateAverageRow(data);
 
-  const chartData = rows.map((d) => ({
+  const chartRows = district !== "All" && stateAverageRow ? [...rows, stateAverageRow] : rows;
+
+  const chartData = chartRows.map((d) => ({
     District: d.District,
     "Sem 1": d.Sem1Pct != null ? Number(d.Sem1Pct.toFixed(1)) : null,
     "Sem 2": d.Sem2Pct != null ? Number(d.Sem2Pct.toFixed(1)) : null,

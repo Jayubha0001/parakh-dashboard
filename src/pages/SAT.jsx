@@ -31,6 +31,8 @@ import {
   getSATSubjectHeatmap,
   getSATActionItems,
   getAllDistrictSATActionItems,
+  getSATActionItemsBothSemesters,
+  getAllDistrictSATActionItemsBothSemesters,
   getSATSemesterComparison,
   getSATSem1DistrictRanking,
   getSATSem1GradeWise,
@@ -81,6 +83,8 @@ const SAT = () => {
   const [allDistrictSatItemsSem1, setAllDistrictSatItemsSem1] = useState([]);
 
   const [satSemesterComparison, setSatSemesterComparison] = useState([]);
+  const [satActionItemsAll, setSatActionItemsAll] = useState([]);
+  const [allDistrictSatItemsAll, setAllDistrictSatItemsAll] = useState([]);
   const [district, setDistrict] = useState("All");
   const [loBreakdown, setLoBreakdown] = useState(null);
 
@@ -115,6 +119,8 @@ const SAT = () => {
       setAllDistrictSatItemsSem1(getAllDistrictSATSem1ActionItems(sem1Workbook));
 
       setSatSemesterComparison(getSATSemesterComparison(workbook, sem1Workbook));
+      setSatActionItemsAll(getSATActionItemsBothSemesters(workbook, sem1Workbook));
+      setAllDistrictSatItemsAll(getAllDistrictSATActionItemsBothSemesters(workbook, sem1Workbook));
 
       setLoading(false);
     }
@@ -247,8 +253,9 @@ const SAT = () => {
   const satSubjectHeatmap = semester === "all" ? satSubjectHeatmapAll : semester === "sem1" ? satSubjectHeatmapSem1 : satSubjectHeatmapSem2;
   // Action items don't have a pooled-marks version — Semester 2 is used
   // as the basis whenever "All" is selected.
-  const satActionItems = semester === "sem1" ? satActionItemsSem1 : satActionItemsSem2;
-  const allDistrictSatItems = semester === "sem1" ? allDistrictSatItemsSem1 : allDistrictSatItemsSem2;
+  const satActionItems = semester === "all" ? satActionItemsAll : semester === "sem1" ? satActionItemsSem1 : satActionItemsSem2;
+  const allDistrictSatItems =
+    semester === "all" ? allDistrictSatItemsAll : semester === "sem1" ? allDistrictSatItemsSem1 : allDistrictSatItemsSem2;
 
   const districts = ["All", ...new Set(satRanking.map((d) => d.District))];
 
@@ -299,6 +306,9 @@ const SAT = () => {
     const grades = [...new Set([...satGradeWiseSem2.grades, ...satGradeWiseSem1.grades])];
 
     return grades.map((grade) => {
+      const stateSem1 = satSummarySem1.gradeAverages.find((g) => g.grade === grade)?.average;
+      const stateSem2 = satSummarySem2.gradeAverages.find((g) => g.grade === grade)?.average;
+
       let sem1Value;
       let sem2Value;
 
@@ -306,14 +316,16 @@ const SAT = () => {
         sem1Value = satGradeWiseSem1.data.find((d) => d.District === district)?.[grade];
         sem2Value = satGradeWiseSem2.data.find((d) => d.District === district)?.[grade];
       } else {
-        sem1Value = satSummarySem1.gradeAverages.find((g) => g.grade === grade)?.average;
-        sem2Value = satSummarySem2.gradeAverages.find((g) => g.grade === grade)?.average;
+        sem1Value = stateSem1;
+        sem2Value = stateSem2;
       }
 
       return {
         grade,
         "Sem 1": sem1Value != null ? Number(sem1Value.toFixed(1)) : null,
         "Sem 2": sem2Value != null ? Number(sem2Value.toFixed(1)) : null,
+        "Sem 1 (State Avg)": district !== "All" && stateSem1 != null ? Number(stateSem1.toFixed(1)) : null,
+        "Sem 2 (State Avg)": district !== "All" && stateSem2 != null ? Number(stateSem2.toFixed(1)) : null,
       };
     });
   })();
@@ -581,7 +593,7 @@ const SAT = () => {
         <Card elevation={3} sx={{ mb: 3 }}>
           <CardContent>
             <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-              SAT — Grade-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district}` : " · Gujarat State Average"}
+              SAT — Grade-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district} vs Gujarat State Average` : " · Gujarat State Average"}
             </Typography>
 
             <ResponsiveContainer width="100%" height={340}>
@@ -591,11 +603,17 @@ const SAT = () => {
                 <YAxis domain={[0, 100]} />
                 <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
                 <Legend />
-                <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={30}>
+                <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 18 : 30}>
                   <LabelList dataKey="Sem 1" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 10, fontWeight: "bold", fill: "#555" }} />
                 </Bar>
-                <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={30}>
+                <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 18 : 30}>
                   <LabelList dataKey="Sem 2" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 10, fontWeight: "bold", fill: "#333" }} />
+                </Bar>
+                <Bar dataKey="Sem 1 (State Avg)" fill="#B7C0D1" radius={[4, 4, 0, 0]} barSize={18}>
+                  <LabelList dataKey="Sem 1 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#555" }} />
+                </Bar>
+                <Bar dataKey="Sem 2 (State Avg)" fill="#F0D9A6" radius={[4, 4, 0, 0]} barSize={18}>
+                  <LabelList dataKey="Sem 2 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#333" }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

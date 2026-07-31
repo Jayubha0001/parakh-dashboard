@@ -593,12 +593,12 @@ const buildPARAKHDistrictAction = (districtName, parakhData, subjectHeatmap) => 
   const weakAreas = [
     ...stages
       .filter((s) => s.value * 100 < 45)
-      .map((s) => ({ label: s.label, pct: s.value * 100, recommendation: null })),
+      .map((s) => ({ label: s.label, pct: s.value * 100, band: "Needs Support", recommendation: null })),
     ...subjectPcts
       .filter((s) => s.pct < 45)
       .map((s) => {
         const name = s.col.split(" - ")[1] || s.col;
-        return { label: s.col, pct: s.pct, recommendation: PARAKH_SUBJECT_RECOMMENDATIONS[name] || null };
+        return { label: s.col, pct: s.pct, band: "Needs Support", recommendation: PARAKH_SUBJECT_RECOMMENDATIONS[name] || null };
       }),
   ].sort((a, b) => a.pct - b.pct);
 
@@ -823,7 +823,7 @@ const buildDistrictAction = (districtName, combined, heatmap) => {
   const weakAreas = categoryPcts
     .filter((c) => c.pct < 45)
     .sort((a, b) => a.pct - b.pct)
-    .map((c) => ({ label: c.cat, pct: c.pct, recommendation: PGI_CATEGORY_RECOMMENDATIONS[c.cat] || null }));
+    .map((c) => ({ label: c.cat, pct: c.pct, band: "Needs Support", recommendation: PGI_CATEGORY_RECOMMENDATIONS[c.cat] || null }));
 
   return {
     priority: levelForBand(row.Band),
@@ -1582,32 +1582,18 @@ const buildSATDistrictAction = (districtName, satRanking, satDistrictSubject) =>
     ? [...subjectRows].sort((a, b) => a.PercentAchieved - b.PercentAchieved)[0]
     : null;
 
-  // State average, per subject, computed from every district in the full
-  // dataset (satDistrictSubject isn't pre-filtered to this one district).
-  const stateAvgBySubject = {};
-  satDistrictSubject.forEach((s) => {
-    if (!stateAvgBySubject[s.subject]) stateAvgBySubject[s.subject] = { total: 0, count: 0 };
-    stateAvgBySubject[s.subject].total += s.PercentAchieved;
-    stateAvgBySubject[s.subject].count += 1;
-  });
-
-  // "Weak" here means behind the STATE AVERAGE for that specific subject —
-  // not a fixed cut-off — so a district can be above 60% overall and still
-  // show up here if the state as a whole is ahead of it on that subject.
-  // Every such subject is listed, not just the single weakest one.
+  // Same absolute Strong (≥60%) / Watch (45–59%) / Needs Support (<45%)
+  // bands used everywhere else in the app (SAT_BANDS, the Reports page's
+  // per-LO breakdown, PGI-D, PARAKH) — a subject is "weak" here if it's
+  // under the 60% Strong line, not just relative to how the rest of the
+  // state did. Every such subject is listed, not just the single weakest.
   const weakAreas = subjectRows
-    .map((s) => {
-      const bucket = stateAvgBySubject[s.subject];
-      const stateAvg = bucket && bucket.count ? bucket.total / bucket.count : null;
-      return { ...s, stateAvg, gap: stateAvg != null ? s.PercentAchieved - stateAvg : null };
-    })
-    .filter((s) => s.gap != null && s.gap < 0)
-    .sort((a, b) => a.gap - b.gap)
+    .filter((s) => s.PercentAchieved < 60)
+    .sort((a, b) => a.PercentAchieved - b.PercentAchieved)
     .map((s) => ({
       label: cleanSubjectLabel(s.subject),
       pct: s.PercentAchieved,
-      stateAvg: s.stateAvg,
-      gap: s.gap,
+      band: s.PercentAchieved < 45 ? "Needs Support" : "Watch",
       recommendation:
         SAT_SUBJECT_RECOMMENDATIONS[s.subject] ||
         "Run targeted remedial sessions focused on this district's weakest Learning Outcomes.",
@@ -1934,7 +1920,6 @@ export const getAllDistrictSATSem1ActionItems = (sem1Workbook) => {
 };
 
 export const getSATSemesterComparison = (sem2Workbook, sem1Workbook) => {
-
   const sem2 = getSATDistrictRanking(sem2Workbook);
   const sem1 = getSATSem1DistrictRanking(sem1Workbook);
 
@@ -1964,5 +1949,134 @@ export const getSATSemesterComparison = (sem2Workbook, sem1Workbook) => {
     })
     .sort((a, b) => (b.TotalPct ?? -1) - (a.TotalPct ?? -1))
     .map((d, index) => ({ ...d, Rank: index + 1 }));
+
+};
+
+// -----------------------------
+// SAT — combined (BOTH semesters) weak-subject builder. Each semester is
+// compared against THAT semester's own state average (Sem 1 numbers are
+// naturally different from Sem 2's, so mixing them into one average would
+// be misleading) — a subject shows up here if the district was behind the
+// state on it in Sem 1, in Sem 2, or both, with both semesters' numbers
+// shown side by side rather than collapsed into one combined figure.
+// -----------------------------
+
+// "Weak" here means behind THAT SEMESTER'S OWN state average for that
+// specific subject — not a fixed absolute cut-off — so a subject can show
+// up even if the district's raw score looks fine, if the rest of Gujarat
+// is ahead of it there. Sem 1 and Sem 2 are each compared against their
+// own semester's state average (mixing the two semesters into one average
+// would be misleading, since Sem 1 and Sem 2 scores run at different
+// overall levels).
+const buildWeakAreasBothSemesters = (districtName, subjectRowsSem1, subjectRowsSem2) => {
+
+  const stateAvgBySubject = (rows) => {
+    const bucket = {};
+    rows.forEach((s) => {
+      if (!bucket[s.subject]) bucket[s.subject] = { total: 0, count: 0 };
+      bucket[s.subject].total += s.PercentAchieved;
+      bucket[s.subject].count += 1;
+    });
+    return bucket;
+  };
+
+  const sem1StateAvgBySubject = stateAvgBySubject(subjectRowsSem1);
+  const sem2StateAvgBySubject = stateAvgBySubject(subjectRowsSem2);
+
+  const sem1BySubject = Object.fromEntries(
+    subjectRowsSem1.filter((s) => s.District === districtName).map((s) => [s.subject, s.PercentAchieved])
+  );
+  const sem2BySubject = Object.fromEntries(
+    subjectRowsSem2.filter((s) => s.District === districtName).map((s) => [s.subject, s.PercentAchieved])
+  );
+
+  const subjects = new Set([...Object.keys(sem1BySubject), ...Object.keys(sem2BySubject)]);
+
+  return [...subjects]
+    .map((subject) => {
+      const sem1Pct = sem1BySubject[subject] ?? null;
+      const sem2Pct = sem2BySubject[subject] ?? null;
+
+      const b1 = sem1StateAvgBySubject[subject];
+      const sem1StateAvg = b1 && b1.count ? b1.total / b1.count : null;
+      const sem1Gap = sem1Pct != null && sem1StateAvg != null ? sem1Pct - sem1StateAvg : null;
+
+      const b2 = sem2StateAvgBySubject[subject];
+      const sem2StateAvg = b2 && b2.count ? b2.total / b2.count : null;
+      const sem2Gap = sem2Pct != null && sem2StateAvg != null ? sem2Pct - sem2StateAvg : null;
+
+      return {
+        label: cleanSubjectLabel(subject),
+        sem1Pct,
+        sem1StateAvg,
+        sem1Gap,
+        sem2Pct,
+        sem2StateAvg,
+        sem2Gap,
+        recommendation:
+          SAT_SUBJECT_RECOMMENDATIONS[subject] ||
+          "Run targeted remedial sessions focused on this district's weakest Learning Outcomes.",
+      };
+    })
+    .filter((e) => (e.sem1Gap != null && e.sem1Gap < 0) || (e.sem2Gap != null && e.sem2Gap < 0))
+    .sort((a, b) => Math.min(a.sem1Gap ?? 0, a.sem2Gap ?? 0) - Math.min(b.sem1Gap ?? 0, b.sem2Gap ?? 0));
+
+};
+
+const buildSATDistrictActionCombined = (districtName, satRankingAll, subjectRowsSem1, subjectRowsSem2) => {
+
+  const row = satRankingAll.find((d) => d.District === districtName);
+  if (!row) return null;
+
+  const weakAreas = buildWeakAreasBothSemesters(districtName, subjectRowsSem1, subjectRowsSem2);
+  const weakestSubject = weakAreas[0] || null;
+
+  const priority = row.PercentAchieved < 45 ? "CRITICAL" : row.PercentAchieved < 55 ? "HIGH" : "MEDIUM";
+
+  return {
+    priority,
+    icon: "📝",
+    title: `${districtName} — SAT Focus`,
+    description: `SAT Overall Score ${row.PercentAchieved.toFixed(1)}% (Rank ${row.Rank}/${satRankingAll.length})${
+      weakestSubject ? ` · Weakest subject: ${weakestSubject.label}` : ""
+    }`,
+    recommendation: weakestSubject ? weakestSubject.recommendation : null,
+    district: districtName,
+    percent: row.PercentAchieved,
+    rank: row.Rank,
+    total: satRankingAll.length,
+    metric: "SAT Score",
+    weakAreas,
+    dualSemester: true,
+  };
+
+};
+
+export const getSATActionItemsBothSemesters = (sem2Workbook, sem1Workbook) => {
+
+  const comparison = getSATSemesterComparison(sem2Workbook, sem1Workbook);
+  const satRankingAll = comparison.map((d) => ({ District: d.District, PercentAchieved: d.TotalPct ?? 0, Rank: d.Rank }));
+  const subjectRowsSem1 = getSATSem1DistrictSubjectWise(sem1Workbook);
+  const subjectRowsSem2 = getSATDistrictSubjectWise(sem2Workbook);
+
+  const items = PRIORITY_DISTRICTS
+    .map((districtName) => buildSATDistrictActionCombined(districtName, satRankingAll, subjectRowsSem1, subjectRowsSem2))
+    .filter(Boolean);
+
+  const order = { CRITICAL: 0, HIGH: 1, MEDIUM: 2 };
+  return items.sort((a, b) => order[a.priority] - order[b.priority]);
+
+};
+
+export const getAllDistrictSATActionItemsBothSemesters = (sem2Workbook, sem1Workbook) => {
+
+  const comparison = getSATSemesterComparison(sem2Workbook, sem1Workbook);
+  const satRankingAll = comparison.map((d) => ({ District: d.District, PercentAchieved: d.TotalPct ?? 0, Rank: d.Rank }));
+  const subjectRowsSem1 = getSATSem1DistrictSubjectWise(sem1Workbook);
+  const subjectRowsSem2 = getSATDistrictSubjectWise(sem2Workbook);
+
+  return satRankingAll
+    .map((d) => buildSATDistrictActionCombined(d.District, satRankingAll, subjectRowsSem1, subjectRowsSem2))
+    .filter(Boolean);
 
 };

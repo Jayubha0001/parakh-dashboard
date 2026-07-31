@@ -1,16 +1,23 @@
+import { Fragment } from "react";
 import { Card, CardContent, Typography, Box, Chip } from "@mui/material";
 import { colors, fontDisplay, fontMono } from "../theme/theme";
 
 // ---------------------------------------------------------------------------
 // Single shared "District x Column %" heat-map table.
 //
-// SAT, PGI, and Subject-mastery each used to have their own near-duplicate
-// copy of this table (different band thresholds, different column sets) —
-// that's why the three pages didn't look or behave quite the same. This is
-// now the ONE place the layout/logic lives; each page only supplies its own
-// data + band thresholds + labels as props, so the underlying behaviour
-// (sticky first column, coloured proportional pills, ⭐ State Average row
-// pinned at the bottom, legend chips) stays identical everywhere.
+// v2: flat, solid-colour badges instead of proportional "fill bar" pills.
+// The old fill-bar design put a colour boundary partway THROUGH the text
+// whenever a value wasn't near 0% or 100% (worse in the dual Sem1/Sem2
+// cells, where each mini-pill was only ~20px tall) — that's what made the
+// numbers hard to read. A badge is just one flat background colour with a
+// pre-defined readable text colour (the same pair already used for the
+// legend chips above the table), so there's no boundary to render through
+// at any screen size or zoom level.
+//
+// Dual-period mode (Sem 1 vs Sem 2) is now laid out as two real
+// side-by-side sub-columns under a grouped header, instead of two tiny
+// stacked pills squeezed into one cell — plain spreadsheet-style columns,
+// easier to scan than a miniaturised chart-in-a-cell.
 // ---------------------------------------------------------------------------
 
 const average = (rows, getValue) => {
@@ -20,81 +27,48 @@ const average = (rows, getValue) => {
 
 const bandFor = (bands, pct) => bands.find((b) => pct >= b.min) || bands[bands.length - 1];
 
-// One coloured, proportional-fill percentage cell. Text colour is chosen
-// for guaranteed contrast against whichever part of the pill it lands on —
-// solid white on the filled (coloured) portion, solid dark ink on the
-// unfilled (light) portion — instead of the old text-shadow "halo" trick,
-// which could render as invisible at some browser zoom levels / screen
-// sizes (the bug where the % just disappeared on larger screens).
-const Pill = ({ pct, bands, height = 22, fontSize = 12, bold = false }) => {
+// One flat, solid-colour percentage badge.
+const Badge = ({ pct, bands, bold = false, compact = false }) => {
   if (pct == null || Number.isNaN(pct)) {
     return (
-      <Box sx={{ borderRadius: 1.5, bgcolor: "#F0F1F5", height, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Typography sx={{ fontSize: fontSize - 1, color: "#9AA5B1" }}>—</Typography>
+      <Box
+        sx={{
+          borderRadius: 1.5,
+          bgcolor: "#F0F1F5",
+          height: compact ? 24 : 28,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Typography sx={{ fontSize: 11, color: "#9AA5B1" }}>—</Typography>
       </Box>
     );
   }
 
   const band = bandFor(bands, pct);
-  const fillWidth = Math.min(100, Math.max(0, pct));
-  const textColor = fillWidth >= 50 ? "#FFFFFF" : "#16233B";
 
   return (
     <Box
       sx={{
-        position: "relative",
         borderRadius: 1.5,
         bgcolor: band.bg,
-        overflow: "hidden",
-        height,
-        border: bold ? `1px solid ${band.bar}` : "none",
+        color: band.text,
+        height: compact ? 24 : 28,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        whiteSpace: "nowrap",
+        fontFamily: fontMono,
+        fontWeight: bold ? 800 : 700,
+        fontSize: compact ? 11.5 : 12.5,
+        border: bold ? `1.5px solid ${band.text}` : "none",
       }}
     >
-      <Box sx={{ position: "absolute", inset: 0, width: `${fillWidth}%`, bgcolor: band.bar }} />
-      <Box
-        sx={{
-          position: "relative",
-          zIndex: 1,
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          whiteSpace: "nowrap",
-          fontFamily: fontMono,
-          fontWeight: bold ? 800 : 700,
-          fontSize,
-          color: textColor,
-        }}
-      >
-        {pct.toFixed(1)}%
-      </Box>
+      {pct.toFixed(1)}%
     </Box>
   );
 };
-
-// One cell for the dual-period view (e.g. Sem 1 / Sem 2 side by side): a
-// small fixed-width period label sitting OUTSIDE the pill, so the pill
-// itself keeps its full width free for the number.
-const LabeledPill = ({ label, pct, bands, bold = false }) => (
-  <Box sx={{ display: "flex", alignItems: "center", gap: "6px" }}>
-    <Typography
-      sx={{
-        fontFamily: fontMono,
-        fontSize: 10,
-        fontWeight: 700,
-        color: "#5B6B85",
-        width: 16,
-        flexShrink: 0,
-        textAlign: "right",
-      }}
-    >
-      {label}
-    </Typography>
-    <Box sx={{ flex: 1, minWidth: 0 }}>
-      <Pill pct={pct} bands={bands} height={20} fontSize={11.5} bold={bold} />
-    </Box>
-  </Box>
-);
 
 const stickyHeaderCell = {
   position: "sticky",
@@ -104,7 +78,7 @@ const stickyHeaderCell = {
   padding: "10px 12px",
   textAlign: "left",
   minWidth: 150,
-  zIndex: 1,
+  zIndex: 2,
   fontFamily: fontMono,
   letterSpacing: 0.5,
   fontSize: 11,
@@ -119,6 +93,7 @@ const stickyBodyCell = {
   fontWeight: 600,
   color: colors.ink,
   borderBottom: "1px solid #EEF0F5",
+  zIndex: 1,
 };
 
 const HeatMapTable = ({
@@ -132,7 +107,7 @@ const HeatMapTable = ({
   allData = null,
   getValue = (row, col) => row[col],
   cellTitle = null,
-  // Dual-period mode (e.g. Semester 1 vs Semester 2 in the same cell)
+  // Dual-period mode (e.g. Semester 1 vs Semester 2, side by side)
   data2 = null,
   allData2 = null,
   label = "S1",
@@ -167,23 +142,27 @@ const HeatMapTable = ({
           <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12 }}>
             <thead>
               <tr>
-                <th style={stickyHeaderCell}>District</th>
+                <th style={stickyHeaderCell} rowSpan={dual ? 2 : 1}>
+                  District
+                </th>
                 {columns.map((col) => {
                   const isAvg = isAverageColumn(col);
                   return (
                     <th
                       key={col}
+                      colSpan={dual ? 2 : 1}
+                      rowSpan={dual ? 1 : 1}
                       style={{
                         background: isAvg ? colors.navyLight : colors.navy,
                         color: "#fff",
                         padding: "10px 8px",
-                        minWidth: dual ? 150 : isAvg ? 100 : 112,
+                        minWidth: dual ? 140 : isAvg ? 100 : 112,
                         whiteSpace: "nowrap",
                         fontFamily: fontMono,
                         letterSpacing: 0.5,
                         fontSize: 11,
                         textTransform: "uppercase",
-                        borderLeft: isAvg ? `2px solid ${colors.gold}` : "none",
+                        borderLeft: isAvg ? `2px solid ${colors.gold}` : "1px solid rgba(255,255,255,0.15)",
                       }}
                     >
                       {isAvg ? "⭐ " + columnLabel(col) : columnLabel(col)}
@@ -191,6 +170,42 @@ const HeatMapTable = ({
                   );
                 })}
               </tr>
+              {dual && (
+                <tr>
+                  {columns.map((col) => {
+                    const isAvg = isAverageColumn(col);
+                    return (
+                      <Fragment key={col}>
+                        <th
+                          style={{
+                            background: isAvg ? colors.navyLight : "#2C3B57",
+                            color: "#D8DEEA",
+                            padding: "5px 8px",
+                            fontSize: 10,
+                            fontWeight: 700,
+                            fontFamily: fontMono,
+                            borderLeft: isAvg ? `2px solid ${colors.gold}` : "1px solid rgba(255,255,255,0.1)",
+                          }}
+                        >
+                          {label}
+                        </th>
+                        <th
+                          style={{
+                            background: isAvg ? colors.navyLight : "#2C3B57",
+                            color: "#D8DEEA",
+                            padding: "5px 8px",
+                            fontSize: 10,
+                            fontWeight: 700,
+                            fontFamily: fontMono,
+                          }}
+                        >
+                          {label2}
+                        </th>
+                      </Fragment>
+                    );
+                  })}
+                </tr>
+              )}
             </thead>
 
             <tbody>
@@ -203,8 +218,36 @@ const HeatMapTable = ({
 
                     {columns.map((col) => {
                       const pct = getValue(row, col);
-                      const pct2 = dual ? getValue(row2 || {}, col) : null;
                       const isAvg = isAverageColumn(col);
+
+                      if (dual) {
+                        const pct2 = getValue(row2 || {}, col);
+                        return (
+                          <Fragment key={col}>
+                            <td
+                              title={cellTitle ? cellTitle(row, col) : undefined}
+                              style={{
+                                textAlign: "center",
+                                padding: "5px 6px",
+                                borderBottom: "1px solid #EEF0F5",
+                                borderLeft: isAvg ? `2px solid ${colors.gold}` : "none",
+                              }}
+                            >
+                              <Badge pct={pct} bands={bands} bold={isAvg} compact />
+                            </td>
+                            <td
+                              title={cellTitle ? cellTitle(row, col) : undefined}
+                              style={{
+                                textAlign: "center",
+                                padding: "5px 6px",
+                                borderBottom: "1px solid #EEF0F5",
+                              }}
+                            >
+                              <Badge pct={pct2} bands={bands} bold={isAvg} compact />
+                            </td>
+                          </Fragment>
+                        );
+                      }
 
                       return (
                         <td
@@ -217,14 +260,7 @@ const HeatMapTable = ({
                             borderLeft: isAvg ? `2px solid ${colors.gold}` : "none",
                           }}
                         >
-                          {dual ? (
-                            <Box sx={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                              <LabeledPill label={label} pct={pct} bands={bands} />
-                              <LabeledPill label={label2} pct={pct2} bands={bands} />
-                            </Box>
-                          ) : (
-                            <Pill pct={pct} bands={bands} bold={isAvg} />
-                          )}
+                          <Badge pct={pct} bands={bands} bold={isAvg} />
                         </td>
                       );
                     })}
@@ -254,7 +290,20 @@ const HeatMapTable = ({
                 {columns.map((col) => {
                   const isAvg = isAverageColumn(col);
                   const avgPct = average(statsSource, (r) => getValue(r, col));
-                  const avgPct2 = dual ? average(statsSource2, (r) => getValue(r, col)) : null;
+
+                  if (dual) {
+                    const avgPct2 = average(statsSource2, (r) => getValue(r, col));
+                    return (
+                      <Fragment key={col}>
+                        <td style={{ textAlign: "center", padding: "5px 6px", borderLeft: isAvg ? `2px solid ${colors.gold}` : "none" }}>
+                          <Badge pct={avgPct} bands={bands} bold compact />
+                        </td>
+                        <td style={{ textAlign: "center", padding: "5px 6px" }}>
+                          <Badge pct={avgPct2} bands={bands} bold compact />
+                        </td>
+                      </Fragment>
+                    );
+                  }
 
                   return (
                     <td
@@ -265,14 +314,7 @@ const HeatMapTable = ({
                         borderLeft: isAvg ? `2px solid ${colors.gold}` : "none",
                       }}
                     >
-                      {dual ? (
-                        <Box sx={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <LabeledPill label={label} pct={avgPct} bands={bands} bold />
-                          <LabeledPill label={label2} pct={avgPct2} bands={bands} bold />
-                        </Box>
-                      ) : (
-                        <Pill pct={avgPct ?? 0} bands={bands} bold />
-                      )}
+                      <Badge pct={avgPct ?? 0} bands={bands} bold />
                     </td>
                   );
                 })}

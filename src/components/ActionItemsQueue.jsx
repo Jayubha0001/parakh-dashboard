@@ -61,41 +61,84 @@ const DistrictDetailCard = ({ item }) => {
           </Box>
         )}
 
-        {item.weakAreas && item.weakAreas.length > 0 && (
+        {item.weakAreas && item.weakAreas.length > 0 ? (
           <Box sx={{ mt: 2.5, p: 2.5, borderRadius: 2, bgcolor: "#FFFBEF", border: "1px dashed #F0B429" }}>
             <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 16, color: "#16233B", mb: 0.5 }}>
               🎯 Action Points — Weak Subjects ({item.weakAreas.length})
             </Typography>
             <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 1.5 }}>
-              Every subject below is under the 60% Strong line — Watch (45–59%) and Needs Support (&lt;45%) both
-              included, in order from weakest to least-weak.
+              {item.dualSemester
+                ? "Every subject below is behind that semester's own state average — Sem 1 and Sem 2 are compared separately, in order from furthest behind to closest."
+                : item.weakAreas[0]?.stateAvg != null
+                ? "Every subject below is behind the state average for that subject specifically, in order from furthest behind to closest."
+                : "Every subject below is under the 60% Strong line — Watch (45–59%) and Needs Support (<45%) both included, in order from weakest to least-weak."}
             </Typography>
 
             <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
               {item.weakAreas.map((w, i) => (
                 <Box component="li" key={i} sx={{ mb: 1.2 }}>
-                  <Typography sx={{ fontSize: 13.5, color: "#16233B" }}>
-                    <strong>{w.label}</strong>{" "}
-                    <span style={{ color: "#5B6B85", fontSize: 12 }}>
-                      ({w.band === "Needs Support" ? "🔺 Needs Support" : "⚠️ Watch"})
-                    </span>{" "}
-                    — currently{" "}
-                    <span
-                      style={{
-                        fontFamily: '"IBM Plex Mono", monospace',
-                        fontWeight: 700,
-                        color: w.band === "Needs Support" ? "#B71C1C" : "#B05F00",
-                      }}
-                    >
-                      {w.pct.toFixed(1)}%
-                    </span>
-                    . {w.recommendation}
-                  </Typography>
+                  {item.dualSemester ? (
+                    <Typography sx={{ fontSize: 13.5, color: "#16233B" }}>
+                      <strong>{w.label}</strong>{" "}
+                      <span style={{ color: "#5B6B85", fontSize: 12 }}>(vs state average)</span>
+                      {" — "}
+                      <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12.5 }}>
+                        S1:{" "}
+                        <strong style={{ color: w.sem1Gap != null && w.sem1Gap < 0 ? "#B71C1C" : "#16233B" }}>
+                          {w.sem1Pct != null ? `${w.sem1Pct.toFixed(1)}%` : "—"}
+                        </strong>
+                        {w.sem1StateAvg != null && ` (state ${w.sem1StateAvg.toFixed(1)}%)`}
+                        {" · "}
+                        S2:{" "}
+                        <strong style={{ color: w.sem2Gap != null && w.sem2Gap < 0 ? "#B71C1C" : "#16233B" }}>
+                          {w.sem2Pct != null ? `${w.sem2Pct.toFixed(1)}%` : "—"}
+                        </strong>
+                        {w.sem2StateAvg != null && ` (state ${w.sem2StateAvg.toFixed(1)}%)`}
+                      </span>
+                      . {w.recommendation}
+                    </Typography>
+                  ) : w.stateAvg != null ? (
+                    <Typography sx={{ fontSize: 13.5, color: "#16233B" }}>
+                      <strong>{w.label}</strong>{" "}
+                      <span style={{ color: "#5B6B85", fontSize: 12 }}>(🔻 below state average)</span>{" "}
+                      — currently{" "}
+                      <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, color: "#B71C1C" }}>
+                        {w.pct.toFixed(1)}%
+                      </span>{" "}
+                      <span style={{ color: "#5B6B85", fontSize: 12 }}>(state avg {w.stateAvg.toFixed(1)}%)</span>
+                      . {w.recommendation}
+                    </Typography>
+                  ) : (
+                    <Typography sx={{ fontSize: 13.5, color: "#16233B" }}>
+                      <strong>{w.label}</strong>{" "}
+                      <span style={{ color: "#5B6B85", fontSize: 12 }}>
+                        ({w.band === "Needs Support" ? "🔺 Needs Support" : "⚠️ Watch"})
+                      </span>{" "}
+                      — currently{" "}
+                      <span
+                        style={{
+                          fontFamily: '"IBM Plex Mono", monospace',
+                          fontWeight: 700,
+                          color: w.band === "Needs Support" ? "#B71C1C" : "#B05F00",
+                        }}
+                      >
+                        {w.pct.toFixed(1)}%
+                      </span>
+                      . {w.recommendation}
+                    </Typography>
+                  )}
                 </Box>
               ))}
             </Box>
           </Box>
-        )}
+        ) : item.weakAreas ? (
+          <Box sx={{ mt: 2.5, p: 2.5, borderRadius: 2, bgcolor: "#EEF7EE", border: "1px solid #C9E6C9" }}>
+            <Typography sx={{ fontSize: 13.5, color: "#1B5E20", fontWeight: 600 }}>
+              ✅ No weak subjects found — {item.district} is at or above{" "}
+              {item.dualSemester ? "the state average, in both semesters," : "the relevant line"} on every subject.
+            </Typography>
+          </Box>
+        ) : null}
       </Box>
     </Box>
   );

@@ -452,6 +452,9 @@ const satGradeComparisonChartData = (() => {
   const grades = [...new Set([...satGradeWiseSem2.grades, ...satGradeWiseSem1.grades])];
 
   return grades.map((grade) => {
+    const stateSem1 = satSummarySem1.gradeAverages.find((g) => g.grade === grade)?.average;
+    const stateSem2 = satSummarySem2.gradeAverages.find((g) => g.grade === grade)?.average;
+
     let sem1Value;
     let sem2Value;
 
@@ -459,14 +462,16 @@ const satGradeComparisonChartData = (() => {
       sem1Value = satGradeWiseSem1.data.find((d) => d.District === district)?.[grade];
       sem2Value = satGradeWiseSem2.data.find((d) => d.District === district)?.[grade];
     } else {
-      sem1Value = satSummarySem1.gradeAverages.find((g) => g.grade === grade)?.average;
-      sem2Value = satSummarySem2.gradeAverages.find((g) => g.grade === grade)?.average;
+      sem1Value = stateSem1;
+      sem2Value = stateSem2;
     }
 
     return {
       grade,
       "Sem 1": sem1Value != null ? Number(sem1Value.toFixed(1)) : null,
       "Sem 2": sem2Value != null ? Number(sem2Value.toFixed(1)) : null,
+      "Sem 1 (State Avg)": district !== "All" && stateSem1 != null ? Number(stateSem1.toFixed(1)) : null,
+      "Sem 2 (State Avg)": district !== "All" && stateSem2 != null ? Number(stateSem2.toFixed(1)) : null,
     };
   });
 })();
@@ -1138,31 +1143,11 @@ const satSubjectComparisonChartData = (() => {
   ))}
 </Grid>
 
-<Card elevation={3}>
-  <CardContent>
-    <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-      District-wise SAT Overall Performance (%) · Semester 1 vs Semester 2
-    </Typography>
-
-    <ResponsiveContainer width="100%" height={460}>
-      <BarChart data={satDistrictComparisonChartData} margin={{ top: 30, right: 30, left: 20, bottom: 100 }}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="District" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 10 }} />
-        <YAxis domain={[0, 100]} />
-        <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
-        <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: 12 }} />
-        <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
-        <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
-      </BarChart>
-    </ResponsiveContainer>
-  </CardContent>
-</Card>
-
 {satGradeComparisonChartData.length > 0 && (
   <Card elevation={3} sx={{ mt: 3 }}>
     <CardContent>
       <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-        SAT — Grade-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district}` : " · Gujarat State Average"}
+        SAT — Grade-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district} vs Gujarat State Average` : " · Gujarat State Average"}
       </Typography>
 
       <ResponsiveContainer width="100%" height={340}>
@@ -1172,8 +1157,10 @@ const satSubjectComparisonChartData = (() => {
           <YAxis domain={[0, 100]} />
           <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
           <Legend />
-          <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={30} />
-          <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={30} />
+          <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 18 : 30} />
+          <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 18 : 30} />
+          <Bar dataKey="Sem 1 (State Avg)" fill="#D8DCE5" radius={[4, 4, 0, 0]} barSize={18} />
+          <Bar dataKey="Sem 2 (State Avg)" fill="#DCC4EE" radius={[4, 4, 0, 0]} barSize={18} />
         </BarChart>
       </ResponsiveContainer>
     </CardContent>
