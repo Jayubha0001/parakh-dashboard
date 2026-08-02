@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { Box, Grid, Paper, Card, CardContent, Typography, ToggleButtonGroup, ToggleButton } from "@mui/material";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import LocationCityIcon from "@mui/icons-material/LocationCity";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import PriorityHighIcon from "@mui/icons-material/PriorityHigh";
 import {
   ResponsiveContainer,
   BarChart,
@@ -15,7 +19,6 @@ import {
 import DashboardLayout from "../components/DashboardLayout";
 import Header from "../components/Header";
 import HeatMapTable from "../components/HeatMapTable";
-import SATSemesterComparison from "../components/SATSemesterComparison";
 import Loading from "../components/Loading";
 import DistrictFilterBar from "../components/DistrictFilterBar";
 import ActionItemsQueue from "../components/ActionItemsQueue";
@@ -297,10 +300,21 @@ const SAT = () => {
   // KPI cards, leaderboard, table, and action items).
   // -----------------------------
 
+  const stateSem1AvgAll = (() => {
+    const vals = satSemesterComparison.map((d) => d.Sem1Pct).filter((v) => v != null);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  })();
+  const stateSem2AvgAll = (() => {
+    const vals = satSemesterComparison.map((d) => d.Sem2Pct).filter((v) => v != null);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  })();
+
   const districtComparisonChartAll = satSemesterComparison.map((d) => ({
     District: d.District,
     "Sem 1": d.Sem1Pct != null ? Number(d.Sem1Pct.toFixed(1)) : null,
     "Sem 2": d.Sem2Pct != null ? Number(d.Sem2Pct.toFixed(1)) : null,
+    "Sem 1 (State Avg)": district !== "All" && stateSem1AvgAll != null ? Number(stateSem1AvgAll.toFixed(1)) : null,
+    "Sem 2 (State Avg)": district !== "All" && stateSem2AvgAll != null ? Number(stateSem2AvgAll.toFixed(1)) : null,
   }));
 
   const districtComparisonChartData =
@@ -463,48 +477,118 @@ const SAT = () => {
       />
 
       {/* KPI Cards */}
-      <Grid container spacing={2} mb={2}>
+      <Grid container spacing={1.5} mb={2}>
         {[
-          { label: "State Average", value: `${satSummary.stateAverage.toFixed(1)}%`, accent: colors.gold },
-          { label: "Districts Assessed", value: satSummary.totalDistricts, accent: "#1976D2" },
-          { label: "Top District", value: topDistrict?.District || "-", sub: `${topDistrict?.PercentAchieved?.toFixed(1) || 0}%`, accent: "#2E7D32" },
-          { label: "Needs Support", value: lowestDistrict?.District || "-", sub: `${lowestDistrict?.PercentAchieved?.toFixed(1) || 0}%`, accent: "#D32F2F" },
+          {
+            label: "State Average",
+            value: `${satSummary.stateAverage.toFixed(1)}%`,
+            gradient: `linear-gradient(135deg, ${colors.navy}, ${colors.navyLight})`,
+            Icon: TrendingUpIcon,
+          },
+          {
+            label: "Districts Assessed",
+            value: satSummary.totalDistricts,
+            gradient: "linear-gradient(135deg, #6A3DB8, #9B6DE0)",
+            Icon: LocationCityIcon,
+          },
+          {
+            label: "Top District",
+            value: topDistrict?.District || "-",
+            sub: `${topDistrict?.PercentAchieved?.toFixed(1) || 0}%`,
+            gradient: "linear-gradient(135deg, #1F8A70, #3FB897)",
+            Icon: EmojiEventsIcon,
+          },
+          {
+            label: "Needs Support",
+            value: lowestDistrict?.District || "-",
+            sub: `${lowestDistrict?.PercentAchieved?.toFixed(1) || 0}%`,
+            gradient: "linear-gradient(135deg, #D32F2F, #E5737E)",
+            Icon: PriorityHighIcon,
+          },
         ].map((kpi) => (
           <Grid size={{ xs: 6, md: 3 }} key={kpi.label}>
-            <Card sx={{ borderRadius: 3, boxShadow: 3, height: "100%" }}>
-              <CardContent>
-                <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{kpi.label.toUpperCase()}</Typography>
-                <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 24, color: "#16233B" }}>
-                  {kpi.value}
+            <Paper
+              elevation={0}
+              sx={{
+                borderRadius: 2.5,
+                background: kpi.gradient,
+                color: "#fff",
+                height: "100%",
+                p: 1.4,
+                display: "flex",
+                alignItems: "center",
+                gap: 1.1,
+                boxShadow: "0 4px 10px rgba(15,23,42,0.10)",
+              }}
+            >
+              <Box
+                sx={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  bgcolor: "rgba(255,255,255,0.22)",
+                  flexShrink: 0,
+                }}
+              >
+                <kpi.Icon sx={{ fontSize: 16 }} />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography sx={{ fontSize: 10.5, opacity: 0.9, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, lineHeight: 1.2 }}>
+                  {kpi.label}
                 </Typography>
-                {kpi.sub && (
-                  <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, fontWeight: 700, color: kpi.accent }}>
-                    {kpi.sub}
+                <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.6 }}>
+                  <Typography
+                    sx={{
+                      fontFamily: fontDisplay,
+                      fontWeight: 700,
+                      fontSize: 18,
+                      lineHeight: 1.3,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {kpi.value}
                   </Typography>
-                )}
-              </CardContent>
-            </Card>
+                  {kpi.sub && (
+                    <Typography sx={{ fontFamily: fontMono, fontSize: 11.5, fontWeight: 700, opacity: 0.95 }}>
+                      {kpi.sub}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            </Paper>
           </Grid>
         ))}
       </Grid>
 
       {/* Grade-wise state overview */}
-      <Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", p: 3, mb: 3 }}>
-        <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 17, mb: 2, color: "#16233B" }}>
+      <Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", borderLeft: `4px solid ${colors.navy}`, p: 2.25, mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5 }}>
+          <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: colors.navy }} />
+          <Typography sx={{ fontFamily: fontMono, fontSize: 10.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: colors.navy }}>
+            Grade breakdown
+          </Typography>
+        </Box>
+        <Typography sx={{ fontFamily: fontDisplay, fontWeight: 600, fontSize: 17, mb: 2, color: "#16233B" }}>
           Grade-wise State Average
         </Typography>
         <Grid container spacing={1}>
           {satGradeWise.grades.map((grade) => {
             const avg = satSummary.gradeAverages.find((g) => g.grade === grade)?.average || 0;
+            const band = avg >= 60 ? "#1F8A70" : avg >= 45 ? colors.gold : "#D32F2F";
             return (
               <Grid size={{ xs: 6, md: 2 }} key={grade}>
-                <Box sx={{ p: 1.2 }}>
-                  <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{grade}</Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Box sx={{ flex: 1, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
-                      <Box sx={{ width: `${Math.min(avg, 100)}%`, height: "100%", bgcolor: colors.gold }} />
+                <Box sx={{ p: 1.2, borderRadius: 2, "&:hover": { bgcolor: "#FAFBFD" } }}>
+                  <Typography sx={{ fontSize: 11, color: colors.slate, fontWeight: 600 }}>{grade}</Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
+                    <Box sx={{ flex: 1, height: 7, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
+                      <Box sx={{ width: `${Math.min(avg, 100)}%`, height: "100%", bgcolor: band, borderRadius: 4 }} />
                     </Box>
-                    <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 700, width: 34 }}>
+                    <Typography sx={{ fontFamily: fontMono, fontSize: 11.5, fontWeight: 700, width: 34, color: band }}>
                       {avg.toFixed(0)}%
                     </Typography>
                   </Box>
@@ -516,15 +600,21 @@ const SAT = () => {
       </Paper>
 
       {/* Leaderboard: Top 5 / Needs Support */}
-      <Grid container spacing={3} mb={3}>
+      <Grid container spacing={2} mb={2.5}>
         {[
-          { title: "Top SAT Districts", icon: "🎯", data: top5, rankBase: 1 },
-          { title: "SAT — Needs Support", icon: "📉", data: bottom5, rankBase: satSummary.totalDistricts || 33, reverse: true },
+          { title: "Top SAT Districts", icon: "🎯", data: top5, rankBase: 1, accent: "#1F8A70" },
+          { title: "SAT — Needs Support", icon: "📉", data: bottom5, rankBase: satSummary.totalDistricts || 33, reverse: true, accent: "#D32F2F" },
         ].map((panel) => (
           <Grid size={{ xs: 12, sm: 6 }} key={panel.title}>
-            <Card sx={{ borderRadius: 3, boxShadow: 3, height: "100%" }}>
+            <Card sx={{ borderRadius: 3, boxShadow: 3, borderLeft: `4px solid ${panel.accent}`, height: "100%" }}>
               <CardContent>
-                <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.25 }}>
+                  <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: panel.accent }} />
+                  <Typography sx={{ fontFamily: fontMono, fontSize: 10.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: panel.accent }}>
+                    {panel.reverse ? "Attention needed" : "Leading the state"}
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontFamily: fontDisplay, fontWeight: 600, fontSize: 18, mb: 2 }}>
                   {panel.icon} {panel.title}
                 </Typography>
 
@@ -604,13 +694,17 @@ const SAT = () => {
         <DistrictFilterBar district={district} setDistrict={setDistrict} districts={districts} />
       </Box>
 
-      <SATSemesterComparison data={satSemesterComparison} district={district} />
-
       {/* District-wise bar chart — Sem 1 vs Sem 2, always both */}
-      <Card elevation={3} sx={{ mb: 3 }}>
+      <Card elevation={0} sx={{ mb: 2.5, borderRadius: 3, border: "1px solid #E4E7F0", borderLeft: `4px solid ${colors.navy}`, boxShadow: "none" }}>
         <CardContent>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-            District-wise SAT Overall Performance (%) · Semester 1 vs Semester 2
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5 }}>
+            <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: colors.navy }} />
+            <Typography sx={{ fontFamily: fontMono, fontSize: 10.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: colors.navy }}>
+              District level
+            </Typography>
+          </Box>
+          <Typography sx={{ fontFamily: fontDisplay, fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
+            District-wise SAT Overall Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district} vs Gujarat State Average` : ""}
           </Typography>
 
           <ResponsiveContainer width="100%" height={460}>
@@ -622,6 +716,12 @@ const SAT = () => {
               <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: 12 }} />
               <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
               <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
+              <Bar dataKey="Sem 1 (State Avg)" fill="#B7C0D1" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10}>
+                <LabelList dataKey="Sem 1 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 11, fontWeight: "bold", fill: "#555" }} />
+              </Bar>
+              <Bar dataKey="Sem 2 (State Avg)" fill="#F0D9A6" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10}>
+                <LabelList dataKey="Sem 2 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 11, fontWeight: "bold", fill: "#333" }} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -629,9 +729,15 @@ const SAT = () => {
 
       {/* Grade-wise bar chart — Sem 1 vs Sem 2, always both */}
       {gradeComparisonChartData.length > 0 && (
-        <Card elevation={3} sx={{ mb: 3 }}>
+        <Card elevation={0} sx={{ mb: 2.5, borderRadius: 3, border: "1px solid #E4E7F0", borderLeft: `4px solid ${colors.teal}`, boxShadow: "none" }}>
           <CardContent>
-            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5 }}>
+              <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: colors.teal }} />
+              <Typography sx={{ fontFamily: fontMono, fontSize: 10.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: colors.teal }}>
+                Grade level
+              </Typography>
+            </Box>
+            <Typography sx={{ fontFamily: fontDisplay, fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
               SAT — Grade-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district} vs Gujarat State Average` : " · Gujarat State Average"}
             </Typography>
 
@@ -662,9 +768,15 @@ const SAT = () => {
 
       {/* Subject-wise bar chart — Sem 1 vs Sem 2, plus district-vs-state when filtered */}
       {subjectComparisonChartData.length > 0 && (
-        <Card elevation={3} sx={{ mb: 3 }}>
+        <Card elevation={0} sx={{ mb: 2.5, borderRadius: 3, border: "1px solid #E4E7F0", borderLeft: `4px solid ${colors.gold}`, boxShadow: "none" }}>
           <CardContent>
-            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5 }}>
+              <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: colors.gold }} />
+              <Typography sx={{ fontFamily: fontMono, fontSize: 10.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "#B07A00" }}>
+                Subject level
+              </Typography>
+            </Box>
+            <Typography sx={{ fontFamily: fontDisplay, fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
               SAT — Subject-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district} vs Gujarat State Average` : " · Gujarat State-wide"}
             </Typography>
 

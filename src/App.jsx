@@ -7,6 +7,7 @@ import SAT from "./pages/SAT";
 import Comparison from "./pages/Comparison";
 import PMShri from "./pages/PMShri";
 import Reports from "./pages/Reports";
+import LiveVisits from "./pages/LiveVisits";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/sat" element={<SAT />} />
         <Route path="/comparison" element={<Comparison />} />
         <Route path="/pmshri" element={<PMShri />} />
+        <Route path="/live-visits" element={<LiveVisits />} />
         <Route path="/reports" element={<Reports />} />
       </Routes>
     </BrowserRouter>

@@ -68,7 +68,11 @@ import {
   getSATSem1SubjectWise,
   getSATDistrictSubjectWise,
   getSATSem1DistrictSubjectWise,
+  getDistrictPGIIndicators,
+  getDistrictCompetencies,
+  getSATDistrictLOBreakdown,
 } from "../services/dataService";
+import { PGIIndicatorSection, PARAKHCompetencySection, SATLOBreakdownSection } from "../components/DistrictDeepDive";
 
 const Dashboard = () => {
   // -----------------------------
@@ -112,6 +116,14 @@ const Dashboard = () => {
   const [stage, setStage] = useState("Overall");
 
   const [subject, setSubject] = useState("Overall");
+
+  // District-scoped "weakest indicators" deep-dive — combines all three
+  // domains (PGI, PARAKH, SAT) that this Dashboard page already summarizes,
+  // so picking a district here shows the same weakest-indicator lists each
+  // domain's own page shows, without having to visit all three separately.
+  const [districtPgiIndicators, setDistrictPgiIndicators] = useState(null);
+  const [districtCompetencies, setDistrictCompetencies] = useState(null);
+  const [districtLoBreakdown, setDistrictLoBreakdown] = useState(null);
 
   // -----------------------------
   // Load Excel
@@ -161,6 +173,32 @@ const Dashboard = () => {
     fetchData();
 
   }, []);
+
+  // Full PGI / PARAKH / SAT indicator-level breakdowns for whichever
+  // district is picked in the filter above — loadExcel() is cached, so
+  // this is cheap even though it looks like a second load.
+  useEffect(() => {
+    if (district === "All") {
+      setDistrictPgiIndicators(null);
+      setDistrictCompetencies(null);
+      setDistrictLoBreakdown(null);
+      return;
+    }
+    let cancelled = false;
+    loadExcel().then((workbook) => {
+      if (cancelled) return;
+      setDistrictPgiIndicators(getDistrictPGIIndicators(workbook, district));
+      setDistrictCompetencies({
+        g3: getDistrictCompetencies(workbook, "PARAKH_Foundational_G3", district),
+        g6: getDistrictCompetencies(workbook, "PARAKH_Preparatory_G6", district),
+        g9: getDistrictCompetencies(workbook, "PARAKH_Middle_G9", district),
+      });
+      setDistrictLoBreakdown(getSATDistrictLOBreakdown(workbook, district));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [district]);
 
   // -----------------------------
   // District List
@@ -1121,6 +1159,51 @@ const satSubjectComparisonChartData = (() => {
 )}
 
 <SATSemesterComparison data={satSemesterComparison} district={district} />
+
+{district !== "All" && (districtPgiIndicators?.overall || districtCompetencies || districtLoBreakdown?.length > 0) && (
+  <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+    <CardContent>
+      <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 20, color: "#16233B", mb: 0.5 }}>
+        🔎 {district} — Weakest Indicators, Across PGI, PARAKH & SAT
+      </Typography>
+      <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 3 }}>
+        The same weakest-indicator breakdown each individual page shows, combined here since this Dashboard already
+        covers all three.
+      </Typography>
+
+      {districtPgiIndicators?.overall && (
+        <>
+          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 17, color: "#16233B", mb: 1 }}>
+            🏛️ PGI-D 2.0 — Full Indicator Breakdown (70 Indicators)
+          </Typography>
+          <PGIIndicatorSection
+            indicators={districtPgiIndicators.indicators}
+            domainSummary={districtPgiIndicators.domainSummary}
+            overall={districtPgiIndicators.overall}
+          />
+        </>
+      )}
+
+      {districtCompetencies && (
+        <>
+          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 17, color: "#16233B", mt: 4, mb: 1 }}>
+            📖 PARAKH — Competency-wise Mastery vs National Benchmark
+          </Typography>
+          <PARAKHCompetencySection competencies={districtCompetencies} />
+        </>
+      )}
+
+      {districtLoBreakdown?.length > 0 && (
+        <>
+          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 17, color: "#16233B", mt: 4, mb: 1 }}>
+            📝 SAT — Learning-Outcome Breakdown
+          </Typography>
+          <SATLOBreakdownSection los={districtLoBreakdown} />
+        </>
+      )}
+    </CardContent>
+  </Card>
+)}
 
 <ActionItemsQueue
   items={actionItems}

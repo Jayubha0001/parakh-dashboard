@@ -168,32 +168,44 @@ const DistrictCompareView = ({
   // One combined "weak spots" list across all three detail boxes above —
   // same treatment as the Reports page's Weakest Indicators list, just
   // scoped to whichever two districts are being compared here. A row
-  // counts as weak if EITHER district is under 45% on it.
+  // counts as weak if EITHER district is behind the STATE AVERAGE for
+  // that specific indicator (not a fixed cut-off) — same "below state
+  // average" criterion used everywhere else in the app now.
+  const avgAcross = (rows, key) => {
+    const vals = rows.map((r) => r[key]).filter((v) => typeof v === "number");
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  };
+
   const weakCompareRows = [];
   if (pgiA && pgiB) {
     pgiHeatmap.categories.forEach((cat) => {
       const a = pgiA[cat];
       const b = pgiB[cat];
-      if ((a != null && a < 45) || (b != null && b < 45)) {
-        weakCompareRows.push({ section: "PGI-D 2.0", label: cat, a, b });
+      const state = avgAcross(pgiHeatmap.data, cat);
+      if (state != null && ((a != null && a < state) || (b != null && b < state))) {
+        weakCompareRows.push({ section: "PGI-D 2.0", label: cat, a, b, state });
       }
     });
   }
   if (parakhA && parakhB) {
+    const stateFoundational = avgAcross(parakhGradeWise, "Foundational");
+    const statePreparatory = avgAcross(parakhGradeWise, "Preparatory");
+    const stateMiddle = avgAcross(parakhGradeWise, "Middle");
     [
-      { label: "Foundational (Grade 3)", a: parakhA.Foundational * 100, b: parakhB.Foundational * 100 },
-      { label: "Preparatory (Grade 6)", a: parakhA.Preparatory * 100, b: parakhB.Preparatory * 100 },
-      { label: "Middle (Grade 9)", a: parakhA.Middle * 100, b: parakhB.Middle * 100 },
+      { label: "Foundational (Grade 3)", a: parakhA.Foundational * 100, b: parakhB.Foundational * 100, state: stateFoundational != null ? stateFoundational * 100 : null },
+      { label: "Preparatory (Grade 6)", a: parakhA.Preparatory * 100, b: parakhB.Preparatory * 100, state: statePreparatory != null ? statePreparatory * 100 : null },
+      { label: "Middle (Grade 9)", a: parakhA.Middle * 100, b: parakhB.Middle * 100, state: stateMiddle != null ? stateMiddle * 100 : null },
     ].forEach((r) => {
-      if (r.a < 45 || r.b < 45) weakCompareRows.push({ section: "PARAKH", ...r });
+      if (r.state != null && (r.a < r.state || r.b < r.state)) weakCompareRows.push({ section: "PARAKH", ...r });
     });
   }
   if (sat1A && sat1B) {
     satGradeSem1.grades.forEach((g) => {
       const a = sat1A[g];
       const b = sat1B[g];
-      if ((a != null && a < 45) || (b != null && b < 45)) {
-        weakCompareRows.push({ section: "SAT — Sem 1", label: g, a, b });
+      const state = avgAcross(satGradeSem1.data, g);
+      if (state != null && ((a != null && a < state) || (b != null && b < state))) {
+        weakCompareRows.push({ section: "SAT — Sem 1", label: g, a, b, state });
       }
     });
   }
@@ -201,8 +213,9 @@ const DistrictCompareView = ({
     satGradeSem2.grades.forEach((g) => {
       const a = sat2A[g];
       const b = sat2B[g];
-      if ((a != null && a < 45) || (b != null && b < 45)) {
-        weakCompareRows.push({ section: "SAT — Sem 2", label: g, a, b });
+      const state = avgAcross(satGradeSem2.data, g);
+      if (state != null && ((a != null && a < state) || (b != null && b < state))) {
+        weakCompareRows.push({ section: "SAT — Sem 2", label: g, a, b, state });
       }
     });
   }
@@ -478,8 +491,8 @@ const DistrictCompareView = ({
                   🎯 Action Points — Weakest Indicators ({weakCompareRows.length})
                 </Typography>
                 <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 1.5 }}>
-                  Every indicator below is under 45% for {districtA}, {districtB}, or both — pulled together from
-                  the PGI-D, PARAKH, and SAT sections above, weakest first.
+                  Every indicator below is behind the state average — for {districtA}, {districtB}, or both —
+                  pulled together from the PGI-D, PARAKH, and SAT sections above, furthest behind first.
                 </Typography>
 
                 <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
@@ -487,13 +500,16 @@ const DistrictCompareView = ({
                     <Box component="li" key={i} sx={{ mb: 1.2 }}>
                       <Typography sx={{ fontSize: 13.5, color: "#16233B" }}>
                         <strong>{row.label}</strong>{" "}
-                        <span style={{ color: "#5B6B85", fontSize: 12 }}>({row.section})</span> —{" "}
+                        <span style={{ color: "#5B6B85", fontSize: 12 }}>
+                          ({row.section} · state avg {row.state.toFixed(1)}%)
+                        </span>{" "}
+                        —{" "}
                         {districtA}:{" "}
                         <span
                           style={{
                             fontFamily: '"IBM Plex Mono", monospace',
                             fontWeight: 700,
-                            color: row.a != null && row.a < 45 ? "#B71C1C" : "#16233B",
+                            color: row.a != null && row.a < row.state ? "#B71C1C" : "#16233B",
                           }}
                         >
                           {row.a != null ? `${row.a.toFixed(1)}%` : "—"}
@@ -504,7 +520,7 @@ const DistrictCompareView = ({
                           style={{
                             fontFamily: '"IBM Plex Mono", monospace',
                             fontWeight: 700,
-                            color: row.b != null && row.b < 45 ? "#B71C1C" : "#16233B",
+                            color: row.b != null && row.b < row.state ? "#B71C1C" : "#16233B",
                           }}
                         >
                           {row.b != null ? `${row.b.toFixed(1)}%` : "—"}

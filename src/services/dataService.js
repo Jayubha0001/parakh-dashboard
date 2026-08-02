@@ -2023,12 +2023,63 @@ const buildWeakAreasBothSemesters = (districtName, subjectRowsSem1, subjectRowsS
 
 };
 
-const buildSATDistrictActionCombined = (districtName, satRankingAll, subjectRowsSem1, subjectRowsSem2) => {
+// Same idea as buildWeakAreasBothSemesters, but for GRADE/CLASS instead of
+// subject — a class shows up here if the district was behind the state's
+// average for that class specifically, in Sem 1, Sem 2, or both.
+const buildWeakGradesBothSemesters = (districtName, gradeWiseSem1, gradeWiseSem2) => {
+
+  const stateAvgByGrade = (gradeWise) => {
+    const bucket = {};
+    gradeWise.grades.forEach((grade) => {
+      const vals = gradeWise.data.map((d) => d[grade]).filter((v) => typeof v === "number");
+      bucket[grade] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    });
+    return bucket;
+  };
+
+  const sem1StateAvg = stateAvgByGrade(gradeWiseSem1);
+  const sem2StateAvg = stateAvgByGrade(gradeWiseSem2);
+
+  const sem1Row = gradeWiseSem1.data.find((d) => d.District === districtName);
+  const sem2Row = gradeWiseSem2.data.find((d) => d.District === districtName);
+
+  const grades = new Set([...gradeWiseSem1.grades, ...gradeWiseSem2.grades]);
+
+  return [...grades]
+    .map((grade) => {
+      const sem1Pct = sem1Row && typeof sem1Row[grade] === "number" ? sem1Row[grade] : null;
+      const sem2Pct = sem2Row && typeof sem2Row[grade] === "number" ? sem2Row[grade] : null;
+
+      const sem1StateAvgVal = sem1StateAvg[grade] ?? null;
+      const sem1Gap = sem1Pct != null && sem1StateAvgVal != null ? sem1Pct - sem1StateAvgVal : null;
+
+      const sem2StateAvgVal = sem2StateAvg[grade] ?? null;
+      const sem2Gap = sem2Pct != null && sem2StateAvgVal != null ? sem2Pct - sem2StateAvgVal : null;
+
+      return {
+        label: grade,
+        sem1Pct,
+        sem1StateAvg: sem1StateAvgVal,
+        sem1Gap,
+        sem2Pct,
+        sem2StateAvg: sem2StateAvgVal,
+        sem2Gap,
+        recommendation:
+          "Run grade-specific remedial sessions and peer-tutoring circles targeted at this class's weakest Learning Outcomes.",
+      };
+    })
+    .filter((e) => (e.sem1Gap != null && e.sem1Gap < 0) || (e.sem2Gap != null && e.sem2Gap < 0))
+    .sort((a, b) => Math.min(a.sem1Gap ?? 0, a.sem2Gap ?? 0) - Math.min(b.sem1Gap ?? 0, b.sem2Gap ?? 0));
+
+};
+
+const buildSATDistrictActionCombined = (districtName, satRankingAll, subjectRowsSem1, subjectRowsSem2, gradeWiseSem1, gradeWiseSem2) => {
 
   const row = satRankingAll.find((d) => d.District === districtName);
   if (!row) return null;
 
   const weakAreas = buildWeakAreasBothSemesters(districtName, subjectRowsSem1, subjectRowsSem2);
+  const weakGrades = buildWeakGradesBothSemesters(districtName, gradeWiseSem1, gradeWiseSem2);
   const weakestSubject = weakAreas[0] || null;
 
   const priority = row.PercentAchieved < 45 ? "CRITICAL" : row.PercentAchieved < 55 ? "HIGH" : "MEDIUM";
@@ -2047,6 +2098,7 @@ const buildSATDistrictActionCombined = (districtName, satRankingAll, subjectRows
     total: satRankingAll.length,
     metric: "SAT Score",
     weakAreas,
+    weakGrades,
     dualSemester: true,
   };
 
@@ -2058,9 +2110,11 @@ export const getSATActionItemsBothSemesters = (sem2Workbook, sem1Workbook) => {
   const satRankingAll = comparison.map((d) => ({ District: d.District, PercentAchieved: d.TotalPct ?? 0, Rank: d.Rank }));
   const subjectRowsSem1 = getSATSem1DistrictSubjectWise(sem1Workbook);
   const subjectRowsSem2 = getSATDistrictSubjectWise(sem2Workbook);
+  const gradeWiseSem1 = getSATSem1GradeWise(sem1Workbook);
+  const gradeWiseSem2 = getSATGradeWise(sem2Workbook);
 
   const items = PRIORITY_DISTRICTS
-    .map((districtName) => buildSATDistrictActionCombined(districtName, satRankingAll, subjectRowsSem1, subjectRowsSem2))
+    .map((districtName) => buildSATDistrictActionCombined(districtName, satRankingAll, subjectRowsSem1, subjectRowsSem2, gradeWiseSem1, gradeWiseSem2))
     .filter(Boolean);
 
   const order = { CRITICAL: 0, HIGH: 1, MEDIUM: 2 };
@@ -2074,9 +2128,11 @@ export const getAllDistrictSATActionItemsBothSemesters = (sem2Workbook, sem1Work
   const satRankingAll = comparison.map((d) => ({ District: d.District, PercentAchieved: d.TotalPct ?? 0, Rank: d.Rank }));
   const subjectRowsSem1 = getSATSem1DistrictSubjectWise(sem1Workbook);
   const subjectRowsSem2 = getSATDistrictSubjectWise(sem2Workbook);
+  const gradeWiseSem1 = getSATSem1GradeWise(sem1Workbook);
+  const gradeWiseSem2 = getSATGradeWise(sem2Workbook);
 
   return satRankingAll
-    .map((d) => buildSATDistrictActionCombined(d.District, satRankingAll, subjectRowsSem1, subjectRowsSem2))
+    .map((d) => buildSATDistrictActionCombined(d.District, satRankingAll, subjectRowsSem1, subjectRowsSem2, gradeWiseSem1, gradeWiseSem2))
     .filter(Boolean);
 
 };

@@ -31,34 +31,36 @@ const average = (rows, col) => {
 // Rural/Urban, etc.) — so a "55%" always means the same thing everywhere.
 const bandFor = (pct) =>
   pct >= 60
-    ? { bg: "#E6F4EA", bar: "#2E7D32" }
+    ? { bg: "#E6F4EA", text: "#1B5E20" }
     : pct >= 45
-    ? { bg: "#FFF3E0", bar: "#FB8C00" }
-    : { bg: "#FDEAEA", bar: "#D32F2F" };
+    ? { bg: "#FFF3E0", text: "#B15C00" }
+    : { bg: "#FDEAEA", text: "#B71C1C" };
 
-const PillCell = ({ pct }) => {
+// Flat, solid-colour badge — same design as the app's HeatMapTable cells.
+// (The earlier version filled a proportional bar behind the text, which
+// put a colour boundary partway through the digits and made them hard to
+// read; a flat background avoids that entirely.)
+const PillCell = ({ pct, bold = false }) => {
   const band = bandFor(pct);
   return (
-    <Box sx={{ position: "relative", borderRadius: 1.5, bgcolor: band.bg, overflow: "hidden", height: 22, minWidth: 76 }}>
-      <Box sx={{ position: "absolute", top: 0, left: 0, bottom: 0, width: `${Math.min(100, Math.max(0, pct))}%`, bgcolor: band.bar }} />
-      <Box
-        sx={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          whiteSpace: "nowrap",
-          fontFamily: fontMono,
-          fontWeight: 700,
-          fontSize: 12,
-          color: "#16233B",
-          textShadow: "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 3px #fff",
-        }}
-      >
-        {pct.toFixed(1)}%
-      </Box>
+    <Box
+      sx={{
+        borderRadius: 1.5,
+        bgcolor: band.bg,
+        color: band.text,
+        height: 28,
+        minWidth: 76,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        whiteSpace: "nowrap",
+        fontFamily: fontMono,
+        fontWeight: bold ? 800 : 700,
+        fontSize: 12.5,
+        border: bold ? `1.5px solid ${band.text}` : "none",
+      }}
+    >
+      {pct.toFixed(1)}%
     </Box>
   );
 };
@@ -203,7 +205,7 @@ const ComparisonSection = ({
                           }}
                         />
                       ) : (
-                        <PillCell pct={avgPct} />
+                        <PillCell pct={avgPct} bold />
                       )}
                     </TableCell>
                   );

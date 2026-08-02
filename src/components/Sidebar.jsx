@@ -18,6 +18,7 @@ import FactCheckIcon from "@mui/icons-material/FactCheck";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import DescriptionIcon from "@mui/icons-material/Description";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+import PlaceIcon from "@mui/icons-material/Place";
 import { colors } from "../theme/theme";
 
 const drawerWidth = 240;
@@ -52,6 +53,11 @@ const menuItems = [
     text: "PM Shri",
     icon: <AccountBalanceIcon />,
     path: "/pmshri",
+  },
+  {
+    text: "CRC Visit",
+    icon: <PlaceIcon />,
+    path: "/live-visits",
   },
   {
     text: "Reports",
