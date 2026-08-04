@@ -75,6 +75,40 @@ export const loadSATSem1Excel = async () => {
 
 };
 
+// -----------------------------
+// PM SHRI GSQAC Result workbook — school-wise quality assessment grade
+// (2019-21 through 2024-25), separate file, cached independently.
+// -----------------------------
+
+let cachedPMShriResultWorkbook = null;
+let pmShriResultLoadingPromise = null;
+
+export const loadPMShriResultExcel = async () => {
+  if (cachedPMShriResultWorkbook) {
+    return cachedPMShriResultWorkbook;
+  }
+
+  if (pmShriResultLoadingPromise) {
+    return pmShriResultLoadingPromise;
+  }
+
+  pmShriResultLoadingPromise = (async () => {
+    const response = await fetch("/PM_SHRI_GSQAC_Result_GOG_GOI.xlsx");
+    const data = await response.arrayBuffer();
+
+    const workbook = XLSX.read(data, {
+      type: "array",
+    });
+
+    cachedPMShriResultWorkbook = workbook;
+    pmShriResultLoadingPromise = null;
+
+    return workbook;
+  })();
+
+  return pmShriResultLoadingPromise;
+};
+
 export const getSheetData = (workbook, sheetName) => {
 
   const worksheet = workbook.Sheets[sheetName];
@@ -2135,4 +2169,196 @@ export const getAllDistrictSATActionItemsBothSemesters = (sem2Workbook, sem1Work
     .map((d) => buildSATDistrictActionCombined(d.District, satRankingAll, subjectRowsSem1, subjectRowsSem2, gradeWiseSem1, gradeWiseSem2))
     .filter(Boolean);
 
+};
+
+// -----------------------------------------------------------------
+// PM SHRI GSQAC Result — school-wise Gujarat State Quality Assurance
+// & Certification grade, 2019-21 through 2024-25.
+//
+// Raw sheet layout (row 0 = title, row 1 = headers, row 2+ = data):
+//   Sr, UDISE School Code, District Name, Block Name, GOI/GOG, Phase,
+//   School Name, School Management Type, School Category, Dept,
+//   Government_EmailId,
+//   then five (score, grade) column pairs for 2019-21 .. 2024-25,
+//   where score is a 0-1 fraction and grade is one of A+/A/B/C/D.
+//
+// The letter grade alone (A+/A/B/C/D) doesn't distinguish the five
+// sub-bands the state actually reports on (Green 5..1, Yellow, Red,
+// Black) — colorGradeFromScore() derives that finer band directly
+// from the score, per the official Grade / Color Grade / Score Range
+// key.
+// -----------------------------------------------------------------
+
+const PM_SHRI_YEAR_COLUMNS = [
+  { year: "2019-21", scoreCol: 11, gradeCol: 12 },
+  { year: "2021-22", scoreCol: 13, gradeCol: 14 },
+  { year: "2022-23", scoreCol: 15, gradeCol: 16 },
+  { year: "2023-24", scoreCol: 17, gradeCol: 18 },
+  { year: "2024-25", scoreCol: 19, gradeCol: 20 },
+];
+
+export const PM_SHRI_YEAR_LABELS = PM_SHRI_YEAR_COLUMNS.map((y) => y.year);
+
+// Official Grade / Color Grade / Score Range key.
+export const COLOR_GRADE_KEY = [
+  { grade: "A+", colorGrade: "Green 5", min: 95, max: 100, color: "#0B8043", exclusiveMin: true },
+  { grade: "A+", colorGrade: "Green 4", min: 90, max: 95, color: "#1E8E3E" },
+  { grade: "A+", colorGrade: "Green 3", min: 85, max: 90, color: "#34A853" },
+  { grade: "A", colorGrade: "Green 2", min: 80, max: 85, color: "#7CB342" },
+  { grade: "A", colorGrade: "Green 1", min: 75, max: 80, color: "#9CCC65" },
+  { grade: "B", colorGrade: "Yellow", min: 50, max: 75, color: "#FDD835", textColor: "#5B4B00" },
+  { grade: "C", colorGrade: "Red", min: 25, max: 50, color: "#E53935" },
+  { grade: "D", colorGrade: "Black", min: 0, max: 25, color: "#5B6B85" },
+];
+
+// pct is 0-100.
+export const colorGradeFromScore = (pct) => {
+  if (pct == null || Number.isNaN(pct)) return null;
+  if (pct > 95) return COLOR_GRADE_KEY[0];
+  if (pct >= 90) return COLOR_GRADE_KEY[1];
+  if (pct >= 85) return COLOR_GRADE_KEY[2];
+  if (pct >= 80) return COLOR_GRADE_KEY[3];
+  if (pct >= 75) return COLOR_GRADE_KEY[4];
+  if (pct >= 50) return COLOR_GRADE_KEY[5];
+  if (pct >= 25) return COLOR_GRADE_KEY[6];
+  return COLOR_GRADE_KEY[7];
+};
+
+const buildColorGradeCounts = () => Object.fromEntries(COLOR_GRADE_KEY.map((c) => [c.colorGrade, 0]));
+
+// Builds { totalSchools, avgPct, colorGradeCounts } for whatever subset
+// of schools is passed in, for a given year index into PM_SHRI_YEAR_COLUMNS
+// (defaults to the latest year) — reused for All / GOI-only / GOG-only,
+// and for whichever year the person picks in the UI.
+export const summarizeSchoolsForYear = (schoolsSubset, yearIndex = PM_SHRI_YEAR_COLUMNS.length - 1) => {
+  const colorGradeCounts = buildColorGradeCounts();
+  let pctSum = 0;
+  let pctCount = 0;
+  schoolsSubset.forEach((s) => {
+    const y = s.years[yearIndex];
+    if (y?.colorGrade) colorGradeCounts[y.colorGrade.colorGrade] += 1;
+    if (y?.pct != null) {
+      pctSum += y.pct;
+      pctCount += 1;
+    }
+  });
+  return {
+    totalSchools: schoolsSubset.length,
+    avgPct: pctCount ? pctSum / pctCount : 0,
+    colorGradeCounts,
+  };
+};
+
+const summarizeSchools = (schoolsSubset) => summarizeSchoolsForYear(schoolsSubset, PM_SHRI_YEAR_COLUMNS.length - 1);
+
+export const buildDistrictSummariesForYear = (schoolsSubset, yearIndex = PM_SHRI_YEAR_COLUMNS.length - 1) => {
+  const byDistrict = {};
+  schoolsSubset.forEach((s) => {
+    const key = s.district || "Unknown";
+    if (!byDistrict[key]) byDistrict[key] = [];
+    byDistrict[key].push(s);
+  });
+  return Object.entries(byDistrict)
+    .map(([district, list]) => ({ district, ...summarizeSchoolsForYear(list, yearIndex) }))
+    .sort((a, b) => a.district.localeCompare(b.district));
+};
+
+const buildDistrictSummaries = (schoolsSubset) => buildDistrictSummariesForYear(schoolsSubset, PM_SHRI_YEAR_COLUMNS.length - 1);
+
+export const getPMShriGSQACResult = (workbook) => {
+  const sheetName = workbook.SheetNames.find((n) => n.trim() === "Main") || workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true, defval: null });
+
+  const schools = rows.slice(2).filter((r) => r && r[1] != null).map((r) => {
+    const years = PM_SHRI_YEAR_COLUMNS.map(({ year, scoreCol, gradeCol }) => {
+      const scoreRaw = r[scoreCol];
+      const pct = typeof scoreRaw === "number" ? Number((scoreRaw * 100).toFixed(2)) : null;
+      return {
+        year,
+        pct,
+        grade: r[gradeCol] || null,
+        colorGrade: colorGradeFromScore(pct),
+      };
+    });
+
+    // Year-over-year trend: compare the two most recent years that
+    // actually have a score (some schools have gaps). "declining"
+    // means the latest available score is lower than the one before
+    // it — used to build the Weakest / Declined list below.
+    const scored = years.filter((y) => y.pct != null);
+    const latestScored = scored[scored.length - 1] || null;
+    const prevScored = scored.length > 1 ? scored[scored.length - 2] : null;
+    const trend = latestScored && prevScored
+      ? {
+          latestYear: latestScored.year,
+          latestPct: latestScored.pct,
+          prevYear: prevScored.year,
+          prevPct: prevScored.pct,
+          delta: Number((latestScored.pct - prevScored.pct).toFixed(2)),
+          declining: latestScored.pct < prevScored.pct,
+        }
+      : null;
+
+    // GOI/ GOG column has stray spacing in the source file ("GOI"/"GOG").
+    const goiGog = String(r[4] || "").trim().toUpperCase();
+
+    return {
+      srNo: r[0],
+      udise: r[1],
+      district: r[2],
+      block: r[3],
+      goiGog,
+      phase: r[5],
+      schoolName: r[6],
+      managementType: r[7],
+      schoolCategory: r[8],
+      years,
+      latest: years[years.length - 1],
+      trend,
+    };
+  });
+
+  const goiSchools = schools.filter((s) => s.goiGog === "GOI");
+  const gogSchools = schools.filter((s) => s.goiGog === "GOG");
+
+  const districts = buildDistrictSummaries(schools);
+  const districtsGOI = buildDistrictSummaries(goiSchools);
+  const districtsGOG = buildDistrictSummaries(gogSchools);
+
+  // Year-wise state average (overall, and split GOI vs GOG) — for the
+  // year-over-year trend chart.
+  const yearWise = PM_SHRI_YEAR_COLUMNS.map(({ year }, i) => {
+    const avgOf = (subset) => {
+      const vals = subset.map((s) => s.years[i].pct).filter((v) => v != null);
+      return vals.length ? Number((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2)) : null;
+    };
+    return {
+      year,
+      "All Schools": avgOf(schools),
+      GOI: avgOf(goiSchools),
+      GOG: avgOf(gogSchools),
+    };
+  });
+
+  // Weakest / Declined — schools whose latest scored year fell versus
+  // the year before it, worst decline first.
+  const decliningSchools = schools
+    .filter((s) => s.trend?.declining)
+    .sort((a, b) => a.trend.delta - b.trend.delta);
+
+  return {
+    schools,
+    goiSchools,
+    gogSchools,
+    districts,
+    districtsGOI,
+    districtsGOG,
+    yearWise,
+    decliningSchools,
+    state: summarizeSchools(schools),
+    stateGOI: summarizeSchools(goiSchools),
+    stateGOG: summarizeSchools(gogSchools),
+    latestYearLabel: PM_SHRI_YEAR_COLUMNS[PM_SHRI_YEAR_COLUMNS.length - 1].year,
+  };
 };
