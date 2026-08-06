@@ -152,8 +152,8 @@ const DistrictDetailCard = ({ item }) => {
           </Box>
         )}
 
-        <WeakItemsBlock items={item.weakAreas} noun="Subjects" icon="🎯" district={item.district} dualSemester={item.dualSemester} />
-        <WeakItemsBlock items={item.weakGrades} noun="Classes" icon="🏫" district={item.district} dualSemester={item.dualSemester} />
+        <WeakItemsBlock items={item.weakAreas} noun={item.weakAreasNoun || "Subjects"} icon={item.weakAreasIcon || "🎯"} district={item.district} dualSemester={item.dualSemester} />
+        <WeakItemsBlock items={item.weakGrades} noun={item.weakGradesNoun || "Classes"} icon={item.weakGradesIcon || "🏫"} district={item.district} dualSemester={item.dualSemester} />
       </Box>
     </Box>
   );

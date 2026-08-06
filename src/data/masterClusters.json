@@ -44,7 +44,7 @@
     {
       "districtId": 2409,
       "district": "RAJKOT",
-      "totalCluster": 126
+      "totalCluster": 128
     },
     {
       "districtId": 2410,
@@ -83,12 +83,12 @@
     },
     {
       "districtId": 2417,
-      "district": "PANCHMAHALS",
+      "district": "PANCH MAHALS",
       "totalCluster": 124
     },
     {
       "districtId": 2418,
-      "district": "DAHOD",
+      "district": "DOHAD",
       "totalCluster": 159
     },
     {
@@ -108,7 +108,7 @@
     },
     {
       "districtId": 2422,
-      "district": "SURAT CORPORATION",
+      "district": "SURAT",
       "totalCluster": 137
     },
     {
@@ -1185,112 +1185,112 @@
     },
     {
       "districtId": 2417,
-      "district": "PANCHMAHALS",
+      "district": "PANCH MAHALS",
       "blockId": 241701,
       "block": "GHOGHAMBA",
       "totalCluster": 19
     },
     {
       "districtId": 2417,
-      "district": "PANCHMAHALS",
+      "district": "PANCH MAHALS",
       "blockId": 241702,
       "block": "GODHRA",
       "totalCluster": 30
     },
     {
       "districtId": 2417,
-      "district": "PANCHMAHALS",
+      "district": "PANCH MAHALS",
       "blockId": 241703,
       "block": "HALOL",
       "totalCluster": 18
     },
     {
       "districtId": 2417,
-      "district": "PANCHMAHALS",
+      "district": "PANCH MAHALS",
       "blockId": 241704,
       "block": "JAMBUGHODA",
       "totalCluster": 5
     },
     {
       "districtId": 2417,
-      "district": "PANCHMAHALS",
+      "district": "PANCH MAHALS",
       "blockId": 241706,
       "block": "KALOL",
       "totalCluster": 16
     },
     {
       "districtId": 2417,
-      "district": "PANCHMAHALS",
+      "district": "PANCH MAHALS",
       "blockId": 241709,
       "block": "MORVA HADAF",
       "totalCluster": 14
     },
     {
       "districtId": 2417,
-      "district": "PANCHMAHALS",
+      "district": "PANCH MAHALS",
       "blockId": 241711,
       "block": "SHAHERA",
       "totalCluster": 22
     },
     {
       "districtId": 2418,
-      "district": "DAHOD",
+      "district": "DOHAD",
       "blockId": 241801,
       "block": "DAHOD",
       "totalCluster": 27
     },
     {
       "districtId": 2418,
-      "district": "DAHOD",
+      "district": "DOHAD",
       "blockId": 241802,
       "block": "GARBADA",
       "totalCluster": 12
     },
     {
       "districtId": 2418,
-      "district": "DAHOD",
+      "district": "DOHAD",
       "blockId": 241803,
       "block": "LIMKHEDA",
       "totalCluster": 17
     },
     {
       "districtId": 2418,
-      "district": "DAHOD",
+      "district": "DOHAD",
       "blockId": 241804,
       "block": "DHANPUR",
       "totalCluster": 15
     },
     {
       "districtId": 2418,
-      "district": "DAHOD",
+      "district": "DOHAD",
       "blockId": 241805,
       "block": "FATEPURA",
       "totalCluster": 23
     },
     {
       "districtId": 2418,
-      "district": "DAHOD",
+      "district": "DOHAD",
       "blockId": 241806,
       "block": "ZALOD",
       "totalCluster": 25
     },
     {
       "districtId": 2418,
-      "district": "DAHOD",
+      "district": "DOHAD",
       "blockId": 241807,
       "block": "DEV.BARIA",
       "totalCluster": 21
     },
     {
       "districtId": 2418,
-      "district": "DAHOD",
+      "district": "DOHAD",
       "blockId": 241808,
       "block": "SANJELI",
       "totalCluster": 8
     },
     {
       "districtId": 2418,
-      "district": "DAHOD",
+      "district": "DOHAD",
       "blockId": 241809,
       "block": "SINGVAD",
       "totalCluster": 11
@@ -1458,70 +1458,70 @@
     },
     {
       "districtId": 2422,
-      "district": "SURAT CORPORATION",
+      "district": "SURAT",
       "blockId": 242201,
       "block": "BARDOLI",
       "totalCluster": 11
     },
     {
       "districtId": 2422,
-      "district": "SURAT CORPORATION",
+      "district": "SURAT",
       "blockId": 242202,
       "block": "CHORYASI",
       "totalCluster": 6
     },
     {
       "districtId": 2422,
-      "district": "SURAT CORPORATION",
+      "district": "SURAT",
       "blockId": 242203,
       "block": "KAMREJ",
       "totalCluster": 8
     },
     {
       "districtId": 2422,
-      "district": "SURAT CORPORATION",
+      "district": "SURAT",
       "blockId": 242204,
       "block": "MAHUVA",
       "totalCluster": 12
     },
     {
       "districtId": 2422,
-      "district": "SURAT CORPORATION",
+      "district": "SURAT",
       "blockId": 242205,
       "block": "MANDAVI",
       "totalCluster": 17
     },
     {
       "districtId": 2422,
-      "district": "SURAT CORPORATION",
+      "district": "SURAT",
       "blockId": 242206,
       "block": "MANGROL",
       "totalCluster": 11
     },
     {
       "districtId": 2422,
-      "district": "SURAT CORPORATION",
+      "district": "SURAT",
       "blockId": 242208,
       "block": "OLPAD",
       "totalCluster": 11
     },
     {
       "districtId": 2422,
-      "district": "SURAT CORPORATION",
+      "district": "SURAT",
       "blockId": 242209,
       "block": "PALASANA",
       "totalCluster": 5
     },
     {
       "districtId": 2422,
-      "district": "SURAT CORPORATION",
+      "district": "SURAT",
       "blockId": 242212,
       "block": "UMARPADA",
       "totalCluster": 9
     },
     {
       "districtId": 2422,
-      "district": "SURAT CORPORATION",
+      "district": "SURAT",
       "blockId": 242215,
       "block": "SURAT CORPO.",
       "totalCluster": 47

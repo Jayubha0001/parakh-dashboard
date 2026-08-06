@@ -16,6 +16,8 @@ import {
   TextField,
   MenuItem,
   TablePagination,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   ResponsiveContainer,
@@ -48,6 +50,9 @@ import {
 import { isPriorityDistrict } from "../utils/priorityDistricts";
 import PriorityChip from "../components/PriorityChip";
 import ActionItemsQueue from "../components/ActionItemsQueue";
+import GOIAnalysisPanel from "../components/pmshri/GOIAnalysisPanel";
+import GOGAnalysisPanel from "../components/pmshri/GOGAnalysisPanel";
+import CombinedOverview from "../components/pmshri/CombinedOverview";
 
 // Five small bars, one per assessment year, coloured by that year's
 // colour grade and height-scaled by score — a whole school's history
@@ -72,6 +77,7 @@ const YearTrend = ({ years }) => (
 );
 
 const PMShri = () => {
+  const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [districts, setDistricts] = useState([]);
   const [stateTotal, setStateTotal] = useState(null);
@@ -96,12 +102,18 @@ const PMShri = () => {
       const { districts, stateTotal } = getPMShriData(workbook);
       setDistricts(districts);
       setStateTotal(stateTotal);
-      setActionItems(getPMShriActionItems(workbook));
       setAllDistrictNames(getAllDistrictNames(workbook));
-      setAllDistrictItems(getAllDistrictPMShriActionItems(workbook));
 
+      // GSQAC quality results are loaded before the action items are
+      // built, since the queue now leads with GSQAC weak/declining
+      // schools (not just raw PM Shri coverage counts) — same pattern
+      // as PGI's ranking+heatmap and SAT's ranking+subject-wise combo.
       const resultWorkbook = await loadPMShriResultExcel();
-      setGsqac(getPMShriGSQACResult(resultWorkbook));
+      const gsqacResult = getPMShriGSQACResult(resultWorkbook);
+      setGsqac(gsqacResult);
+
+      setActionItems(getPMShriActionItems(workbook, gsqacResult));
+      setAllDistrictItems(getAllDistrictPMShriActionItems(workbook, gsqacResult));
 
       setLoading(false);
     }
@@ -171,6 +183,30 @@ const PMShri = () => {
     <DashboardLayout>
       <Header />
 
+      <Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", mt: 2, px: 1 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, v) => setActiveTab(v)}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            "& .MuiTab-root": { textTransform: "none", fontWeight: 600, fontSize: 13.5, minHeight: 48 },
+            "& .Mui-selected": { color: "#0F172A !important" },
+            "& .MuiTabs-indicator": { bgcolor: "#0F172A", height: 3 },
+          }}
+        >
+          <Tab label="GSQAC Overview" />
+          <Tab label="GOI Analysis — Enrollment & Board Results" />
+          <Tab label="GOG 426 Deep-Dive" />
+        </Tabs>
+      </Paper>
+
+      {activeTab === 1 && <GOIAnalysisPanel />}
+      {activeTab === 2 && <GOGAnalysisPanel />}
+
+      {activeTab === 0 && (
+      <>
+      <CombinedOverview />
       <Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", overflow: "hidden", mt: 2 }}>
         <Grid container>
           {statCards.map((stat, i) => (
@@ -681,7 +717,10 @@ const PMShri = () => {
         items={actionItems}
         allDistricts={allDistrictNames}
         allItems={allDistrictItems}
+        syncDistrict={gsqacDistrictFilter}
       />
+      </>
+      )}
     </DashboardLayout>
   );
 };

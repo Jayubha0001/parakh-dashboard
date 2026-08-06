@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 import { PRIORITY_DISTRICTS } from "../utils/priorityDistricts";
-import { normalizeSATDistrict, isSATSummaryRow } from "../utils/satDistrictMap";
+import { normalizeSATDistrict, isSATSummaryRow, normalizeDistrictName } from "../utils/satDistrictMap";
 
 // Cache the parsed workbook in memory so navigating between pages
 // (Dashboard, PARAKH, PGI, Comparison, Reports) doesn't re-download and
@@ -504,11 +504,17 @@ export const getPMShriData = (workbook) => {
   // wrong cells entirely and returned an empty district list. A real
   // district row always has a numeric Sr No in the first column and the
   // district name (a string) in the second.
+  // Normalized here (not left as the sheet's raw spelling/casing) since
+  // this sheet has at least one outright typo ("Ahmadabad" instead of
+  // "Ahmedabad") that otherwise silently breaks every district-name
+  // match against the canonical list used by PRIORITY_DISTRICTS /
+  // Combined_Performance_Ranking — the district would just disappear
+  // from Action Items instead of erroring.
   const districts = rows
     .filter((r) => typeof r[0] === "number" && r[1] && typeof r[1] === "string")
     .map((r) => ({
       srNo: r[0],
-      district: String(r[1]).trim(),
+      district: normalizeDistrictName(String(r[1]).trim()),
       goiSchools: Number(r[2]) || 0,
       goiEnrollment: Number(r[3]) || 0,
       goiTeachers: Number(r[4]) || 0,
@@ -742,39 +748,207 @@ export const getComparisonActionItems = (workbook, sem1Workbook) => {
 };
 
 // -----------------------------
-// PM Shri-focused Action Queue (lowest PM Shri school/enrolment coverage
-// among priority districts) — used on the PM Shri page.
+// District-name canonicalization for PM Shri only — this page cross
+// references THREE separate source files (Combined_Performance_Ranking,
+// the "PM-SHRI DATA" sheet, and the standalone GSQAC result workbook)
+// and each one spells several districts differently:
+//   Combined            PM-SHRI DATA      GSQAC workbook
+//   Ahmedabad           Ahmadabad         Ahmedabad
+//   Dahod               Dohad             Dohad
+//   Dang                The Dangs         Dang / The Dangs (both appear)
+//   Kutch               Kachchh           Kachchh
+//   Mehsana              Mahesana         Mahesana
+//   Panchmahal          Panch Mahals      Panch Mahals
+// Multi-word names (Devbhoomi Dwarka, Gir Somnath, Sabar Kantha) also
+// need whitespace stripped from BOTH sides before comparing — comparing
+// one side raw and the other space-stripped (the previous bug here)
+// silently drops every multi-word district. Left unhandled, ~9 of the
+// 33 districts simply vanished from the Action Items list/dropdown
+// with no error — this is what fixes that.
 // -----------------------------
 
-const buildPMShriDistrictAction = (canonicalName, byDistrict) => {
+const PMSHRI_DISTRICT_ALIASES = {
+  AHMADABAD: "AHMEDABAD",
+  DOHAD: "DAHOD",
+  THEDANGS: "DANG",
+  KACHCHH: "KUTCH",
+  MAHESANA: "MEHSANA",
+  PANCHMAHALS: "PANCHMAHAL",
+  DEVBHUMIDWARKA: "DEVBHOOMIDWARKA", // typo seen in the GSQAC sheet
+};
 
-  const upper = canonicalName.toUpperCase();
-  const row =
-    byDistrict[canonicalName] ||
-    Object.values(byDistrict).find((d) => d.district.toUpperCase() === upper.replace(/\s+/g, ""));
+const canonicalizePMShriDistrict = (name) => {
+  const stripped = String(name || "").toUpperCase().replace(/\s+/g, "").replace(/\./g, "");
+  return PMSHRI_DISTRICT_ALIASES[stripped] || stripped;
+};
+
+// -----------------------------
+// PM Shri-focused Action Queue — same shape as PGI/PARAKH/SAT: priority
+// driven by actual quality data (GSQAC colour-grade results), not just a
+// raw coverage count, with a "Weak Schools" list (Red/Black band, this
+// year) and a "Declining Schools" list (score fell vs the previous
+// scored year) so each district card tells you exactly which schools
+// need attention and why — used on the PM Shri page.
+// -----------------------------
+
+// Keyed by COLOR_GRADE_KEY's colorGrade string. Only the bands that can
+// actually show up as "weak" (below Green) need an entry here.
+const PMSHRI_BAND_RECOMMENDATIONS = {
+  Black: "This school is in the lowest GSQAC band (below 25%) — treat it as an immediate-intervention case, not a routine follow-up. Send a joint team (BRC + subject expert) for an on-site diagnostic visit within the month, identify the two or three most basic gaps (infrastructure, staffing, or classroom process) dragging the score down, and set a 90-day recovery plan with a named owner and a re-check date.",
+  Red: "Score is well below the passing (Yellow) line — schedule a school-level review of the GSQAC parameters this school is losing the most marks on, and pair it with a nearby Green-band school for a peer-mentoring visit. Re-verify progress against the specific weak parameters at the next assessment cycle rather than waiting for the annual score alone.",
+  Yellow: "Score clears the Red line but is still short of Green — this is usually the easiest band to move out of. Identify the one or two parameters keeping the school in Yellow (often infrastructure or digital-learning related) and close just those gaps first rather than spreading effort across every category.",
+};
+
+const declineRecommendation = (school) => {
+  const { latestYear, latestPct, prevYear, prevPct, delta } = school.trend;
+  return (
+    `Score fell from ${prevPct.toFixed(1)}% in ${prevYear} to ${latestPct.toFixed(1)}% in ${latestYear} — a drop of ${Math.abs(delta).toFixed(1)} points. ` +
+    `Before assuming a teaching-quality issue, first check for anything that changed at the school between the two cycles (staff transfers, infrastructure damage, or a change in student intake), since a sharp single-cycle drop is often administrative rather than academic. ` +
+    `Once the cause is confirmed, set a specific target to recover at least half the lost ground by the next assessment and assign a named owner to track it.`
+  );
+};
+
+const PMSHRI_MAX_WEAK_ITEMS = 8;
+
+const truncateWithNote = (list, max) => {
+  if (list.length <= max) return list;
+  const kept = list.slice(0, max);
+  kept.push({
+    label: `+ ${list.length - max} more school${list.length - max === 1 ? "" : "s"} in this band`,
+    pct: kept[kept.length - 1].pct,
+    band: kept[kept.length - 1].band,
+    recommendation: "See the full school list on the GSQAC Results table below, filtered to this district.",
+  });
+  return kept;
+};
+
+const buildPMShriDistrictAction = (canonicalName, byDistrict, gsqacByDistrict, gsqacSchoolsByDistrict) => {
+
+  const key = canonicalizePMShriDistrict(canonicalName);
+  const row = byDistrict[key];
 
   if (!row) return null;
 
-  const priority = row.totalSchools <= 5 ? "CRITICAL" : row.totalSchools <= 10 ? "HIGH" : "MEDIUM";
+  // GSQAC quality data is matched the same normalized way — it comes
+  // from a third, separately-spelled workbook (see the alias table
+  // above the canonicalizer).
+  const gsqacRow = gsqacByDistrict?.[key] || null;
+  const gsqacSchools = gsqacSchoolsByDistrict?.[key] || [];
+
+  // Priority follows the official GSQAC band on the district's average
+  // score, the same way PGI/SAT priority follows their own band — not
+  // the raw school-count heuristic this used to use.
+  const avgPct = gsqacRow?.avgPct ?? null;
+  const priority = avgPct == null
+    ? (row.totalSchools <= 5 ? "CRITICAL" : row.totalSchools <= 10 ? "HIGH" : "MEDIUM")
+    : avgPct < 50 ? "CRITICAL" : avgPct < 75 ? "HIGH" : "MEDIUM";
+
+  // Weak Schools — this year's Red/Black band, worst first.
+  const weakAreas = truncateWithNote(
+    gsqacSchools
+      .filter((s) => s.latest?.pct != null && s.latest.pct < 50)
+      .sort((a, b) => a.latest.pct - b.latest.pct)
+      .map((s) => ({
+        label: `${s.schoolName} (${s.udise})`,
+        pct: s.latest.pct,
+        band: s.latest.colorGrade?.colorGrade === "Black" ? "Needs Support" : "Watch",
+        recommendation: PMSHRI_BAND_RECOMMENDATIONS[s.latest.colorGrade?.colorGrade] || null,
+      })),
+    PMSHRI_MAX_WEAK_ITEMS
+  );
+
+  // Declining Schools — latest scored year fell vs the year before it,
+  // worst decline first.
+  const weakGrades = truncateWithNote(
+    gsqacSchools
+      .filter((s) => s.trend?.declining)
+      .sort((a, b) => a.trend.delta - b.trend.delta)
+      .map((s) => ({
+        label: `${s.schoolName} (${s.udise})`,
+        pct: s.trend.latestPct,
+        band: s.trend.latestPct < 25 ? "Needs Support" : "Watch",
+        recommendation: declineRecommendation(s),
+      })),
+    PMSHRI_MAX_WEAK_ITEMS
+  );
+
+  const topRecommendation = gsqacRow
+    ? (weakAreas[0]?.recommendation
+        || "Every school here is at or above the Yellow line — hold this district steady with the existing monitoring cadence rather than pulling resources away from lower-scoring districts.")
+    : "Assess eligibility for additional PM Shri school upgrades to expand model-school coverage in this district, prioritizing clusters that currently have zero or only one PM Shri school nearby. Cross-check enrolment trends before proposing new sites, so upgrades go where student demand actually supports them.";
 
   return {
     priority,
     icon: "🏫",
-    title: `${canonicalName} — PM Shri Coverage`,
-    description: `${row.totalSchools} PM Shri schools (${row.goiSchools} GOI + ${row.gogSchools} GOG) · ${row.totalEnrollment.toLocaleString()} students enrolled`,
-    recommendation: "Assess eligibility for additional PM Shri school upgrades to expand model-school coverage in this district, prioritizing clusters that currently have zero or only one PM Shri school nearby. Cross-check enrolment trends before proposing new sites, so upgrades go where student demand actually supports them.",
+    title: `${canonicalName} — PM Shri Focus`,
+    description: `${row.totalSchools} PM Shri schools (${row.goiSchools} GOI + ${row.gogSchools} GOG) · ${row.totalEnrollment.toLocaleString()} students enrolled${
+      avgPct != null ? ` · GSQAC avg ${avgPct.toFixed(1)}% (${gsqacRow.totalSchools} schools scored)` : ""
+    }${weakAreas.length ? ` · ${weakAreas.length} school${weakAreas.length === 1 ? "" : "s"} below the Yellow line` : ""}`,
+    recommendation: topRecommendation,
     district: canonicalName,
+    percent: avgPct,
+    metric: "GSQAC Avg Score",
+    weakAreas,
+    weakGrades,
+    weakAreasNoun: "Schools",
+    weakAreasIcon: "🚨",
+    weakGradesNoun: "Declining Schools",
+    weakGradesIcon: "📉",
   };
 
 };
 
-export const getPMShriActionItems = (workbook) => {
+// Groups GSQAC schools by district once, so every district lookup in the
+// action-items loop below is O(1) instead of re-filtering the full
+// school list for each of the 33 districts. Keyed by the canonicalized
+// name so it lines up with the other two sources regardless of which
+// spelling variant the GSQAC sheet happened to use for a given row.
+const groupGSQACSchoolsByDistrict = (gsqacResult) => {
+  const byDistrict = {};
+  (gsqacResult?.schools || []).forEach((s) => {
+    const key = canonicalizePMShriDistrict(s.district);
+    if (!byDistrict[key]) byDistrict[key] = [];
+    byDistrict[key].push(s);
+  });
+  return byDistrict;
+};
+
+const groupGSQACDistrictsByName = (gsqacResult) => {
+  // Multiple raw spellings can canonicalize to the same district (e.g.
+  // "Devbhoomi Dwarka" and the "Devbhumi Dwarka" typo both appear as
+  // separate rows in the GSQAC sheet) — merge their school counts and
+  // recompute the average instead of letting the last one silently
+  // overwrite the first.
+  const bucket = {};
+  (gsqacResult?.districts || []).forEach((d) => {
+    const key = canonicalizePMShriDistrict(d.district);
+    if (!bucket[key]) bucket[key] = { district: d.district, totalSchools: 0, pctSum: 0, pctCount: 0 };
+    bucket[key].totalSchools += d.totalSchools;
+    if (d.avgPct != null && d.totalSchools) {
+      bucket[key].pctSum += d.avgPct * d.totalSchools;
+      bucket[key].pctCount += d.totalSchools;
+    }
+  });
+  return Object.fromEntries(
+    Object.entries(bucket).map(([key, b]) => [
+      key,
+      { district: b.district, totalSchools: b.totalSchools, avgPct: b.pctCount ? b.pctSum / b.pctCount : null },
+    ])
+  );
+};
+
+// gsqacResult is optional (getPMShriGSQACResult(resultWorkbook)) — when
+// omitted, this falls back to the old coverage-only heuristic so nothing
+// breaks for a caller that hasn't loaded the GSQAC workbook yet.
+export const getPMShriActionItems = (workbook, gsqacResult = null) => {
 
   const { districts } = getPMShriData(workbook);
-  const byDistrict = Object.fromEntries(districts.map((d) => [d.district, d]));
+  const byDistrict = Object.fromEntries(districts.map((d) => [canonicalizePMShriDistrict(d.district), d]));
+  const gsqacByDistrict = groupGSQACDistrictsByName(gsqacResult);
+  const gsqacSchoolsByDistrict = groupGSQACSchoolsByDistrict(gsqacResult);
 
   const items = PRIORITY_DISTRICTS
-    .map((canonicalName) => buildPMShriDistrictAction(canonicalName, byDistrict))
+    .map((canonicalName) => buildPMShriDistrictAction(canonicalName, byDistrict, gsqacByDistrict, gsqacSchoolsByDistrict))
     .filter(Boolean);
 
   const order = { CRITICAL: 0, HIGH: 1, MEDIUM: 2 };
@@ -782,14 +956,16 @@ export const getPMShriActionItems = (workbook) => {
 
 };
 
-export const getAllDistrictPMShriActionItems = (workbook) => {
+export const getAllDistrictPMShriActionItems = (workbook, gsqacResult = null) => {
 
   const { districts } = getPMShriData(workbook);
-  const byDistrict = Object.fromEntries(districts.map((d) => [d.district, d]));
+  const byDistrict = Object.fromEntries(districts.map((d) => [canonicalizePMShriDistrict(d.district), d]));
+  const gsqacByDistrict = groupGSQACDistrictsByName(gsqacResult);
+  const gsqacSchoolsByDistrict = groupGSQACSchoolsByDistrict(gsqacResult);
   const allNames = getCombinedRanking(workbook).districts.map((d) => d.District);
 
   return allNames
-    .map((canonicalName) => buildPMShriDistrictAction(canonicalName, byDistrict))
+    .map((canonicalName) => buildPMShriDistrictAction(canonicalName, byDistrict, gsqacByDistrict, gsqacSchoolsByDistrict))
     .filter(Boolean);
 
 };
@@ -2306,7 +2482,12 @@ export const getPMShriGSQACResult = (workbook) => {
     return {
       srNo: r[0],
       udise: r[1],
-      district: r[2],
+      // Normalized: this sheet spells some districts two different ways
+      // across its own rows (e.g. "BANASKANTHA" and "BANAS KANTHA", or
+      // "DEVBHOOMI DWARKA" and "DEVBHUMI DWARKA") — left un-normalized,
+      // that silently splits one district's schools into two separate
+      // buckets everywhere this data gets grouped by district.
+      district: normalizeDistrictName(r[2]),
       block: r[3],
       goiGog,
       phase: r[5],

@@ -205,24 +205,39 @@ export const getDistrictReportRows = (visits, masterClusters) => {
     masterByDistrict[d.district] = d;
   });
 
+  const makeEmptyRow = (key) => ({
+    District: key,
+    inPlace: 0,
+    visited: 0,
+    notVisitedWithReason: 0,
+    notVisitedWithoutReason: 0,
+    reasonCounts: emptyReasonCounts(),
+    // Freezed / Bagless Activity: field names not yet confirmed
+    // against a raw API sample. Counted only if present (see
+    // hasFreezedField / hasBaglessField below) so the UI can show
+    // "—" instead of a misleading 0 until confirmed.
+    freezed: 0,
+    baglessActivity: 0,
+  });
+
   const byDistrict = {};
+
+  // Seed every district on the official master list first, even ones
+  // with zero visit records for the selected date/role. Without this,
+  // a district that simply hasn't logged a visit yet today disappears
+  // from the table entirely — and its Total Cluster count disappears
+  // from the "Total Cluster" grand total along with it, which is why
+  // that stat card used to undercount the master-list sum (e.g. 3156
+  // instead of the true total). Total Cluster must always reflect the
+  // full master list regardless of what's in the live feed.
+  (masterClusters?.districts || []).forEach((d) => {
+    byDistrict[d.district] = makeEmptyRow(d.district);
+  });
+
   visits.forEach((v) => {
     const key = v.DistrictName || "Unknown";
     if (!byDistrict[key]) {
-      byDistrict[key] = {
-        District: key,
-        inPlace: 0,
-        visited: 0,
-        notVisitedWithReason: 0,
-        notVisitedWithoutReason: 0,
-        reasonCounts: emptyReasonCounts(),
-        // Freezed / Bagless Activity: field names not yet confirmed
-        // against a raw API sample. Counted only if present (see
-        // hasFreezedField / hasBaglessField below) so the UI can show
-        // "—" instead of a misleading 0 until confirmed.
-        freezed: 0,
-        baglessActivity: 0,
-      };
+      byDistrict[key] = makeEmptyRow(key);
     }
     const row = byDistrict[key];
     row.inPlace += 1;
@@ -312,20 +327,32 @@ export const getBlockReportRows = (visits, masterClusters, districtName) => {
     masterByBlock[`${b.district}||${b.block}`] = b;
   });
 
+  const makeEmptyBlockRow = (dKey, bKey) => ({
+    District: dKey,
+    Block: bKey,
+    inPlace: 0,
+    visited: 0,
+    notVisitedWithReason: 0,
+    notVisitedWithoutReason: 0,
+  });
+
   const byBlock = {};
+
+  // Same reasoning as getDistrictReportRows above: seed every block on
+  // the master list (optionally scoped to the selected district) so a
+  // block with zero visits today still contributes its Total Cluster
+  // count to the total instead of vanishing.
+  (masterClusters?.blocks || []).forEach((b) => {
+    if (districtName && districtName !== "All" && b.district !== districtName) return;
+    byBlock[`${b.district}||${b.block}`] = makeEmptyBlockRow(b.district, b.block);
+  });
+
   filtered.forEach((v) => {
     const dKey = v.DistrictName || "Unknown";
     const bKey = v.BlockName || "Unknown";
     const key = `${dKey}||${bKey}`;
     if (!byBlock[key]) {
-      byBlock[key] = {
-        District: dKey,
-        Block: bKey,
-        inPlace: 0,
-        visited: 0,
-        notVisitedWithReason: 0,
-        notVisitedWithoutReason: 0,
-      };
+      byBlock[key] = makeEmptyBlockRow(dKey, bKey);
     }
     const row = byBlock[key];
     row.inPlace += 1;
