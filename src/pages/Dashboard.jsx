@@ -15,8 +15,6 @@ import {
   TableRow,
   Paper,
   Button,
-  ToggleButtonGroup,
-  ToggleButton,
 } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
@@ -73,6 +71,7 @@ import {
   getSATDistrictLOBreakdown,
 } from "../services/dataService";
 import { PGIIndicatorSection, PARAKHCompetencySection, SATLOBreakdownSection } from "../components/DistrictDeepDive";
+import DropdownFilter from "../components/DropdownFilter";
 
 const Dashboard = () => {
   // -----------------------------
@@ -1051,15 +1050,15 @@ const satSubjectComparisonChartData = (() => {
       </Typography>
     </Box>
 
-    <ToggleButtonGroup
+    <DropdownFilter
+      minWidth={160}
       value={satSemester}
-      exclusive
-      size="small"
-      onChange={(e, value) => value && setSatSemester(value)}
-    >
-      <ToggleButton value="sem2" sx={{ fontWeight: 600, fontSize: 12, px: 2 }}>Semester 2</ToggleButton>
-      <ToggleButton value="sem1" sx={{ fontWeight: 600, fontSize: 12, px: 2 }}>Semester 1</ToggleButton>
-    </ToggleButtonGroup>
+      onChange={(e) => setSatSemester(e.target.value)}
+      options={[
+        { value: "sem2", label: "Semester 2" },
+        { value: "sem1", label: "Semester 1" },
+      ]}
+    />
   </Box>
   <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.5, ml: 2.5 }}>
     District-wise SAT ({satSemester === "sem1" ? "Semester 1" : "Semester 2"}) performance, plus Semester 1 vs Semester 2 comparison below · filtered by the same District selector above

@@ -97,12 +97,19 @@ export const AnalysisDataTable = ({
   searchable = false,
   searchKeys,
   districtFilterKey,
+  externalDistrict, // optional: value from a page-level district filter. When
+  // provided, this table's own District dropdown is hidden and rows are
+  // filtered by this value instead — keeps every table in sync with one
+  // shared filter instead of each table having its own disconnected one.
   dense = true,
 }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(pageSize);
   const [search, setSearch] = useState("");
-  const [districtFilter, setDistrictFilter] = useState("All");
+  const [internalDistrictFilter, setInternalDistrictFilter] = useState("All");
+  const isControlled = externalDistrict !== undefined;
+  const districtFilter = isControlled ? externalDistrict : internalDistrictFilter;
+  const setDistrictFilter = setInternalDistrictFilter;
 
   const cols = columns || (rows[0] ? Object.keys(rows[0]).map((k) => ({ key: k, label: k })) : []);
 
@@ -128,9 +135,9 @@ export const AnalysisDataTable = ({
 
   return (
     <Box>
-      {(searchable || districtFilterKey) && (
+      {(searchable || (districtFilterKey && !isControlled)) && (
         <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", mb: 1.5 }}>
-          {districtFilterKey && (
+          {districtFilterKey && !isControlled && (
             <TextField
               select
               size="small"

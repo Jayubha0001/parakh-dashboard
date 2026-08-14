@@ -27,7 +27,7 @@ const GRADE_PIE_COLORS = { "A+": "#2E7D32", A: "#66BB6A", B: "#F0B429", C: "#EF6
 
 const metricValue = (label) => gog.stateMetrics.find((m) => m.metric === label)?.value;
 
-const GOGAnalysisPanel = () => {
+const GOGAnalysisPanel = ({ selectedDistrict = "All" }) => {
   return (
     <Box>
       {/* State overview */}
@@ -95,6 +95,7 @@ const GOGAnalysisPanel = () => {
           rows={gog.districtEnrollResult}
           searchable
           districtFilterKey="District"
+                externalDistrict={selectedDistrict}
           pageSize={15}
           columns={[
             { key: "District", label: "District" },
@@ -115,6 +116,7 @@ const GOGAnalysisPanel = () => {
               rows={gog.schoolEnrollDetail}
               searchable
               districtFilterKey="District"
+                externalDistrict={selectedDistrict}
               pageSize={15}
               columns={[
                 { key: "District", label: "District" },
@@ -138,6 +140,7 @@ const GOGAnalysisPanel = () => {
           rows={gog.districtGSQACResult}
           searchable
           districtFilterKey="District"
+                externalDistrict={selectedDistrict}
           pageSize={15}
           columns={[
             { key: "District", label: "District" },
@@ -160,6 +163,7 @@ const GOGAnalysisPanel = () => {
               rows={gog.schoolGSQACDetail}
               searchable
               districtFilterKey="District"
+                externalDistrict={selectedDistrict}
               pageSize={15}
               columns={[
                 { key: "District", label: "District" },
@@ -197,6 +201,7 @@ const GOGAnalysisPanel = () => {
                     rows={sec.rows}
                     searchable
                     districtFilterKey="District"
+                externalDistrict={selectedDistrict}
                     pageSize={10}
                     columns={sec.cols.map((k) => ({ key: k, label: k, mono: /%|No\.|Change|Grade|UDISE/.test(k) }))}
                   />
@@ -217,6 +222,7 @@ const GOGAnalysisPanel = () => {
               rows={gog.gradeStable3Yr}
               searchable
               districtFilterKey="District"
+                externalDistrict={selectedDistrict}
               pageSize={10}
               columns={[
                 { key: "District", label: "District" },

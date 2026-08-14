@@ -50,6 +50,7 @@ import {
 import { isPriorityDistrict } from "../utils/priorityDistricts";
 import PriorityChip from "../components/PriorityChip";
 import ActionItemsQueue from "../components/ActionItemsQueue";
+import DropdownFilter from "../components/DropdownFilter";
 import GOIAnalysisPanel from "../components/pmshri/GOIAnalysisPanel";
 import GOGAnalysisPanel from "../components/pmshri/GOGAnalysisPanel";
 import CombinedOverview from "../components/pmshri/CombinedOverview";
@@ -138,12 +139,41 @@ const PMShri = () => {
     );
   }
 
-  const sorted = [...districts].sort((a, b) => b.totalSchools - a.totalSchools);
+  const filteredDistricts = gsqacDistrictFilter === "All" ? districts : districts.filter((d) => d.district === gsqacDistrictFilter);
+  const sorted = [...filteredDistricts].sort((a, b) => b.totalSchools - a.totalSchools);
 
-  const gsqacSegmentSchools = gsqacSegment === "GOI" ? gsqac.goiSchools : gsqacSegment === "GOG" ? gsqac.gogSchools : gsqac.schools;
+  const gsqacSegmentSchoolsUnfiltered = gsqacSegment === "GOI" ? gsqac.goiSchools : gsqacSegment === "GOG" ? gsqac.gogSchools : gsqac.schools;
+  const gsqacSegmentSchools =
+    gsqacDistrictFilter === "All" ? gsqacSegmentSchoolsUnfiltered : gsqacSegmentSchoolsUnfiltered.filter((s) => s.district === gsqacDistrictFilter);
   const gsqacCurrentDistricts = buildDistrictSummariesForYear(gsqacSegmentSchools, gsqacYearIndex);
+  const gsqacCurrentDistrictsFiltered =
+    gsqacDistrictFilter === "All" ? gsqacCurrentDistricts : gsqacCurrentDistricts.filter((d) => d.district === gsqacDistrictFilter);
   const gsqacCurrentState = summarizeSchoolsForYear(gsqacSegmentSchools, gsqacYearIndex);
   const gsqacSelectedYearLabel = PM_SHRI_YEAR_LABELS[gsqacYearIndex];
+  // Unfiltered state-wide version too, so sections can show "State: X" next
+  // to the district-filtered number instead of just replacing it.
+  const gsqacCurrentStateWide = summarizeSchoolsForYear(gsqacSegmentSchoolsUnfiltered, gsqacYearIndex);
+
+  // District-filtered state/segment cards + year-wise chart (previously
+  // these used gsqac.state / gsqac.stateGOI / gsqac.stateGOG / gsqac.yearWise
+  // — fixed state-wide numbers computed once in dataService.js that never
+  // responded to the District filter at all).
+  const gsqacDistrictAll = gsqacDistrictFilter === "All" ? gsqac.schools : gsqac.schools.filter((s) => s.district === gsqacDistrictFilter);
+  const gsqacDistrictGOI = gsqacDistrictFilter === "All" ? gsqac.goiSchools : gsqac.goiSchools.filter((s) => s.district === gsqacDistrictFilter);
+  const gsqacDistrictGOG = gsqacDistrictFilter === "All" ? gsqac.gogSchools : gsqac.gogSchools.filter((s) => s.district === gsqacDistrictFilter);
+  const gsqacStateCardAll = summarizeSchoolsForYear(gsqacDistrictAll, PM_SHRI_YEAR_LABELS.length - 1);
+  const gsqacStateCardGOI = summarizeSchoolsForYear(gsqacDistrictGOI, PM_SHRI_YEAR_LABELS.length - 1);
+  const gsqacStateCardGOG = summarizeSchoolsForYear(gsqacDistrictGOG, PM_SHRI_YEAR_LABELS.length - 1);
+  const gsqacAvgPctFor = (subset, yearIndex) => {
+    const vals = subset.map((s) => s.years[yearIndex]?.pct).filter((v) => v != null);
+    return vals.length ? Number((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2)) : null;
+  };
+  const gsqacYearWiseFiltered = PM_SHRI_YEAR_LABELS.map((year, i) => ({
+    year,
+    "All Schools": gsqacAvgPctFor(gsqacDistrictAll, i),
+    GOI: gsqacAvgPctFor(gsqacDistrictGOI, i),
+    GOG: gsqacAvgPctFor(gsqacDistrictGOG, i),
+  }));
 
   const gsqacFilteredSchools = gsqac.schools.filter((s) => {
     if (gsqacSegment !== "All" && s.goiGog !== gsqacSegment) return false;
@@ -159,7 +189,11 @@ const PMShri = () => {
     gsqacPage * gsqacRowsPerPage + gsqacRowsPerPage
   );
 
-  const decliningFiltered = gsqacSegment === "All" ? gsqac.decliningSchools : gsqac.decliningSchools.filter((s) => s.goiGog === gsqacSegment);
+  const decliningFiltered = gsqac.decliningSchools.filter((s) => {
+    if (gsqacSegment !== "All" && s.goiGog !== gsqacSegment) return false;
+    if (gsqacDistrictFilter !== "All" && s.district !== gsqacDistrictFilter) return false;
+    return true;
+  });
   const decliningPaged = decliningFiltered.slice(
     decliningPage * decliningRowsPerPage,
     decliningPage * decliningRowsPerPage + decliningRowsPerPage
@@ -171,12 +205,16 @@ const PMShri = () => {
     "GOG Schools": d.gogSchools,
   }));
 
+  // When a district is selected, show that district's own totals (still
+  // sourced from the same `districts` list) instead of the fixed state
+  // total — with the state number kept alongside for reference.
+  const displayTotal = gsqacDistrictFilter === "All" ? stateTotal : filteredDistricts[0];
   const statCards = [
-    { label: "Total PM Shri Schools", value: stateTotal?.totalSchools ?? 0, accent: "#1976D2" },
-    { label: "Total Enrolment", value: stateTotal?.totalEnrollment?.toLocaleString() ?? 0, accent: "#2E7D32" },
-    { label: "Total Teachers", value: stateTotal?.totalTeachers?.toLocaleString() ?? 0, accent: "#F0B429" },
-    { label: "GOI Schools", value: stateTotal?.goiSchools ?? 0, accent: "#8E24AA" },
-    { label: "GOG Schools", value: stateTotal?.gogSchools ?? 0, accent: "#00897B" },
+    { label: "Total PM Shri Schools", value: displayTotal?.totalSchools ?? 0, stateValue: stateTotal?.totalSchools ?? 0, accent: "#1976D2" },
+    { label: "Total Enrolment", value: displayTotal?.totalEnrollment?.toLocaleString() ?? 0, stateValue: stateTotal?.totalEnrollment?.toLocaleString() ?? 0, accent: "#2E7D32" },
+    { label: "Total Teachers", value: displayTotal?.totalTeachers?.toLocaleString() ?? 0, stateValue: stateTotal?.totalTeachers?.toLocaleString() ?? 0, accent: "#F0B429" },
+    { label: "GOI Schools", value: displayTotal?.goiSchools ?? 0, stateValue: stateTotal?.goiSchools ?? 0, accent: "#8E24AA" },
+    { label: "GOG Schools", value: displayTotal?.gogSchools ?? 0, stateValue: stateTotal?.gogSchools ?? 0, accent: "#00897B" },
   ];
 
   return (
@@ -201,12 +239,28 @@ const PMShri = () => {
         </Tabs>
       </Paper>
 
-      {activeTab === 1 && <GOIAnalysisPanel />}
-      {activeTab === 2 && <GOGAnalysisPanel />}
+      {activeTab === 1 && <GOIAnalysisPanel selectedDistrict={gsqacDistrictFilter} />}
+      {activeTab === 2 && <GOGAnalysisPanel selectedDistrict={gsqacDistrictFilter} />}
+
+      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: 2, mt: 2, display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+        <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: "text.secondary" }}>
+          District Filter — applies across all tabs on this page:
+        </Typography>
+        <DropdownFilter
+          minWidth={220}
+          value={gsqacDistrictFilter}
+          onChange={(e) => setGsqacDistrictFilter(e.target.value)}
+          options={[
+            { value: "All", label: "All Districts" },
+            ...[...districts].sort((a, b) => a.district.localeCompare(b.district)).map((d) => ({ value: d.district, label: d.district })),
+          ]}
+        />
+      </Paper>
 
       {activeTab === 0 && (
       <>
-      <CombinedOverview />
+      <CombinedOverview selectedDistrict={gsqacDistrictFilter} />
+
       <Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", overflow: "hidden", mt: 2 }}>
         <Grid container>
           {statCards.map((stat, i) => (
@@ -231,6 +285,11 @@ const PMShri = () => {
               >
                 {stat.value}
               </Typography>
+              {gsqacDistrictFilter !== "All" && (
+                <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 0.25 }}>
+                  State: {stat.stateValue}
+                </Typography>
+              )}
             </Grid>
           ))}
         </Grid>
@@ -319,10 +378,10 @@ const PMShri = () => {
             </Typography>
           </Box>
           <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 0.5, color: "#16233B" }}>
-            Gujarat State Quality Assurance & Certification — {gsqac.latestYearLabel}
+            Gujarat State Quality Assurance & Certification — {gsqac.latestYearLabel}{gsqacDistrictFilter !== "All" ? ` · ${gsqacDistrictFilter}` : ""}
           </Typography>
           <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 2 }}>
-            {gsqac.state.totalSchools.toLocaleString()} PM SHRI schools · State average {gsqac.state.avgPct.toFixed(1)}%
+            {gsqacStateCardAll.totalSchools.toLocaleString()} PM SHRI schools · Average {gsqacStateCardAll.avgPct.toFixed(1)}%
           </Typography>
 
           {/* GOI vs GOG — kept separate throughout: these are two
@@ -330,9 +389,9 @@ const PMShri = () => {
               hides which one needs attention. */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
             {[
-              { label: "All Schools", data: gsqac.state, accent: "#0F172A" },
-              { label: "GOI Schools", data: gsqac.stateGOI, accent: "#1976D2" },
-              { label: "GOG Schools", data: gsqac.stateGOG, accent: "#8E24AA" },
+              { label: "All Schools", data: gsqacStateCardAll, stateData: gsqac.state, accent: "#0F172A" },
+              { label: "GOI Schools", data: gsqacStateCardGOI, stateData: gsqac.stateGOI, accent: "#1976D2" },
+              { label: "GOG Schools", data: gsqacStateCardGOG, stateData: gsqac.stateGOG, accent: "#8E24AA" },
             ].map((seg) => (
               <Grid size={{ xs: 12, sm: 4 }} key={seg.label}>
                 <Paper elevation={0} sx={{ borderRadius: 2.5, border: "1px solid #E4E7F0", borderLeft: `4px solid ${seg.accent}`, p: 2 }}>
@@ -348,6 +407,11 @@ const PMShri = () => {
                   <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, fontSize: 15, color: seg.accent, mt: 0.25 }}>
                     Avg {seg.data.avgPct.toFixed(1)}%
                   </Typography>
+                  {gsqacDistrictFilter !== "All" && (
+                    <Typography sx={{ fontSize: 11, color: "text.secondary", mt: 0.5 }}>
+                      State: {seg.stateData.totalSchools.toLocaleString()} schools · Avg {seg.stateData.avgPct.toFixed(1)}%
+                    </Typography>
+                  )}
                 </Paper>
               </Grid>
             ))}
@@ -360,7 +424,7 @@ const PMShri = () => {
             Year-wise Comparison
           </Typography>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={gsqac.yearWise} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}>
+            <BarChart data={gsqacYearWiseFiltered} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="year" tick={{ fontSize: 12 }} />
               <YAxis domain={[0, 100]} />
@@ -408,7 +472,8 @@ const PMShri = () => {
 
           {/* Grade / Color Grade / Score Range key */}
           <Typography sx={{ fontSize: 12, color: "text.secondary", fontWeight: 600, mb: 0.75 }}>
-            School counts for {gsqacSelectedYearLabel}{gsqacSegment !== "All" ? ` · ${gsqacSegment} Schools` : ""}
+            School counts for {gsqacSelectedYearLabel}{gsqacSegment !== "All" ? ` · ${gsqacSegment} Schools` : ""}{gsqacDistrictFilter !== "All" ? ` · ${gsqacDistrictFilter}` : ""}
+            {gsqacDistrictFilter !== "All" ? ` (State-wide: ${gsqacCurrentStateWide.totalSchools.toLocaleString()} schools)` : ""}
           </Typography>
           <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #E4E7F0", mb: 3, maxWidth: 520 }}>
             <Table size="small">
@@ -472,7 +537,7 @@ const PMShri = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {gsqacCurrentDistricts.map((d) => (
+                {gsqacCurrentDistrictsFiltered.map((d) => (
                   <TableRow key={d.district} hover sx={isPriorityDistrict(d.district) ? { bgcolor: "#FFFBEB" } : undefined}>
                     <TableCell sx={{ fontWeight: 500 }}>
                       {d.district}
@@ -491,24 +556,11 @@ const PMShri = () => {
             </Table>
           </TableContainer>
 
-          {/* School-level search/filter */}
+          {/* School-level search (District is controlled by the filter at the top of this tab) */}
           <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 16, mb: 1.5, color: "#16233B" }}>
             School-wise Result
           </Typography>
           <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", mb: 2 }}>
-            <TextField
-              select
-              size="small"
-              label="District"
-              value={gsqacDistrictFilter}
-              onChange={(e) => setGsqacDistrictFilter(e.target.value)}
-              sx={{ minWidth: 200 }}
-            >
-              <MenuItem value="All">All Districts</MenuItem>
-              {gsqac.districts.map((d) => (
-                <MenuItem key={d.district} value={d.district}>{d.district}</MenuItem>
-              ))}
-            </TextField>
             <TextField
               size="small"
               label="Search school, UDISE, block..."
@@ -617,10 +669,11 @@ const PMShri = () => {
             </Typography>
           </Box>
           <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 0.5, color: "#16233B" }}>
-            Schools Declined vs Previous Year {gsqacSegment !== "All" ? `— ${gsqacSegment} Schools` : ""}
+            Schools Declined vs Previous Year {gsqacSegment !== "All" ? `— ${gsqacSegment} Schools` : ""}{gsqacDistrictFilter !== "All" ? ` · ${gsqacDistrictFilter}` : ""}
           </Typography>
           <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 2 }}>
             {decliningFiltered.length.toLocaleString()} schools scored lower in their latest assessment than the one before it — sorted biggest drop first.
+            {gsqacDistrictFilter !== "All" ? ` (State-wide: ${gsqac.decliningSchools.filter((s) => gsqacSegment === "All" || s.goiGog === gsqacSegment).length.toLocaleString()} schools)` : ""}
           </Typography>
 
           <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 480, border: "1px solid #E4E7F0" }}>

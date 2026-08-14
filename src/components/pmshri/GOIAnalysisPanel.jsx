@@ -37,7 +37,7 @@ const autoColumns = (sample = {}) =>
       mono: k.toLowerCase().includes("result") || k === "Sr. No.",
     }));
 
-const GOIAnalysisPanel = () => {
+const GOIAnalysisPanel = ({ selectedDistrict = "All" }) => {
   const latestEnr = latest(goi.stateEnrollment);
   const latestGSQAC = latest(goi.stateGSQAC);
   const latestG1012 = latest(goi.stateGrade1012);
@@ -100,6 +100,7 @@ const GOIAnalysisPanel = () => {
           rows={goi.districtEnrollment}
           searchable
           districtFilterKey="District"
+          externalDistrict={selectedDistrict}
           pageSize={15}
           columns={[
             { key: "District", label: "District" },
@@ -122,6 +123,7 @@ const GOIAnalysisPanel = () => {
           rows={goi.districtGSQAC}
           searchable
           districtFilterKey="District"
+          externalDistrict={selectedDistrict}
           pageSize={15}
           columns={[
             { key: "District", label: "District" },
@@ -144,6 +146,8 @@ const GOIAnalysisPanel = () => {
             <AnalysisDataTable
               rows={goi.districtGrade10}
               searchable
+              districtFilterKey="District"
+              externalDistrict={selectedDistrict}
               pageSize={10}
               columns={[
                 { key: "District", label: "District" },
@@ -160,6 +164,8 @@ const GOIAnalysisPanel = () => {
             <AnalysisDataTable
               rows={goi.districtGrade12}
               searchable
+              districtFilterKey="District"
+              externalDistrict={selectedDistrict}
               pageSize={10}
               columns={[
                 { key: "District", label: "District" },
@@ -186,6 +192,8 @@ const GOIAnalysisPanel = () => {
               <AnalysisDataTable
                 rows={sec.schools}
                 searchable
+                districtFilterKey="District"
+                externalDistrict={selectedDistrict}
                 pageSize={10}
                 columns={autoColumns(sec.schools[0])}
               />
@@ -209,6 +217,8 @@ const GOIAnalysisPanel = () => {
                 <AnalysisDataTable
                   rows={sec.schools}
                   searchable
+                  districtFilterKey="District"
+                  externalDistrict={selectedDistrict}
                   pageSize={10}
                   columns={autoColumns(sec.schools[0])}
                 />

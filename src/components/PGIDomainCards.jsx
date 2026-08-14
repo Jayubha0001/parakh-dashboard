@@ -3,11 +3,11 @@ import { gradeColor } from "./PGIHeader";
 
 const shortenDomain = (name = "") => name.split(" - ")[0].replace("Domain ", "D");
 
-const PGIDomainCards = ({ domains = [] }) => {
+const PGIDomainCards = ({ domains = [], title = "📚 Domain-wise Score — Gujarat State (2024-25)" }) => {
   return (
     <Box sx={{ mt: 4 }}>
       <Typography variant="h6" fontWeight="bold" mb={2} sx={{ color: "#1E3A8A" }}>
-        📚 Domain-wise Score — Gujarat State (2024-25)
+        {title}
       </Typography>
 
       <Grid container spacing={3}>

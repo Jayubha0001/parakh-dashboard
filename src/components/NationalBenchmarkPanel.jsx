@@ -4,12 +4,13 @@ import {
   CardContent,
   Typography,
   Grid,
+  Chip,
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Chip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { useState } from "react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -154,22 +155,23 @@ const BenchmarkChart = ({ item, showDistrict }) => {
   );
 };
 
-const Section = ({ title, items, showDistrict, defaultOpen = false }) => (
-  <Accordion defaultExpanded={defaultOpen} disableGutters sx={{ mb: 1, "&:before": { display: "none" } }}>
-    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-      <Typography sx={{ fontWeight: 600, fontSize: 14 }}>{title}</Typography>
-    </AccordionSummary>
-    <AccordionDetails>
-      <Grid container spacing={2}>
-        {items.map((item) => (
-          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.name}>
-            <BenchmarkChart item={item} showDistrict={showDistrict} />
-          </Grid>
-        ))}
+const CategoryChartGrid = ({ items, showDistrict }) => (
+  <Grid container spacing={2}>
+    {items.map((item) => (
+      <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.name}>
+        <BenchmarkChart item={item} showDistrict={showDistrict} />
       </Grid>
-    </AccordionDetails>
-  </Accordion>
+    ))}
+  </Grid>
 );
+
+const CATEGORY_OPTIONS = [
+  { key: "subject", label: "📊 By Subject" },
+  { key: "gender", label: "👥 By Gender" },
+  { key: "location", label: "🏡 By Location (Rural/Urban)" },
+  { key: "management", label: "🏫 By School Management Type" },
+  { key: "socialGroup", label: "🤝 By Social Group" },
+];
 
 const NationalBenchmarkPanel = ({
   district = "All",
@@ -180,6 +182,7 @@ const NationalBenchmarkPanel = ({
   socialGroupData = [],
 }) => {
   const showDistrict = district !== "All";
+  const [category, setCategory] = useState("subject");
 
   const combine = (sectionKey) =>
     combineAcrossGrades(sectionKey, district, subjectData, genderData, locationData, managementData, socialGroupData);
@@ -220,11 +223,30 @@ const NationalBenchmarkPanel = ({
           </Box>
         </Typography>
 
-        <Section title="📚 By Subject" items={combine("subject")} showDistrict={showDistrict} defaultOpen />
-        <Section title="🚻 By Gender" items={combine("gender")} showDistrict={showDistrict} />
-        <Section title="🏘️ By Location (Rural/Urban)" items={combine("location")} showDistrict={showDistrict} />
-        <Section title="🏫 By School Management Type" items={combine("management")} showDistrict={showDistrict} />
-        <Section title="🤝 By Social Group" items={combine("socialGroup")} showDistrict={showDistrict} />
+        <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 1.5 }}>View</Typography>
+        {CATEGORY_OPTIONS.map((o) => (
+          <Accordion
+            key={o.key}
+            expanded={category === o.key}
+            onChange={(_, isExp) => setCategory(isExp ? o.key : category)}
+            disableGutters
+            elevation={0}
+            sx={{
+              mb: 1.25,
+              border: "1px solid #E4E7F0",
+              borderRadius: "12px !important",
+              "&:before": { display: "none" },
+              overflow: "hidden",
+            }}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2.5, py: 0.5 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B" }}>{o.label}</Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 2.5, pb: 2.5 }}>
+              <CategoryChartGrid items={combine(o.key)} showDistrict={showDistrict} />
+            </AccordionDetails>
+          </Accordion>
+        ))}
       </CardContent>
     </Card>
   );

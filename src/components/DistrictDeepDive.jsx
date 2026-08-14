@@ -13,8 +13,6 @@ import {
   TableBody,
   TableRow,
   TableCell,
-  TextField,
-  MenuItem,
   Chip,
 } from "@mui/material";
 
@@ -48,6 +46,7 @@ const groupIndicatorsByCategory = (indicators, domainSummary) => {
 
 export const PGIIndicatorSection = ({ indicators = [], domainSummary = [], overall }) => {
   const groups = groupIndicatorsByCategory(indicators, domainSummary);
+  const [selectedCategory, setSelectedCategory] = useState(groups[0]?.category || "");
 
   // Anything below the PGI-D "Akanshi" cut-off (31%) is a genuine weak
   // spot, not just below-average noise — these get pulled into the
@@ -69,28 +68,31 @@ export const PGIIndicatorSection = ({ indicators = [], domainSummary = [], overa
         </Box>
       )}
 
+      <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 1.5 }}>Category</Typography>
+
       {groups.map((g) => {
         const pct = g.maxWeight ? (g.score / g.maxWeight) * 100 : 0;
-
         return (
-          <Accordion key={g.category} disableGutters sx={{ mb: 1, "&:before": { display: "none" } }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center", pr: 2 }}>
-                <Typography sx={{ fontWeight: 600, fontSize: 14 }}>{g.category}</Typography>
-                <Typography
-                  sx={{
-                    fontFamily: '"IBM Plex Mono", monospace',
-                    fontWeight: 700,
-                    fontSize: 13,
-                    color: scoreColor(pct),
-                  }}
-                >
-                  {g.score.toFixed(1)} / {g.maxWeight} ({pct.toFixed(1)}%)
-                </Typography>
-              </Box>
+          <Accordion
+            key={g.category}
+            expanded={selectedCategory === g.category}
+            onChange={(_, isExp) => setSelectedCategory(isExp ? g.category : selectedCategory)}
+            disableGutters
+            elevation={0}
+            sx={{
+              mb: 1.25,
+              border: "1px solid #E4E7F0",
+              borderRadius: "12px !important",
+              "&:before": { display: "none" },
+              overflow: "hidden",
+            }}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2.5, py: 0.5 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B" }}>
+                {g.category} — {g.score.toFixed(1)} / {g.maxWeight} ({pct.toFixed(1)}%)
+              </Typography>
             </AccordionSummary>
-
-            <AccordionDetails sx={{ p: 0 }}>
+            <AccordionDetails sx={{ px: 2.5, pb: 2.5, overflowX: "auto" }}>
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ bgcolor: "#F5F6FA" }}>
@@ -310,16 +312,10 @@ export const SATLOBreakdownSection = ({ los = [] }) => {
   );
 };
 
-const groupCompetenciesBySubject = (data) => {
-  const subjects = [...new Set(data.map((r) => r.subject))];
-  return subjects.map((subject) => ({
-    subject,
-    rows: data.filter((r) => r.subject === subject),
-  }));
-};
-
-const CompetencyTable = ({ data = [] }) => {
-  const groups = groupCompetenciesBySubject(data);
+const SingleSubjectCompetencyTable = ({ data = [] }) => {
+  const subject = data[0]?.subject;
+  const avgDistrict = data.length ? data.reduce((s, r) => s + r.district, 0) / data.length : 0;
+  const avgPct = avgDistrict * 100;
 
   // A competency is a weak spot if the district is clearly below the
   // Watch/Support line (45%) or is meaningfully behind the national
@@ -331,98 +327,85 @@ const CompetencyTable = ({ data = [] }) => {
 
   return (
     <Box>
-      {groups.map((g) => {
-        const avgDistrict = g.rows.reduce((s, r) => s + r.district, 0) / g.rows.length;
-        const avgPct = avgDistrict * 100;
+      <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center", mb: 1.5 }}>
+        <Typography sx={{ fontWeight: 600, fontSize: 15 }}>{subject}</Typography>
+        <Typography
+          sx={{
+            fontFamily: '"IBM Plex Mono", monospace',
+            fontWeight: 700,
+            fontSize: 14,
+            color: scoreColor(avgPct),
+          }}
+        >
+          Avg {avgPct.toFixed(1)}%
+        </Typography>
+      </Box>
 
-        return (
-          <Accordion key={g.subject} disableGutters sx={{ mb: 1, "&:before": { display: "none" } }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center", pr: 2 }}>
-                <Typography sx={{ fontWeight: 600, fontSize: 14 }}>{g.subject}</Typography>
-                <Typography
+      <Table size="small">
+        <TableHead>
+          <TableRow sx={{ bgcolor: "#F5F6FA" }}>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Competency</TableCell>
+            <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
+              National %
+            </TableCell>
+            <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
+              District %
+            </TableCell>
+            <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
+              Gap
+            </TableCell>
+          </TableRow>
+        </TableHead>
+
+        <TableBody>
+          {data.map((row, idx) => {
+            const districtPct = row.district * 100;
+            const gap = row.district - row.national;
+            const isWeak = districtPct < 45 || gap * 100 <= -3;
+
+            return (
+              <TableRow key={idx} hover sx={isWeak ? { bgcolor: "#FDEAEA" } : undefined}>
+                <TableCell sx={{ fontSize: 12.5 }}>
+                  {row.description}
+                  {isWeak && (
+                    <Chip
+                      label="Weak"
+                      size="small"
+                      sx={{ ml: 1, height: 18, fontSize: 10, fontWeight: 700, bgcolor: "#D32F2F", color: "#fff" }}
+                    />
+                  )}
+                </TableCell>
+                <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12.5 }}>
+                  {(row.national * 100).toFixed(1)}%
+                </TableCell>
+                <TableCell
+                  align="center"
                   sx={{
                     fontFamily: '"IBM Plex Mono", monospace',
+                    fontSize: 12.5,
                     fontWeight: 700,
-                    fontSize: 13,
-                    color: scoreColor(avgPct),
+                    color: isWeak ? "#B71C1C" : "inherit",
                   }}
                 >
-                  Avg {avgPct.toFixed(1)}%
-                </Typography>
-              </Box>
-            </AccordionSummary>
-
-            <AccordionDetails sx={{ p: 0 }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ bgcolor: "#F5F6FA" }}>
-                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Competency</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
-                      National %
-                    </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
-                      District %
-                    </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
-                      Gap
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-
-                <TableBody>
-                  {g.rows.map((row, idx) => {
-                    const districtPct = row.district * 100;
-                    const gap = row.district - row.national;
-                    const isWeak = districtPct < 45 || gap * 100 <= -3;
-
-                    return (
-                      <TableRow key={idx} hover sx={isWeak ? { bgcolor: "#FDEAEA" } : undefined}>
-                        <TableCell sx={{ fontSize: 12.5 }}>
-                          {row.description}
-                          {isWeak && (
-                            <Chip
-                              label="Weak"
-                              size="small"
-                              sx={{ ml: 1, height: 18, fontSize: 10, fontWeight: 700, bgcolor: "#D32F2F", color: "#fff" }}
-                            />
-                          )}
-                        </TableCell>
-                        <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12.5 }}>
-                          {(row.national * 100).toFixed(1)}%
-                        </TableCell>
-                        <TableCell
-                          align="center"
-                          sx={{
-                            fontFamily: '"IBM Plex Mono", monospace',
-                            fontSize: 12.5,
-                            fontWeight: 700,
-                            color: isWeak ? "#B71C1C" : "inherit",
-                          }}
-                        >
-                          {districtPct.toFixed(1)}%
-                        </TableCell>
-                        <TableCell
-                          align="center"
-                          sx={{
-                            fontFamily: '"IBM Plex Mono", monospace',
-                            fontSize: 12.5,
-                            fontWeight: 700,
-                            color: gap >= 0 ? "#2E7D32" : "#D32F2F",
-                          }}
-                        >
-                          {gap >= 0 ? "+" : ""}
-                          {(gap * 100).toFixed(1)}%
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </AccordionDetails>
-          </Accordion>
-        );
-      })}
+                  {districtPct.toFixed(1)}%
+                </TableCell>
+                <TableCell
+                  align="center"
+                  sx={{
+                    fontFamily: '"IBM Plex Mono", monospace',
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    color: gap >= 0 ? "#2E7D32" : "#D32F2F",
+                  }}
+                >
+                  {gap >= 0 ? "+" : ""}
+                  {(gap * 100).toFixed(1)}%
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
 
       {weakRows.length > 0 && (
         <Box sx={{ mt: 2, p: 2.5, borderRadius: 2, bgcolor: "#FFFBEF", border: "1px dashed #F0B429" }}>
@@ -430,16 +413,15 @@ const CompetencyTable = ({ data = [] }) => {
             🎯 Action Points — Weakest Competencies ({weakRows.length})
           </Typography>
           <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 1.5 }}>
-            Every competency below is either under 45% or at least 3 points behind the national benchmark — in
-            order from weakest to least-weak.
+            Every {subject} competency below is either under 45% or at least 3 points behind the national benchmark
+            — in order from weakest to least-weak.
           </Typography>
 
           <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
             {weakRows.map((row, i) => (
               <Box component="li" key={i} sx={{ mb: 1.2 }}>
                 <Typography sx={{ fontSize: 13.5, color: "#16233B" }}>
-                  <strong>{row.description}</strong>{" "}
-                  <span style={{ color: "#5B6B85", fontSize: 12 }}>({row.subject})</span> — currently{" "}
+                  <strong>{row.description}</strong> — currently{" "}
                   <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, color: "#B71C1C" }}>
                     {row.districtPct.toFixed(1)}%
                   </span>{" "}
@@ -461,58 +443,60 @@ const CompetencyTable = ({ data = [] }) => {
   );
 };
 
-// The stage dropdown + weak-highlighted competency table + Action Points,
-// as one reusable block — used both inside DistrictDeepDive (Reports page)
-// and directly on the PARAKH page itself for whichever district is
-// currently selected there.
+// The combined Stage+Subject dropdown + weak-highlighted competency
+// table + Action Points, as one reusable block — used both inside
+// DistrictDeepDive (Reports page) and directly on the PARAKH page
+// itself for whichever district is currently selected there.
+// One dropdown picks stage AND subject together (e.g. "Foundational
+// (Grade 3) — Mathematics") instead of a stage dropdown plus a
+// separate subject accordion to open every time.
 export const PARAKHCompetencySection = ({ competencies }) => {
-  const [tab, setTab] = useState(0);
-
   const stageLabels = ["Foundational (Grade 3)", "Preparatory (Grade 6)", "Middle (Grade 9)"];
   const stageData = [competencies.g3, competencies.g6, competencies.g9];
 
+  const options = stageData.flatMap((data, stageIndex) => {
+    const subjects = [...new Set((data || []).map((r) => r.subject))];
+    return subjects.map((subject) => ({
+      value: `${stageIndex}::${subject}`,
+      label: `${stageLabels[stageIndex]} — ${subject}`,
+      stageIndex,
+      subject,
+    }));
+  });
+
+  const [expanded, setExpanded] = useState(false);
+
   return (
     <Box>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 2 }}>
-        <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Stage</Typography>
-        <TextField
-          select
-          size="small"
-          value={tab}
-          onChange={(e) => setTab(Number(e.target.value))}
-          className="no-print"
-          sx={{ minWidth: 220 }}
-        >
-          {stageLabels.map((label, i) => (
-            <MenuItem key={label} value={i}>
-              {label}
-            </MenuItem>
-          ))}
-        </TextField>
-      </Box>
+      <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 1.5 }}>Stage &amp; Subject</Typography>
 
-      {/* All 3 stages are always in the DOM. On screen only the selected
-          stage is shown; the "print-show-all" class (see index.css) forces
-          every stage to be visible when printing, so a report card
-          never leaves out G3/G6/G9 data just because a different stage
-          was selected on screen. */}
-      {stageLabels.map((label, i) => (
-        <Box
-          key={label}
-          className="print-show-all"
-          sx={{ display: tab === i ? "block" : "none", overflowX: "auto" }}
+      {/* Every stage+subject combo is its own expandable row, always in
+          the DOM. On screen only the expanded row is open; the global
+          print stylesheet (index.css) forces every MuiCollapse open when
+          printing, so a report card never leaves out G3/G6/G9 data just
+          because a different row was open on screen. */}
+      {options.map((o) => (
+        <Accordion
+          key={o.value}
+          expanded={expanded === o.value}
+          onChange={(_, isExp) => setExpanded(isExp ? o.value : false)}
+          disableGutters
+          elevation={0}
+          sx={{
+            mb: 1.25,
+            border: "1px solid #E4E7F0",
+            borderRadius: "12px !important",
+            "&:before": { display: "none" },
+            overflow: "hidden",
+          }}
         >
-          {tab !== i && (
-            <Typography
-              className="print-only-label"
-              sx={{ display: "none", fontWeight: 700, fontSize: 14, mt: 3, mb: 1 }}
-              component="div"
-            >
-              {label}
-            </Typography>
-          )}
-          <CompetencyTable data={stageData[i] || []} />
-        </Box>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2.5, py: 0.5 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B" }}>{o.label}</Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ px: 2.5, pb: 2.5, overflowX: "auto" }}>
+            <SingleSubjectCompetencyTable data={(stageData[o.stageIndex] || []).filter((r) => r.subject === o.subject)} />
+          </AccordionDetails>
+        </Accordion>
       ))}
     </Box>
   );
