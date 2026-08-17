@@ -59,7 +59,7 @@ const ScoreCell = ({ value }) => {
 };
 
 const Section = ({ title, subtitle, children }) => (
-  <Card sx={{ borderRadius: 3, boxShadow: 3, mb: 3, border: "1px solid #E4E7F0" }}>
+  <Card sx={{ borderRadius: 3, boxShadow: 3, mb: 2, border: "1px solid #E4E7F0" }}>
     <CardContent>
       <Typography sx={{ fontFamily: '"Fraunces", serif', fontSize: 20, fontWeight: 700, color: "#16233B" }}>
         {title}
@@ -214,7 +214,7 @@ const SATWorkbookExplorer = () => {
 
   return (
     <Box>
-      <Paper elevation={0} sx={{ p: 2.5, mb: 3, borderRadius: 3, border: "1px solid #E4E7F0", bgcolor: "#FBFBFE" }}>
+      <Paper elevation={0} sx={{ p: 2.5, mb: 2, borderRadius: 3, border: "1px solid #E4E7F0", bgcolor: "#FBFBFE" }}>
         <Typography sx={{ fontWeight: 700, color: "#16233B", mb: 2 }}>Semester 2 data drill-down</Typography>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6, md: 3 }}><FormControl fullWidth size="small"><InputLabel>District</InputLabel><Select value={district} label="District" onChange={(event) => updateDistrict(event.target.value)}><MenuItem value="All">All Districts</MenuItem>{districts.map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></FormControl></Grid>
@@ -225,7 +225,7 @@ const SATWorkbookExplorer = () => {
       </Paper>
 
       <Section title="District-wise SAT Data" subtitle={`${districtRows.length} district records · actual total and obtained question marks`}>
-        <Box sx={{ height: 360, mb: 3 }}><ResponsiveContainer width="100%" height="100%"><BarChart data={districtRows} margin={{ top: 16, right: 16, left: 0, bottom: 70 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="district" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 10 }} /><YAxis domain={[0, 100]} /><Tooltip formatter={(value) => percent(value)} /><Bar dataKey="averageScore" name="Average score" fill="#1976D2" radius={[5, 5, 0, 0]} /></BarChart></ResponsiveContainer></Box>
+        <Box sx={{ height: 360, mb: 2 }}><ResponsiveContainer width="100%" height="100%"><BarChart data={districtRows} margin={{ top: 16, right: 16, left: 0, bottom: 70 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="district" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 10 }} /><YAxis domain={[0, 100]} /><Tooltip formatter={(value) => percent(value)} /><Bar dataKey="averageScore" name="Average score" fill="#1976D2" radius={[5, 5, 0, 0]} /></BarChart></ResponsiveContainer></Box>
         <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 420 }}><Table stickyHeader size="small"><TableHead><TableRow><HeaderCell>District</HeaderCell><HeaderCell align="right">Total Question Marks</HeaderCell><HeaderCell align="right">Obtained Score</HeaderCell><HeaderCell align="right">Average Score</HeaderCell></TableRow></TableHead><TableBody>{districtRows.map((row) => <TableRow key={row.district} hover><TableCell>{row.district}</TableCell><TableCell align="right">{marks(row.totalQuestionMarks)}</TableCell><TableCell align="right">{marks(row.totalObtainedScore)}</TableCell><TableCell align="right">{percent(row.averageScore)}</TableCell></TableRow>)}</TableBody></Table></TableContainer>
       </Section>
 

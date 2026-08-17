@@ -13,6 +13,8 @@ import ActionItemsQueue from "../components/ActionItemsQueue";
 import { PGIIndicatorSection } from "../components/DistrictDeepDive";
 import { Card, CardContent } from "@mui/material";
 import pgiD202526 from "../data/pgiD202526.json";
+import PriorityChip from "../components/PriorityChip";
+import { isPriorityDistrict } from "../utils/priorityDistricts";
 
 import {
   loadExcel,
@@ -134,8 +136,10 @@ const PGI = () => {
   // single district is filtered (so it's not standing alone with nothing
   // to compare against), but included in the "All" view too for consistency.
   const stateAvg2425 = mergedRanking.reduce((s, d) => s + d.pct2425, 0) / mergedRanking.length;
+  const stateAvgScore2425 = mergedRanking.reduce((s, d) => s + d.score2425, 0) / mergedRanking.length;
   const withPct2526 = mergedRanking.filter((d) => d.pct2526 != null);
   const stateAvg2526 = withPct2526.length ? withPct2526.reduce((s, d) => s + d.pct2526, 0) / withPct2526.length : null;
+  const stateAvgScore2526 = withPct2526.length ? withPct2526.reduce((s, d) => s + d.score2526, 0) / withPct2526.length : null;
   rankingChartData.push({
     District: "State Average",
     "2024-25": Math.round(stateAvg2425 * 10) / 10,
@@ -225,7 +229,7 @@ const PGI = () => {
         title="📚 Category-wise Score — Gujarat State (2025-26 · Average of 33 Districts)"
       />
 
-      <Box mt={4}>
+      <Box mt={2.5}>
         <DistrictFilterBar
           district={district}
           setDistrict={setDistrict}
@@ -252,7 +256,7 @@ const PGI = () => {
         </CardContent>
       </Card>
 
-      <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 3, border: "1px solid #E4E7F0" }} elevation={0}>
+      <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2, border: "1px solid #E4E7F0" }} elevation={0}>
         <CardContent>
           <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
             📋 District-wise PGI-D 2.0 Ranking (out of 600) — 2024-25 vs 2025-26
@@ -272,8 +276,11 @@ const PGI = () => {
               </TableHead>
               <TableBody>
                 {filteredSortedRanking.map((d) => (
-                  <TableRow key={d.District} hover>
-                    <TableCell sx={{ fontWeight: 600 }}>{d.District}</TableCell>
+                  <TableRow key={d.District} hover sx={isPriorityDistrict(d.District) ? { bgcolor: "#FFFBEF" } : undefined}>
+                    <TableCell sx={{ fontWeight: 600 }}>
+                      {d.District}
+                      <PriorityChip district={d.District} />
+                    </TableCell>
                     <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>{d.score2425.toFixed(2)}</TableCell>
                     <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>{d.pct2425.toFixed(1)}%</TableCell>
                     <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>{d.score2526 != null ? d.score2526.toFixed(2) : "—"}</TableCell>
@@ -289,6 +296,18 @@ const PGI = () => {
                     </TableCell>
                   </TableRow>
                 ))}
+                {/* State Average — always shown at the bottom, even when
+                    filtered to one district, so there's always something
+                    to compare that district's numbers against. */}
+                <TableRow sx={{ bgcolor: "#F5F6FA" }}>
+                  <TableCell sx={{ fontWeight: 700 }}>⭐ State Average</TableCell>
+                  <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700 }}>{stateAvgScore2425.toFixed(2)}</TableCell>
+                  <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700 }}>{stateAvg2425.toFixed(1)}%</TableCell>
+                  <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700 }}>{stateAvgScore2526 != null ? stateAvgScore2526.toFixed(2) : "—"}</TableCell>
+                  <TableCell align="center" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700 }}>{stateAvg2526 != null ? `${stateAvg2526.toFixed(1)}%` : "—"}</TableCell>
+                  <TableCell align="center">—</TableCell>
+                  <TableCell align="center">—</TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </TableContainer>
@@ -309,7 +328,7 @@ const PGI = () => {
       />
 
       {district !== "All" && districtIndicators?.overall && (
-        <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+        <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
           <CardContent>
             <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
               🔎 {district} — Full Indicator Breakdown (70 Indicators) — 2024-25

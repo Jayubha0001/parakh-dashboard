@@ -2,13 +2,13 @@ import { Card, CardContent, Typography, Grid, Box, LinearProgress } from "@mui/m
 
 const ContextualSummaryCards = ({ data = [] }) => {
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 4 }}>
+    <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 2.5 }}>
       <CardContent>
         <Typography variant="h6" fontWeight="bold" mb={2} sx={{ color: "#1E3A8A" }}>
           🧩 Contextual Variables — High vs Low Performing Schools (Gujarat-wide)
         </Typography>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={2}>
           {data.map((row, i) => {
             const high = row["Avg High-Performing (%)"] ?? 0;
             const low = row["Avg Low-Performing (%)"] ?? 0;

@@ -566,7 +566,7 @@ const satSubjectComparisonChartData = (() => {
       <Paper
         elevation={0}
         sx={{
-          mt: 3,
+          mt: 2,
           borderRadius: 4,
           border: "1px solid #E4E7F0",
           overflow: "hidden",
@@ -696,7 +696,7 @@ const satSubjectComparisonChartData = (() => {
       </Paper>
 
       {/* Leaderboard: Top 5 / Bottom 5 — PARAKH + PGI-D */}
-      <Grid container spacing={3} mt={0.5}>
+      <Grid container spacing={2} mt={0.5}>
         {[
           { title: "Top PARAKH Districts", icon: "🎓", data: top5Districts, rankBase: 1, tone: "success.main", subtitle: `Ranked by: ${stage}${subject !== "Overall" ? ` · ${subject}` : ""}` },
           { title: "PARAKH — Needs Support", icon: "📉", data: bottom5Districts, rankBase: 33, tone: "error.main", reverse: true, subtitle: `Ranked by: ${stage}${subject !== "Overall" ? ` · ${subject}` : ""}` },
@@ -873,7 +873,7 @@ const satSubjectComparisonChartData = (() => {
 </Paper>
 
 
-<Box mt={3}>
+<Box mt={2}>
 
   <Card elevation={3}>
 
@@ -995,7 +995,7 @@ const satSubjectComparisonChartData = (() => {
   </Typography>
 </Box>
 
-<Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", p: 3, mb: 3 }}>
+<Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", p: 3, mb: 2 }}>
   <Grid container spacing={2}>
     <Grid size={{ xs: 12, sm: 4 }}>
       <Box sx={{ p: 2, borderRadius: 2, bgcolor: "#F5F6FA", textAlign: "center", height: "100%" }}>
@@ -1065,7 +1065,7 @@ const satSubjectComparisonChartData = (() => {
   </Typography>
 </Box>
 
-<Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", p: 3, mb: 3 }}>
+<Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", p: 3, mb: 2 }}>
   <Grid container spacing={2}>
     <Grid size={{ xs: 12, sm: 4 }}>
       <Box sx={{ p: 2, borderRadius: 2, bgcolor: "#F5F6FA", textAlign: "center", height: "100%" }}>
@@ -1110,7 +1110,7 @@ const satSubjectComparisonChartData = (() => {
 </Paper>
 
 {satGradeComparisonChartData.length > 0 && (
-  <Card elevation={3} sx={{ mt: 3 }}>
+  <Card elevation={3} sx={{ mt: 2 }}>
     <CardContent>
       <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
         SAT — Grade-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district} vs Gujarat State Average` : " · Gujarat State Average"}
@@ -1134,7 +1134,7 @@ const satSubjectComparisonChartData = (() => {
 )}
 
 {satSubjectComparisonChartData.length > 0 && (
-  <Card elevation={3} sx={{ mt: 3 }}>
+  <Card elevation={3} sx={{ mt: 2 }}>
     <CardContent>
       <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
         SAT — Subject-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district} vs Gujarat State Average` : " · Gujarat State-wide"}
@@ -1160,12 +1160,12 @@ const satSubjectComparisonChartData = (() => {
 <SATSemesterComparison data={satSemesterComparison} district={district} />
 
 {district !== "All" && (districtPgiIndicators?.overall || districtCompetencies || districtLoBreakdown?.length > 0) && (
-  <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+  <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
     <CardContent>
       <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 20, color: "#16233B", mb: 0.5 }}>
         🔎 {district} — Weakest Indicators, Across PGI, PARAKH & SAT
       </Typography>
-      <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 3 }}>
+      <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 2 }}>
         The same weakest-indicator breakdown each individual page shows, combined here since this Dashboard already
         covers all three.
       </Typography>
@@ -1185,7 +1185,7 @@ const satSubjectComparisonChartData = (() => {
 
       {districtCompetencies && (
         <>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 17, color: "#16233B", mt: 4, mb: 1 }}>
+          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 17, color: "#16233B", mt: 2.5, mb: 1 }}>
             📖 PARAKH — Competency-wise Mastery vs National Benchmark
           </Typography>
           <PARAKHCompetencySection competencies={districtCompetencies} />
@@ -1194,7 +1194,7 @@ const satSubjectComparisonChartData = (() => {
 
       {districtLoBreakdown?.length > 0 && (
         <>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 17, color: "#16233B", mt: 4, mb: 1 }}>
+          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 17, color: "#16233B", mt: 2.5, mb: 1 }}>
             📝 SAT — Learning-Outcome Breakdown
           </Typography>
           <SATLOBreakdownSection los={districtLoBreakdown} />

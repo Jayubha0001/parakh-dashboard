@@ -35,7 +35,7 @@ const PGIKPICards = ({ overall, totalDistricts, topDistrict, lowestDistrict }) =
   ];
 
   return (
-    <Grid container spacing={3}>
+    <Grid container spacing={2}>
       {cards.map((c, i) => (
         <Grid size={{ xs: 12, sm: 6, md: 2.4 }} key={i}>
           <Card

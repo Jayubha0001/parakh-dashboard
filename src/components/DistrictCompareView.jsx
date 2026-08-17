@@ -224,7 +224,7 @@ const DistrictCompareView = ({
   );
 
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+    <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
       <CardContent>
         <Typography
           sx={{
@@ -238,7 +238,7 @@ const DistrictCompareView = ({
           Compare Two Districts — Indicator by Indicator
         </Typography>
 
-        <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               select
@@ -358,7 +358,7 @@ const DistrictCompareView = ({
             </TableContainer>
 
             {/* ---- Detail reports: PGI-D category-wise, PARAKH grade-wise, SAT grade-wise ---- */}
-            <Box sx={{ mt: 3 }}>
+            <Box sx={{ mt: 2 }}>
               <Typography sx={{ fontSize: 13, fontWeight: 700, color: "#16233B", mb: 1 }}>
                 Detailed Reports — {districtA} vs {districtB}
               </Typography>
@@ -461,7 +461,7 @@ const DistrictCompareView = ({
                     <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 2 }}>No SAT Sem 1 grade-wise data for one of these districts.</Typography>
                   )}
 
-                  <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "#16233B", mt: 3, mb: 1 }}>Semester 2</Typography>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "#16233B", mt: 2, mb: 1 }}>Semester 2</Typography>
                   {sat2A && sat2B ? (
                     (() => {
                       const rows = satGradeSem2.grades.map((g) => ({ label: g, a: sat2A[g], b: sat2B[g] }));
@@ -486,7 +486,7 @@ const DistrictCompareView = ({
             </Box>
 
             {weakCompareRows.length > 0 && (
-              <Box sx={{ mt: 3, p: 2.5, borderRadius: 2, bgcolor: "#FFFBEF", border: "1px dashed #F0B429" }}>
+              <Box sx={{ mt: 2, p: 2.5, borderRadius: 2, bgcolor: "#FFFBEF", border: "1px dashed #F0B429" }}>
                 <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 16, color: "#16233B", mb: 0.5 }}>
                   🎯 Action Points — Weakest Indicators ({weakCompareRows.length})
                 </Typography>

@@ -16,7 +16,7 @@ const PGIHeader = ({ overall }) => {
         borderRadius: 4,
         color: "#fff",
         p: { xs: 2.5, md: 3.5 },
-        mb: 4,
+        mb: 2.5,
         position: "relative",
         overflow: "hidden",
         boxShadow: "0 10px 30px rgba(15,23,42,0.25)",
@@ -33,7 +33,7 @@ const PGIHeader = ({ overall }) => {
         }}
       />
 
-      <Grid container spacing={3} sx={{ alignItems: "center" }}>
+      <Grid container spacing={2} sx={{ alignItems: "center" }}>
         <Grid size={{ xs: 12, md: 8 }}>
           <Typography
             sx={{

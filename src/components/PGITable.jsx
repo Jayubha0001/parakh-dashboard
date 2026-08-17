@@ -41,7 +41,7 @@ const PGITable = ({ data = [], allData = null }) => {
   const stateAverageRow = buildStateAverageRow(allData || data);
 
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 4 }}>
+    <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 2.5 }}>
       <CardContent>
         <Typography variant="h6" fontWeight="bold" mb={2}>
           📋 District-wise PGI-D 2.0 Ranking (out of 600)

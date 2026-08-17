@@ -27,7 +27,7 @@ const Header = ({ pageEyebrow, pageIcon, pageTitle, pageSubtitle, statChip, cont
         borderRadius: 4,
         color: "#fff",
         p: { xs: 2, md: 3 },
-        mb: 4,
+        mb: 2.5,
         position: "relative",
         overflow: "hidden",
         boxShadow: "0 10px 30px rgba(15,23,42,0.25)",

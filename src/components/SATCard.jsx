@@ -53,7 +53,7 @@ const SATCard = ({ satData }) => {
       sx={{
         borderRadius: 3,
         boxShadow: 4,
-        mt: 4,
+        mt: 2.5,
         border: "1px solid #E4E7F0",
         overflow: "hidden",
         transition: "transform 0.2s",
@@ -248,7 +248,7 @@ const SATCard = ({ satData }) => {
         <Divider sx={{ my: 2.5 }} />
 
         {/* Top 5 & Bottom 5 */}
-        <Grid container spacing={3}>
+        <Grid container spacing={2}>
           {/* Top 5 */}
           <Grid item xs={12} md={6}>
             <Typography
@@ -333,7 +333,7 @@ const SATCard = ({ satData }) => {
         {/* Footer - View Full Dashboard Button */}
         <Box
           sx={{
-            mt: 3,
+            mt: 2,
             pt: 2,
             borderTop: "1px solid #EEF0F5",
             display: "flex",

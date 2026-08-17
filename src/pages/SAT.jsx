@@ -834,7 +834,7 @@ const SAT = () => {
       />
 
       {district !== "All" && loBreakdown?.length > 0 && (
-        <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+        <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
           <CardContent>
             <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
               🔎 {district} — Full Learning-Outcome Breakdown

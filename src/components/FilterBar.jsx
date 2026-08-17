@@ -30,7 +30,7 @@ const FilterBar = ({
       elevation={3}
       sx={{
         p: 3,
-        mb: 3,
+        mb: 2,
         borderRadius: 3,
       }}
     >

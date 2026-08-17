@@ -37,6 +37,7 @@ import EditNoteIcon from "@mui/icons-material/EditNote";
 import Header from "../components/Header";
 import DashboardLayout from "../components/DashboardLayout";
 import { colors, fontMono, fontDisplay } from "../theme/theme";
+import PriorityChip from "../components/PriorityChip";
 
 import {
   fetchVisitDetails,
@@ -96,7 +97,7 @@ const SectionCard = ({ level, eyebrowExtra, title, subtitle, action, children })
         border: "1px solid #E4E7F0",
         borderLeft: `4px solid ${accent}`,
         overflow: "hidden",
-        mb: 3,
+        mb: 2,
       }}
     >
       <Box sx={{ p: 2, borderBottom: "1px solid #E4E7F0", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 1.5 }}>
@@ -327,7 +328,7 @@ const LiveVisits = () => {
       />
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+        <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
           {error}
         </Alert>
       )}
@@ -339,7 +340,7 @@ const LiveVisits = () => {
       <Typography sx={{ fontFamily: fontMono, fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: colors.slate, mb: 1 }}>
         Statewide Snapshot
       </Typography>
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid size={{ xs: 6, md: 3 }}>
           <StatTile
             label="Total Cluster"
@@ -446,7 +447,10 @@ const LiveVisits = () => {
                   onClick={() => setSelectedDistrict(selectedDistrict === d.district ? "All" : d.district)}
                   sx={{ cursor: "pointer" }}
                 >
-                  <TableCell sx={{ fontWeight: 600 }}>{d.district}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>
+                    {d.district}
+                    <PriorityChip district={d.district} />
+                  </TableCell>
                   <TableCell align="right" sx={{ fontFamily: fontMono }}>{d.totalCluster}</TableCell>
                   <TableCell align="right" sx={{ fontFamily: fontMono }}>{d.inPlace}</TableCell>
                   <TableCell align="right" sx={{ fontFamily: fontMono }}>{d.vacantCount}</TableCell>
@@ -546,7 +550,10 @@ const LiveVisits = () => {
             <TableBody>
               {blockRows.map((b) => (
                 <TableRow key={`${b.district}-${b.block}`} hover>
-                  <TableCell sx={{ color: colors.slate }}>{b.district}</TableCell>
+                  <TableCell sx={{ color: colors.slate }}>
+                    {b.district}
+                    <PriorityChip district={b.district} />
+                  </TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{b.block}</TableCell>
                   <TableCell align="right" sx={{ fontFamily: fontMono }}>{b.totalCluster}</TableCell>
                   <TableCell align="right" sx={{ fontFamily: fontMono }}>{b.inPlace}</TableCell>
@@ -635,7 +642,7 @@ const LiveVisits = () => {
             p: 4,
             textAlign: "center",
             color: colors.slate,
-            mb: 3,
+            mb: 2,
           }}
         >
           <NearMeIcon sx={{ fontSize: 26, color: LEVEL.cluster.color, mb: 1 }} />

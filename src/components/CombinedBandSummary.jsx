@@ -13,7 +13,7 @@ const CombinedBandSummary = ({ bandSummary = [], weights = {} }) => {
     <Paper
       elevation={0}
       sx={{
-        mt: 3,
+        mt: 2,
         borderRadius: 4,
         border: "1px solid #E4E7F0",
         overflow: "hidden",

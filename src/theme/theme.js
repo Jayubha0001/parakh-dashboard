@@ -51,6 +51,17 @@ const theme = createTheme({
         root: { borderRadius: 16 },
       },
     },
+    // Cut the default inner padding on every Card body — with ~50+ cards
+    // stacked down each page, MUI's default 16-24px padding adds up to a
+    // lot of scroll height across the app.
+    MuiCardContent: {
+      styleOverrides: {
+        root: {
+          padding: "16px",
+          "&:last-child": { paddingBottom: "16px" },
+        },
+      },
+    },
   },
 });
 

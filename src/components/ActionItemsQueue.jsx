@@ -180,7 +180,7 @@ const ActionItemsQueue = ({ items = [], allDistricts = [], allItems = [], syncDi
     : null;
 
   return (
-    <Paper elevation={0} sx={{ borderRadius: 4, overflow: "hidden", mt: 3, mb: 3 }}>
+    <Paper elevation={0} sx={{ borderRadius: 4, overflow: "hidden", mt: 2, mb: 2 }}>
       {/* Header banner */}
       <Box
         sx={{

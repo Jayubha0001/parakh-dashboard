@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import { Card, CardContent, Typography, Box, Chip } from "@mui/material";
 import { colors, fontDisplay, fontMono } from "../theme/theme";
+import PriorityChip from "./PriorityChip";
 
 // ---------------------------------------------------------------------------
 // Single shared "District x Column %" heat-map table.
@@ -119,7 +120,7 @@ const HeatMapTable = ({
   const data2ByDistrict = dual ? Object.fromEntries(data2.map((r) => [r.District, r])) : {};
 
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+    <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
       <CardContent>
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 2 }}>
           <Typography sx={{ fontFamily: fontDisplay, fontWeight: 600, fontSize: 17, color: colors.ink }}>
@@ -214,7 +215,10 @@ const HeatMapTable = ({
 
                 return (
                   <tr key={row.District} style={{ background: i % 2 === 1 ? "#FAFBFD" : "#fff" }}>
-                    <td style={stickyBodyCell}>{row.District}</td>
+                    <td style={stickyBodyCell}>
+                      {row.District}
+                      <PriorityChip district={row.District} />
+                    </td>
 
                     {columns.map((col) => {
                       const pct = getValue(row, col);

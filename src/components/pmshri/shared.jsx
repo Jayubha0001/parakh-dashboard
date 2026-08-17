@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import PriorityChip from "../PriorityChip";
 import {
   Box,
   Card,
@@ -197,7 +198,16 @@ export const AnalysisDataTable = ({
                       fontWeight: c.bold ? 700 : 400,
                     }}
                   >
-                    {c.render ? c.render(r[c.key], r) : fmt(r[c.key])}
+                    {c.render
+                      ? c.render(r[c.key], r)
+                      : c.key === "District"
+                      ? (
+                          <>
+                            {fmt(r[c.key])}
+                            <PriorityChip district={r[c.key]} />
+                          </>
+                        )
+                      : fmt(r[c.key])}
                   </TableCell>
                 ))}
               </TableRow>
@@ -266,7 +276,7 @@ export const CardShell = ({ children, accent }) => (
     sx={{
       borderRadius: 3,
       boxShadow: 3,
-      mt: 4,
+      mt: 2.5,
       border: "1px solid #E4E7F0",
       ...(accent ? { borderLeft: `4px solid ${accent}` } : {}),
     }}

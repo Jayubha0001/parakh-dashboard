@@ -11,7 +11,7 @@ const DistrictFilterBar = ({ district, setDistrict, districts = [] }) => {
       elevation={0}
       sx={{
         p: 2.5,
-        mb: 3,
+        mb: 2,
         borderRadius: 3,
         border: "1px solid #E4E7F0",
         display: "flex",

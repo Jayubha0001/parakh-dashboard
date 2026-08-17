@@ -99,7 +99,7 @@ const Comparison = () => {
         weights={ranking.weights}
       />
 
-      <Box mt={4}>
+      <Box mt={2.5}>
         <DistrictRankingChart data={filteredDistricts} />
       </Box>
 

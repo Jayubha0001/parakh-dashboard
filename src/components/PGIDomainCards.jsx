@@ -5,12 +5,12 @@ const shortenDomain = (name = "") => name.split(" - ")[0].replace("Domain ", "D"
 
 const PGIDomainCards = ({ domains = [], title = "📚 Domain-wise Score — Gujarat State (2024-25)" }) => {
   return (
-    <Box sx={{ mt: 4 }}>
+    <Box sx={{ mt: 2.5 }}>
       <Typography variant="h6" fontWeight="bold" mb={2} sx={{ color: "#1E3A8A" }}>
         {title}
       </Typography>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         {domains.map((d, i) => (
           <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }} key={i}>
             <Card sx={{ borderRadius: 3, boxShadow: 3, height: "100%" }}>

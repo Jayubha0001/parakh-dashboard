@@ -11,7 +11,7 @@ const DataSourceNote = ({ sources = [] }) => {
   return (
     <Box
       sx={{
-        mt: 4,
+        mt: 2.5,
         mb: 1,
         p: 2,
         borderRadius: 2,

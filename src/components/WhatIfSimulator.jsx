@@ -142,7 +142,7 @@ const WhatIfSimulator = ({ item, metricLabel = "Score" }) => {
         }}
       />
 
-      <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", mt: 3 }}>
+      <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", mt: 2 }}>
         <Box>
           <Typography sx={{ fontSize: 11, letterSpacing: 0.5, textTransform: "uppercase", color: "text.secondary" }}>
             Current {metricLabel}

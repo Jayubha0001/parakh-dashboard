@@ -110,7 +110,7 @@ const CombinedOverview = ({ selectedDistrict = "All" }) => {
 
       {selectedDistrict === "All" ? (
         <>
-          <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid size={{ xs: 12, md: 6 }}>
               <Paper elevation={0} sx={{ border: "1px solid #E4E7F0", borderLeft: "4px solid #1976D2", borderRadius: 2.5, p: 2, height: "100%" }}>
                 <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: "#1976D2", textTransform: "uppercase", letterSpacing: 0.4, mb: 1 }}>
@@ -139,7 +139,7 @@ const CombinedOverview = ({ selectedDistrict = "All" }) => {
             </Grid>
           </Grid>
 
-          <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid size={{ xs: 12, md: 6 }}>
               <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#16233B", mb: 1 }}>Enrollment — GOI vs GOG</Typography>
               <ResponsiveContainer width="100%" height={220}>

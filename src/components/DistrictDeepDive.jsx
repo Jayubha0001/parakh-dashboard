@@ -148,7 +148,7 @@ export const PGIIndicatorSection = ({ indicators = [], domainSummary = [], overa
       {weakIndicators.length > 0 && (
         <Box
           sx={{
-            mt: 3,
+            mt: 2,
             p: 2.5,
             borderRadius: 2,
             bgcolor: "#FFFBEF",
@@ -283,7 +283,7 @@ export const SATLOBreakdownSection = ({ los = [] }) => {
       })}
 
       {weakLOs.length > 0 && (
-        <Box sx={{ mt: 3, p: 2.5, borderRadius: 2, bgcolor: "#FFFBEF", border: "1px dashed #F0B429" }}>
+        <Box sx={{ mt: 2, p: 2.5, borderRadius: 2, bgcolor: "#FFFBEF", border: "1px dashed #F0B429" }}>
           <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 16, color: "#16233B", mb: 0.5 }}>
             🎯 Action Points — Weakest Learning Outcomes ({weakLOs.length})
           </Typography>
@@ -504,7 +504,7 @@ export const PARAKHCompetencySection = ({ competencies }) => {
 
 const DistrictDeepDive = ({ pgiDetail, competencies }) => {
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 3, border: "1px solid #E4E7F0" }} elevation={0}>
+    <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2, border: "1px solid #E4E7F0" }} elevation={0}>
       <CardContent>
         <Typography
           sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}
@@ -519,7 +519,7 @@ const DistrictDeepDive = ({ pgiDetail, competencies }) => {
         />
 
         <Typography
-          sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mt: 4, mb: 1, color: "#16233B" }}
+          sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mt: 2.5, mb: 1, color: "#16233B" }}
         >
           📖 PARAKH — Competency-wise Mastery vs National Benchmark
         </Typography>

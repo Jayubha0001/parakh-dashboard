@@ -22,7 +22,7 @@ const DistrictTable = ({ data }) => {
       sx={{
         borderRadius: 3,
         boxShadow: 4,
-        mt: 4,
+        mt: 2.5,
       }}
     >
       <CardContent>

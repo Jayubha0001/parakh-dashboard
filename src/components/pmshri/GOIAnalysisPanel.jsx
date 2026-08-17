@@ -61,7 +61,7 @@ const GOIAnalysisPanel = ({ selectedDistrict = "All" }) => {
           ]}
         />
 
-        <Grid container spacing={3} sx={{ mt: 1 }}>
+        <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid size={{ xs: 12, md: 6 }}>
             <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#16233B", mb: 1 }}>
               Total Enrollment by Year
@@ -139,7 +139,7 @@ const GOIAnalysisPanel = ({ selectedDistrict = "All" }) => {
       </CardShell>
 
       {/* District — Grade 10 & 12 */}
-      <Grid container spacing={3} sx={{ mt: 0 }}>
+      <Grid container spacing={2} sx={{ mt: 0 }}>
         <Grid size={{ xs: 12, md: 6 }}>
           <CardShell accent="#2E7D32">
             <SectionHeading eyebrow="Grade 10" title="District-wise Grade 10 Board Result" color="#2E7D32" />

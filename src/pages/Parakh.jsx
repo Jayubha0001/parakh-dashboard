@@ -134,7 +134,7 @@ const PARAKH = () => {
         getValue={(row, col) => (row[col] ?? 0) * 100}
       />
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 6 }}>
           <ComparisonSection
             title="Boys vs Girls — Average Performance"
@@ -158,7 +158,7 @@ const PARAKH = () => {
         </Grid>
       </Grid>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 6 }}>
           <ComparisonSection
             title="School Management Type — Average Performance"
@@ -183,7 +183,7 @@ const PARAKH = () => {
       </Grid>
 
       {district !== "All" && competencies && (
-        <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+        <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
           <CardContent>
             <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
               📖 {district} — Competency-wise Mastery vs National Benchmark

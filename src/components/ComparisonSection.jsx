@@ -84,14 +84,14 @@ const ComparisonSection = ({
   const averages = valueColumns.map((col) => ({ label: col, avg: average(statsSource, col) }));
 
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0", borderTop: `4px solid ${color}` }} elevation={0}>
+    <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0", borderTop: `4px solid ${color}` }} elevation={0}>
       <CardContent>
         <Typography sx={{ fontFamily: fontDisplay, fontWeight: 600, fontSize: 17, color: colors.ink, mb: 2 }}>
           {icon} {title}
         </Typography>
 
         {/* State-level average summary — always from the full district set */}
-        <Grid container spacing={2} mb={3}>
+        <Grid container spacing={2} mb={2}>
           {averages.map((a, i) => (
             <Grid size={{ xs: 6, sm: 4, md: Math.max(2, Math.floor(12 / averages.length)) }} key={i}>
               <Box

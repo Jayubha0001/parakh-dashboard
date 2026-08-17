@@ -50,7 +50,7 @@ const RankBadge = ({ rank }) => {
 
 const CombinedRankingTable = ({ data = [] }) => {
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+    <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
       <CardContent>
         <Typography
           sx={{

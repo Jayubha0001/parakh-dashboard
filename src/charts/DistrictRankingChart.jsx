@@ -32,7 +32,7 @@ const DistrictRankingChart = ({ data = [] }) => {
   const chartWidth = Math.max(700, chartData.length * WIDTH_PER_DISTRICT);
 
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 4 }}>
+    <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 2.5 }}>
       <CardContent>
         <Typography variant="h6" fontWeight="bold" mb={0.5} sx={{ color: "#1E3A8A" }}>
           📊 PGI-D vs PARAKH vs SAT — District by District

@@ -73,7 +73,7 @@ const SATSemesterComparison = ({ data = [], district = "All" }) => {
   }));
 
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 4 }}>
+    <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 2.5 }}>
       <CardContent>
         <Typography variant="h6" fontWeight="bold" mb={0.5}>
           📆 Semester 1 vs Semester 2 — SAT Comparison
@@ -102,7 +102,7 @@ const SATSemesterComparison = ({ data = [], district = "All" }) => {
           </BarChart>
         </ResponsiveContainer>
 
-        <TableContainer component={Paper} sx={{ mt: 3 }}>
+        <TableContainer component={Paper} sx={{ mt: 2 }}>
           <Table size="small">
             <TableHead>
               <TableRow sx={{ backgroundColor: "#6A1B9A" }}>

@@ -23,7 +23,7 @@ const StateSummary = ({
   return (
     <Card
       sx={{
-        mt: 4,
+        mt: 2.5,
         borderRadius: 3,
       }}
     >
@@ -32,12 +32,12 @@ const StateSummary = ({
         <Typography
           variant="h6"
           fontWeight="bold"
-          mb={3}
+          mb={2}
         >
           Gujarat State Summary
         </Typography>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={2}>
 
           <Grid item xs={12} md={4}>
             <Typography color="text.secondary">

@@ -132,7 +132,7 @@ const Reports = () => {
       {/* Controls */}
       <Paper
         elevation={0}
-        sx={{ borderRadius: 4, overflow: "hidden", mt: 3 }}
+        sx={{ borderRadius: 4, overflow: "hidden", mt: 2 }}
         className="no-print"
       >
         <Box
@@ -192,7 +192,7 @@ const Reports = () => {
 
       {/* Printable Report Card */}
       {districtRow && (
-        <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 3 }}>
+        <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 2 }}>
           <CardContent>
             <Box
               sx={{
@@ -221,7 +221,7 @@ const Reports = () => {
 
             <Divider sx={{ my: 3 }} />
 
-            <Grid container spacing={3}>
+            <Grid container spacing={2}>
               <Grid size={{ xs: 6, md: 3 }}>
                 <Typography color="text.secondary" fontSize={13}>
                   PGI-D Score
@@ -352,7 +352,7 @@ const Reports = () => {
               </>
             )}
 
-            <Box sx={{ textAlign: "right", mt: 3 }} className="no-print">
+            <Box sx={{ textAlign: "right", mt: 2 }} className="no-print">
               <Button
                 variant="contained"
                 startIcon={<PrintIcon />}

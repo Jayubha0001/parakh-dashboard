@@ -295,7 +295,7 @@ const PMShri = () => {
         </Grid>
       </Paper>
 
-      <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+      <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
         <CardContent>
           <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
             PM Shri Schools — GOI vs GOG, by District
@@ -315,7 +315,7 @@ const PMShri = () => {
         </CardContent>
       </Card>
 
-      <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+      <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
         <CardContent>
           <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
             District-wise PM Shri School Details
@@ -369,7 +369,7 @@ const PMShri = () => {
       </Card>
 
       {/* PM SHRI GSQAC Result — Gujarat State Quality Assurance & Certification grade */}
-      <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0" }} elevation={0}>
+      <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
         <CardContent>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5 }}>
             <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#0F172A" }} />
@@ -387,7 +387,7 @@ const PMShri = () => {
           {/* GOI vs GOG — kept separate throughout: these are two
               different funding streams, so a combined-only number
               hides which one needs attention. */}
-          <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
             {[
               { label: "All Schools", data: gsqacStateCardAll, stateData: gsqac.state, accent: "#0F172A" },
               { label: "GOI Schools", data: gsqacStateCardGOI, stateData: gsqac.stateGOI, accent: "#1976D2" },
@@ -475,7 +475,7 @@ const PMShri = () => {
             School counts for {gsqacSelectedYearLabel}{gsqacSegment !== "All" ? ` · ${gsqacSegment} Schools` : ""}{gsqacDistrictFilter !== "All" ? ` · ${gsqacDistrictFilter}` : ""}
             {gsqacDistrictFilter !== "All" ? ` (State-wide: ${gsqacCurrentStateWide.totalSchools.toLocaleString()} schools)` : ""}
           </Typography>
-          <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #E4E7F0", mb: 3, maxWidth: 520 }}>
+          <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #E4E7F0", mb: 2, maxWidth: 520 }}>
             <Table size="small">
               <TableHead>
                 <TableRow>
@@ -503,7 +503,7 @@ const PMShri = () => {
           </TableContainer>
 
           {/* State-wide colour distribution, as one segmented bar */}
-          <Box sx={{ display: "flex", height: 22, borderRadius: 2, overflow: "hidden", mb: 3 }}>
+          <Box sx={{ display: "flex", height: 22, borderRadius: 2, overflow: "hidden", mb: 2 }}>
             {COLOR_GRADE_KEY.map((c) => {
               const count = gsqacCurrentState.colorGradeCounts[c.colorGrade];
               const pct = gsqacCurrentState.totalSchools ? (count / gsqacCurrentState.totalSchools) * 100 : 0;
@@ -522,7 +522,7 @@ const PMShri = () => {
           <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 16, mb: 1.5, color: "#16233B" }}>
             District-wise Colour Grade Distribution — {gsqacSelectedYearLabel}{gsqacSegment !== "All" ? ` · ${gsqacSegment} Schools` : ""}
           </Typography>
-          <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 500, border: "1px solid #E4E7F0", mb: 3 }}>
+          <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 500, border: "1px solid #E4E7F0", mb: 2 }}>
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
@@ -660,7 +660,7 @@ const PMShri = () => {
       {/* Weakest — schools whose latest scored year came in lower than
           the year before it. Worst decline first, so the schools most
           in need of attention surface at the top. */}
-      <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 4, border: "1px solid #E4E7F0", borderLeft: "4px solid #D32F2F" }} elevation={0}>
+      <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0", borderLeft: "4px solid #D32F2F" }} elevation={0}>
         <CardContent>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5 }}>
             <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#D32F2F" }} />
