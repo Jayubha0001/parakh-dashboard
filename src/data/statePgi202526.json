@@ -1,0 +1,53 @@
+{
+  "domains": [
+    {
+      "domain": "Domain 1: Learning Outcomes and Quality (LO) - 240",
+      "maxWeight": 240,
+      "score": 58.5,
+      "percentAchieved": 24.38,
+      "grade": "Akanshi-1"
+    },
+    {
+      "domain": "Domain 2: Access (A) - 80",
+      "maxWeight": 80,
+      "score": 61.1,
+      "percentAchieved": 76.38,
+      "grade": "Atti-Uttam"
+    },
+    {
+      "domain": "Domain 3: Infrastructure & Facilities (I&F) - 190",
+      "maxWeight": 190,
+      "score": 103.91,
+      "percentAchieved": 54.69,
+      "grade": "Prachesta-1"
+    },
+    {
+      "domain": "Domain 4: Equity (E) - 260",
+      "maxWeight": 260,
+      "score": 229.5,
+      "percentAchieved": 88.27,
+      "grade": "Utkarsh"
+    },
+    {
+      "domain": "Domain 5: Governance Processes (GP) - 130",
+      "maxWeight": 130,
+      "score": 73.9,
+      "percentAchieved": 56.85,
+      "grade": "Prachesta-1"
+    },
+    {
+      "domain": "Domain 6: Teacher Education & Training (TE&T) - 100",
+      "maxWeight": 100,
+      "score": 77.3,
+      "percentAchieved": 77.3,
+      "grade": "Atti-Uttam"
+    }
+  ],
+  "overall": {
+    "label": "GUJARAT STATE \u2014 OVERALL PGI 2.0 SCORE",
+    "maxWeight": 1000,
+    "score": 604.21,
+    "percentAchieved": 60.42,
+    "grade": "Prachesta-1"
+  }
+}

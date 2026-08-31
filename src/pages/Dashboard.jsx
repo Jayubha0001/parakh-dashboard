@@ -72,6 +72,8 @@ import {
 } from "../services/dataService";
 import { PGIIndicatorSection, PARAKHCompetencySection, SATLOBreakdownSection } from "../components/DistrictDeepDive";
 import DropdownFilter from "../components/DropdownFilter";
+import statePgi202526 from "../data/statePgi202526.json";
+import pgiD202526 from "../data/pgiD202526.json";
 
 const Dashboard = () => {
   // -----------------------------
@@ -423,6 +425,13 @@ const pgiSortedByScore = [...pgiRanking].sort(
   (a, b) => b.PercentAchieved - a.PercentAchieved
 );
 
+// District -> PGI % achieved lookup, used to shade the district map in
+// the DistrictFilterBar (src/components/GujaratDistrictMap.jsx) so the
+// map's colours mean something instead of being flat.
+const pgiByDistrict = Object.fromEntries(
+  pgiRanking.map((d) => [d.District, d.PercentAchieved])
+);
+
 const pgiChartAll = pgiSortedByScore.map((d) => ({
   District: d.District,
   Score: Number(d.PercentAchieved.toFixed(1)),
@@ -566,7 +575,7 @@ const satSubjectComparisonChartData = (() => {
       <Paper
         elevation={0}
         sx={{
-          mt: 2,
+          mt: { xs: 1.5, md: 2 },
           borderRadius: 4,
           border: "1px solid #E4E7F0",
           overflow: "hidden",
@@ -608,17 +617,22 @@ const satSubjectComparisonChartData = (() => {
             },
             {
               group: "PGI-D 2.0",
-              label: "State Score",
-              value: pgiSummary.overall?.percentAchieved?.toFixed(1) ?? "-",
+              label: "State Score (2025-26)",
+              value: statePgi202526.overall?.percentAchieved?.toFixed(1) ?? "-",
               suffix: "%",
               accent: "#1976D2",
+              sub: `24-25: ${pgiSummary.overall?.percentAchieved?.toFixed(1) ?? "-"}%`,
             },
             {
               group: "PGI-D 2.0",
-              label: "State Average",
-              value: pgiStateAverage.toFixed(1),
+              label: "District Average (2025-26)",
+              value:
+                pgiD202526.ranking.length > 0
+                  ? (pgiD202526.ranking.reduce((s, d) => s + d.PercentAchieved, 0) / pgiD202526.ranking.length).toFixed(1)
+                  : "-",
               suffix: "%",
               accent: "#2E7D32",
+              sub: `24-25: ${pgiStateAverage.toFixed(1)}%`,
             },
             {
               group: "PGI-D 2.0",
@@ -643,7 +657,7 @@ const satSubjectComparisonChartData = (() => {
               size={{ xs: 6, sm: 3, md: 1.5 }}
               key={stat.group + stat.label}
               sx={{
-                p: 2.5,
+                p: { xs: 1.5, sm: 2, md: 2.5 },
                 borderRight: { sm: i !== 3 && i !== 7 ? "1px solid #E4E7F0" : "none" },
                 borderLeft: i === 4 ? { sm: "3px solid #0F172A" } : "none",
                 borderBottom: { xs: i < 6 ? "1px solid #E4E7F0" : "none", sm: "none" },
@@ -815,7 +829,13 @@ const satSubjectComparisonChartData = (() => {
   District-wise mastery by grade band
 </Typography>
 
-<DistrictFilterBar district={district} setDistrict={setDistrict} districts={districts} />
+<DistrictFilterBar
+  district={district}
+  setDistrict={setDistrict}
+  districts={districts}
+  mapData={pgiByDistrict}
+  mapValueSuffix="% PGI"
+/>
 
 <NationalBenchmarkPanel
   district={district}
@@ -999,7 +1019,7 @@ const satSubjectComparisonChartData = (() => {
   <Grid container spacing={2}>
     <Grid size={{ xs: 12, sm: 4 }}>
       <Box sx={{ p: 2, borderRadius: 2, bgcolor: "#F5F6FA", textAlign: "center", height: "100%" }}>
-        <Typography sx={{ fontSize: 12, color: "text.secondary" }}>STATE OVERALL SCORE</Typography>
+        <Typography sx={{ fontSize: 12, color: "text.secondary" }}>STATE OVERALL SCORE (2024-25)</Typography>
         <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 28, color: "#0F172A" }}>
           {pgiSummary.overall?.score?.toFixed(1) ?? "-"}
           <Typography component="span" sx={{ fontSize: 14, color: "text.secondary" }}>

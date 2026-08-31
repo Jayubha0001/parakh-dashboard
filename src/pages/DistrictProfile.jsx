@@ -21,6 +21,7 @@ import {
   getSheetData,
   getDistrictPGIRanking,
 } from "../services/dataService";
+import pgiD202526 from "../data/pgiD202526.json";
 
 const DistrictProfile = () => {
   const [loading, setLoading] = useState(true);
@@ -64,6 +65,10 @@ const DistrictProfile = () => {
   );
 
   const pgi = pgiData.find(
+    (x) => x.District === selectedDistrict
+  );
+
+  const pgi2526 = pgiD202526.ranking.find(
     (x) => x.District === selectedDistrict
   );
 
@@ -150,7 +155,7 @@ const DistrictProfile = () => {
             <CardContent>
 
               <Typography color="text.secondary">
-                PGI Score
+                PGI Score (2024-25)
               </Typography>
 
               <Typography
@@ -159,6 +164,15 @@ const DistrictProfile = () => {
                 color="success.main"
               >
                 {pgi?.Score || 0}
+              </Typography>
+
+              <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.5 }}>
+                2025-26: <b>{pgi2526?.Score ?? "—"}</b>
+                {pgi2526 && pgi ? (
+                  <span style={{ color: pgi2526.Score >= pgi.Score ? "#2E7D32" : "#D32F2F", fontWeight: 700 }}>
+                    {" "}({pgi2526.Score >= pgi.Score ? "+" : ""}{Math.round((pgi2526.Score - pgi.Score) * 100) / 100})
+                  </span>
+                ) : null}
               </Typography>
 
               <Chip
@@ -184,7 +198,7 @@ const DistrictProfile = () => {
             <CardContent>
 
               <Typography color="text.secondary">
-                PGI Grade
+                PGI Grade (2024-25)
               </Typography>
 
               <Typography
@@ -192,6 +206,10 @@ const DistrictProfile = () => {
                 fontWeight="bold"
               >
                 {pgi?.Grade || "-"}
+              </Typography>
+
+              <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.5 }}>
+                2025-26: <b>{pgi2526?.Grade ?? "—"}</b>
               </Typography>
 
             </CardContent>

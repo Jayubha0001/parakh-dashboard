@@ -13,6 +13,8 @@ import ActionItemsQueue from "../components/ActionItemsQueue";
 import { PGIIndicatorSection } from "../components/DistrictDeepDive";
 import { Card, CardContent } from "@mui/material";
 import pgiD202526 from "../data/pgiD202526.json";
+import statePgi202526 from "../data/statePgi202526.json";
+import districtPgiIndicators202526 from "../data/districtPgiIndicators202526.json";
 import PriorityChip from "../components/PriorityChip";
 import { isPriorityDistrict } from "../utils/priorityDistricts";
 
@@ -165,33 +167,6 @@ const PGI = () => {
   const filteredHeatmap2425 = district === "All" ? heatmapPct2425 : heatmapPct2425.filter((d) => d.District === district);
   const filteredHeatmap2526 = district === "All" ? heatmapPct2526 : heatmapPct2526.filter((d) => d.District === district);
 
-  // 2025-26 has no separate state-level summary sheet (unlike 2024-25's
-  // stateSummary.domains, which comes straight from the workbook) — so
-  // this is the average of all 33 districts' category scores, computed
-  // here, not a figure pulled from a source file.
-  const gradeFromPct = (pct) => (pct >= 71 ? "Atti-Uttam" : pct >= 51 ? "Utkarsh" : pct >= 31 ? "Prachesta" : "Akanshi");
-  const stateCategoryAvg2526 = heatmap2425.categories.map((cat) => {
-    const max = CATEGORY_MAX[cat] || 100;
-    const vals = pgiD202526.heatmapData.map((r) => r[cat]).filter((v) => typeof v === "number");
-    const avgScore = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-    const pct = max ? (avgScore / max) * 100 : 0;
-    return { domain: cat, score: avgScore, maxWeight: max, percentAchieved: pct, grade: gradeFromPct(pct) };
-  });
-
-  // State-level (33-district average) view of the 6 PGI-D *categories* for
-  // 2025-26 — note this is the District-level category framework
-  // (Outcomes/ECT/IF&SE/SS&CP/DL/GP, out of 600), not the same taxonomy as
-  // the 2024-25 state Domain cards above (D1-D6, out of 1000) — that
-  // Domain-level breakdown isn't in the 2025-26 file, only category scores.
-  const bandForPct = (pct) => (pct >= 71 ? "Atti-Uttam+" : pct >= 51 ? "Utkarsh" : pct >= 31 ? "Prachesta" : "Akanshi");
-  const stateCategory2526 = heatmap2425.categories.map((cat) => {
-    const max = CATEGORY_MAX[cat] || 100;
-    const avgScore = pgiD202526.heatmapData.reduce((s, r) => s + (r[cat] ?? 0), 0) / pgiD202526.heatmapData.length;
-    const percentAchieved = max ? (avgScore / max) * 100 : 0;
-    return { domain: cat, score: avgScore, maxWeight: max, percentAchieved, grade: bandForPct(percentAchieved) };
-  });
-
-
   if (loading) {
     return (
       <DashboardLayout>
@@ -208,10 +183,10 @@ const PGI = () => {
         pageTitle="Gujarat PGI 2.0 Dashboard"
         pageSubtitle="6 Domains · 33 Districts · Scored out of 1000 (State) / 600 (District)"
         statChip={{
-          label: "Gujarat State Overall Score",
-          value: stateSummary.overall?.score?.toFixed(1) ?? "-",
-          suffix: `/ ${stateSummary.overall?.maxWeight ?? 1000}`,
-          badge: `${stateSummary.overall?.grade || "-"} · ${stateSummary.overall?.percentAchieved?.toFixed(1) ?? 0}%`,
+          label: "Gujarat State Overall Score (2025-26)",
+          value: statePgi202526.overall?.score?.toFixed(1) ?? "-",
+          suffix: `/ ${statePgi202526.overall?.maxWeight ?? 1000}`,
+          badge: `${statePgi202526.overall?.grade || "-"} · ${statePgi202526.overall?.percentAchieved?.toFixed(1) ?? 0}% (24-25: ${stateSummary.overall?.score?.toFixed(1) ?? "-"}, ${stateSummary.overall?.percentAchieved != null ? (statePgi202526.overall.percentAchieved - stateSummary.overall.percentAchieved >= 0 ? "+" : "") + (Math.round((statePgi202526.overall.percentAchieved - stateSummary.overall.percentAchieved) * 10) / 10) + "pp" : ""})`,
         }}
       />
 
@@ -222,11 +197,12 @@ const PGI = () => {
         lowestDistrict={{ District: lowestDistrict.District, PercentAchieved: lowestDistrict.pct2526 ?? lowestDistrict.pct2425 }}
       />
 
-      <PGIDomainCards domains={stateSummary.domains} />
-
       <PGIDomainCards
-        domains={stateCategoryAvg2526}
-        title="📚 Category-wise Score — Gujarat State (2025-26 · Average of 33 Districts)"
+        domains={stateSummary.domains}
+        domains2={statePgi202526.domains}
+        label="24-25"
+        label2="25-26"
+        title="📚 Domain-wise Score — Gujarat State PGI 2.0 (2024-25 vs 2025-26)"
       />
 
       <Box mt={2.5}>
@@ -331,12 +307,16 @@ const PGI = () => {
         <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
           <CardContent>
             <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-              🔎 {district} — Full Indicator Breakdown (70 Indicators) — 2024-25
+              🔎 {district} — Full Indicator Breakdown (70 Indicators) — 2024-25 vs 2025-26
             </Typography>
             <PGIIndicatorSection
               indicators={districtIndicators.indicators}
               domainSummary={districtIndicators.domainSummary}
               overall={districtIndicators.overall}
+              indicators2={districtPgiIndicators202526[district]?.indicators ?? null}
+              overall2={districtPgiIndicators202526[district]?.overall ?? null}
+              label="24-25"
+              label2="25-26"
             />
           </CardContent>
         </Card>

@@ -44,27 +44,71 @@ const groupIndicatorsByCategory = (indicators, domainSummary) => {
   });
 };
 
-export const PGIIndicatorSection = ({ indicators = [], domainSummary = [], overall }) => {
+export const PGIIndicatorSection = ({
+  indicators = [],
+  domainSummary = [],
+  overall,
+  indicators2 = null,
+  overall2 = null,
+  label = "2024-25",
+  label2 = "2025-26",
+}) => {
   const groups = groupIndicatorsByCategory(indicators, domainSummary);
   const [selectedCategory, setSelectedCategory] = useState(groups[0]?.category || "");
+
+  // When a second year is supplied, look each row up by indNo so both
+  // years' scores sit in the same row instead of two separate stacked
+  // tables/sections.
+  const indicators2ByIndNo = indicators2 ? new Map(indicators2.map((i) => [i.indNo, i])) : null;
 
   // Anything below the PGI-D "Akanshi" cut-off (31%) is a genuine weak
   // spot, not just below-average noise — these get pulled into the
   // Action Points list below instead of staying buried in an accordion.
+  // With a second year present, "weak" is judged on whichever year is
+  // more recent (2025-26 when available) so the list reflects current status.
   const weakIndicators = indicators
-    .map((item) => ({ ...item, pct: item.weight ? (item.score / item.weight) * 100 : 0 }))
-    .filter((item) => item.pct < 31)
-    .sort((a, b) => a.pct - b.pct);
+    .map((item) => {
+      const item2 = indicators2ByIndNo?.get(item.indNo);
+      const pct = item.weight ? (item.score / item.weight) * 100 : 0;
+      const pct2 = item2 && item2.weight ? (item2.score / item2.weight) * 100 : null;
+      return { ...item, pct, pct2: pct2 };
+    })
+    .filter((item) => (item.pct2 != null ? item.pct2 : item.pct) < 31)
+    .sort((a, b) => (a.pct2 ?? a.pct) - (b.pct2 ?? b.pct));
 
   return (
     <Box>
       {overall && (
-        <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", mb: 2, px: 0.5 }}>
+        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", mb: 2, px: 0.5, alignItems: "center" }}>
           <Chip
-            label={`Overall: ${overall.score.toFixed(1)} / ${overall.maxWeight} (${overall.percentAchieved.toFixed(1)}%)`}
+            label={
+              overall2
+                ? `${label}: ${overall.score.toFixed(1)} / ${overall.maxWeight} (${overall.percentAchieved.toFixed(1)}%)`
+                : `Overall: ${overall.score.toFixed(1)} / ${overall.maxWeight} (${overall.percentAchieved.toFixed(1)}%)`
+            }
             sx={{ bgcolor: "#0F172A", color: "#fff", fontWeight: 600 }}
           />
-          <Chip label={overall.grade} sx={{ bgcolor: "#F0B429", color: "#fff", fontWeight: 600 }} />
+          <Chip label={overall.grade} sx={{ bgcolor: overall2 ? "#8B94A8" : "#F0B429", color: "#fff", fontWeight: 600 }} />
+          {overall2 && (
+            <>
+              <Chip
+                label={`${label2}: ${overall2.score.toFixed(1)} / ${overall2.maxWeight} (${overall2.percentAchieved.toFixed(1)}%)`}
+                sx={{ bgcolor: "#5B2E91", color: "#fff", fontWeight: 600 }}
+              />
+              <Chip label={overall2.grade} sx={{ bgcolor: "#F0B429", color: "#fff", fontWeight: 600 }} />
+              <Chip
+                label={`Δ ${overall2.percentAchieved - overall.percentAchieved >= 0 ? "+" : ""}${(
+                  Math.round((overall2.percentAchieved - overall.percentAchieved) * 10) / 10
+                )}pp`}
+                variant="outlined"
+                sx={{
+                  fontWeight: 700,
+                  borderColor: overall2.percentAchieved >= overall.percentAchieved ? "#2E7D32" : "#D32F2F",
+                  color: overall2.percentAchieved >= overall.percentAchieved ? "#2E7D32" : "#D32F2F",
+                }}
+              />
+            </>
+          )}
         </Box>
       )}
 
@@ -99,14 +143,22 @@ export const PGIIndicatorSection = ({ indicators = [], domainSummary = [], overa
                     <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Domain</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Indicator</TableCell>
                     <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
-                      Score
+                      {indicators2ByIndNo ? label : "Score"}
                     </TableCell>
+                    {indicators2ByIndNo && (
+                      <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
+                        {label2}
+                      </TableCell>
+                    )}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {g.items.map((item, idx) => {
                     const itemPct = item.weight ? (item.score / item.weight) * 100 : 0;
-                    const isWeak = itemPct < 31;
+                    const item2 = indicators2ByIndNo?.get(item.indNo);
+                    const itemPct2 = item2 && item2.weight ? (item2.score / item2.weight) * 100 : null;
+                    const currentPct = itemPct2 != null ? itemPct2 : itemPct;
+                    const isWeak = currentPct < 31;
 
                     return (
                       <TableRow key={idx} hover sx={isWeak ? { bgcolor: "#FDEAEA" } : undefined}>
@@ -129,12 +181,33 @@ export const PGIIndicatorSection = ({ indicators = [], domainSummary = [], overa
                             fontFamily: '"IBM Plex Mono", monospace',
                             fontSize: 12.5,
                             fontWeight: 700,
-                            color: isWeak ? "#B71C1C" : "inherit",
+                            color: !indicators2ByIndNo && isWeak ? "#B71C1C" : "inherit",
                             whiteSpace: "nowrap",
                           }}
                         >
                           {item.score.toFixed(2)} / {item.weight} <span style={{ opacity: 0.7 }}>({itemPct.toFixed(1)}%)</span>
                         </TableCell>
+                        {indicators2ByIndNo && (
+                          <TableCell
+                            align="center"
+                            sx={{
+                              fontFamily: '"IBM Plex Mono", monospace',
+                              fontSize: 12.5,
+                              fontWeight: 700,
+                              color: isWeak ? "#B71C1C" : "inherit",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {item2 ? (
+                              <>
+                                {item2.score.toFixed(2)} / {item2.weight}{" "}
+                                <span style={{ opacity: 0.7 }}>({itemPct2.toFixed(1)}%)</span>
+                              </>
+                            ) : (
+                              "—"
+                            )}
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })}

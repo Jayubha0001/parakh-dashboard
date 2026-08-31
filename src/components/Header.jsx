@@ -26,8 +26,8 @@ const Header = ({ pageEyebrow, pageIcon, pageTitle, pageSubtitle, statChip, cont
         background: `linear-gradient(120deg, ${colors.navy} 0%, ${colors.navyLight} 100%)`,
         borderRadius: 4,
         color: "#fff",
-        p: { xs: 2, md: 3 },
-        mb: 2.5,
+        p: { xs: 1.5, md: 3 },
+        mb: { xs: 1.5, md: 2.5 },
         position: "relative",
         overflow: "hidden",
         boxShadow: "0 10px 30px rgba(15,23,42,0.25)",
@@ -171,8 +171,8 @@ const Header = ({ pageEyebrow, pageIcon, pageTitle, pageSubtitle, statChip, cont
               src="/logo-reach-to-teach.png"
               alt="Reach to Teach Foundation"
               sx={{
-                height: 150,
-                width: 150,
+                height: { xs: 64, md: 150 },
+                width: { xs: 64, md: 150 },
                 borderRadius: 0.5,
                 bgcolor: "#fff",
                 p: 1,
