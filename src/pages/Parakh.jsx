@@ -11,6 +11,7 @@ import DistrictFilterBar from "../components/DistrictFilterBar";
 import ActionItemsQueue from "../components/ActionItemsQueue";
 import NationalBenchmarkPanel from "../components/NationalBenchmarkPanel";
 import { PARAKHCompetencySection } from "../components/DistrictDeepDive";
+import { isPriorityDistrict, PRIORITY_DISTRICTS } from "../utils/priorityDistricts";
 
 import {
   loadExcel,
@@ -47,6 +48,7 @@ const PARAKH = () => {
   const [allDistrictNames, setAllDistrictNames] = useState([]);
   const [allDistrictItems, setAllDistrictItems] = useState([]);
   const [district, setDistrict] = useState("All");
+  const [priorityOnly, setPriorityOnly] = useState(false);
   const [competencies, setCompetencies] = useState(null);
 
   useEffect(() => {
@@ -100,19 +102,33 @@ const PARAKH = () => {
   }
 
   const districts = ["All", ...new Set(subject.data.map((d) => d.District))];
+  const dropdownDistricts = priorityOnly
+    ? ["All", ...districts.slice(1).filter((d) => isPriorityDistrict(d))]
+    : districts;
 
   // Every section below is one-row-per-district, so a single generic
   // filter narrows all of them consistently. Contextual Variables is
   // excluded — its rows are questionnaire types (School/Teacher/Pupil),
   // not districts, so a district filter doesn't apply to it.
   const byDistrict = (arr) =>
-    district === "All" ? arr : arr.filter((d) => d.District === district);
+    arr
+      .filter((d) => district === "All" || d.District === district)
+      .filter((d) => !priorityOnly || isPriorityDistrict(d.District));
 
   return (
     <DashboardLayout>
       <Header />
 
-      <DistrictFilterBar district={district} setDistrict={setDistrict} districts={districts} />
+      <DistrictFilterBar
+        district={district}
+        setDistrict={setDistrict}
+        districts={dropdownDistricts}
+        priorityOnly={priorityOnly}
+        onPriorityOnlyChange={(v) => {
+          setPriorityOnly(v);
+          if (v && district !== "All" && !isPriorityDistrict(district)) setDistrict("All");
+        }}
+      />
 
       <NationalBenchmarkPanel
         district={district}
@@ -121,6 +137,8 @@ const PARAKH = () => {
         locationData={location.data}
         managementData={management.data}
         socialGroupData={socialGroup.data}
+        priorityOnly={priorityOnly}
+        priorityDistricts={PRIORITY_DISTRICTS}
       />
 
       <HeatMapTable
@@ -200,6 +218,7 @@ const PARAKH = () => {
         allDistricts={allDistrictNames}
         allItems={allDistrictItems}
         syncDistrict={district}
+        focusDistricts={priorityOnly ? PRIORITY_DISTRICTS : []}
       />
     </DashboardLayout>
   );

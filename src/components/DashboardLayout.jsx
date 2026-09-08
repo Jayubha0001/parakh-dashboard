@@ -6,10 +6,16 @@ import { colors } from "../theme/theme";
 
 const DashboardLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <Box sx={{ display: "flex", width: "100%" }}>
-      <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <Sidebar
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((c) => !c)}
+      />
 
       <Box
         component="main"

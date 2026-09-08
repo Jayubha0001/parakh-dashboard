@@ -1,24 +1,11 @@
 import { useEffect, useState } from "react";
-import {
-  Box,
-  Card,
-  CardContent,
-  Grid,
-  Typography,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  TableContainer,
-  Paper,
-  Chip,
-  TextField,
-  MenuItem,
-  TablePagination,
-  Tabs,
-  Tab,
-} from "@mui/material";
+import { Box, Card, CardContent, Grid, Typography, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, Paper, Chip, TextField, MenuItem, TablePagination, Tabs, Tab, ToggleButton } from "@mui/material";
+import StarIcon from "@mui/icons-material/Star";
+import LocationCityIcon from "@mui/icons-material/LocationCity";
+import SchoolIcon from "@mui/icons-material/School";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+import { colors } from "../theme/theme";
 import {
   ResponsiveContainer,
   BarChart,
@@ -47,7 +34,7 @@ import {
   PM_SHRI_YEAR_LABELS,
   COLOR_GRADE_KEY,
 } from "../services/dataService";
-import { isPriorityDistrict } from "../utils/priorityDistricts";
+import { isPriorityDistrict, PRIORITY_DISTRICTS } from "../utils/priorityDistricts";
 import PriorityChip from "../components/PriorityChip";
 import ActionItemsQueue from "../components/ActionItemsQueue";
 import DropdownFilter from "../components/DropdownFilter";
@@ -88,6 +75,7 @@ const PMShri = () => {
   const [gsqac, setGsqac] = useState(null);
 
   const [gsqacDistrictFilter, setGsqacDistrictFilter] = useState("All");
+  const [priorityOnly, setPriorityOnly] = useState(false);
   const [gsqacSearch, setGsqacSearch] = useState("");
   const [gsqacPage, setGsqacPage] = useState(0);
   const [gsqacRowsPerPage, setGsqacRowsPerPage] = useState(10);
@@ -139,7 +127,9 @@ const PMShri = () => {
     );
   }
 
-  const filteredDistricts = gsqacDistrictFilter === "All" ? districts : districts.filter((d) => d.district === gsqacDistrictFilter);
+  const filteredDistricts = districts
+    .filter((d) => gsqacDistrictFilter === "All" || d.district === gsqacDistrictFilter)
+    .filter((d) => !priorityOnly || isPriorityDistrict(d.district));
   const sorted = [...filteredDistricts].sort((a, b) => b.totalSchools - a.totalSchools);
 
   const gsqacSegmentSchoolsUnfiltered = gsqacSegment === "GOI" ? gsqac.goiSchools : gsqacSegment === "GOG" ? gsqac.gogSchools : gsqac.schools;
@@ -158,9 +148,15 @@ const PMShri = () => {
   // these used gsqac.state / gsqac.stateGOI / gsqac.stateGOG / gsqac.yearWise
   // — fixed state-wide numbers computed once in dataService.js that never
   // responded to the District filter at all).
-  const gsqacDistrictAll = gsqacDistrictFilter === "All" ? gsqac.schools : gsqac.schools.filter((s) => s.district === gsqacDistrictFilter);
-  const gsqacDistrictGOI = gsqacDistrictFilter === "All" ? gsqac.goiSchools : gsqac.goiSchools.filter((s) => s.district === gsqacDistrictFilter);
-  const gsqacDistrictGOG = gsqacDistrictFilter === "All" ? gsqac.gogSchools : gsqac.gogSchools.filter((s) => s.district === gsqacDistrictFilter);
+  const gsqacDistrictAll = gsqac.schools
+    .filter((s) => gsqacDistrictFilter === "All" || s.district === gsqacDistrictFilter)
+    .filter((s) => !priorityOnly || isPriorityDistrict(s.district));
+  const gsqacDistrictGOI = gsqac.goiSchools
+    .filter((s) => gsqacDistrictFilter === "All" || s.district === gsqacDistrictFilter)
+    .filter((s) => !priorityOnly || isPriorityDistrict(s.district));
+  const gsqacDistrictGOG = gsqac.gogSchools
+    .filter((s) => gsqacDistrictFilter === "All" || s.district === gsqacDistrictFilter)
+    .filter((s) => !priorityOnly || isPriorityDistrict(s.district));
   const gsqacStateCardAll = summarizeSchoolsForYear(gsqacDistrictAll, PM_SHRI_YEAR_LABELS.length - 1);
   const gsqacStateCardGOI = summarizeSchoolsForYear(gsqacDistrictGOI, PM_SHRI_YEAR_LABELS.length - 1);
   const gsqacStateCardGOG = summarizeSchoolsForYear(gsqacDistrictGOG, PM_SHRI_YEAR_LABELS.length - 1);
@@ -178,6 +174,7 @@ const PMShri = () => {
   const gsqacFilteredSchools = gsqac.schools.filter((s) => {
     if (gsqacSegment !== "All" && s.goiGog !== gsqacSegment) return false;
     if (gsqacDistrictFilter !== "All" && s.district !== gsqacDistrictFilter) return false;
+    if (priorityOnly && !isPriorityDistrict(s.district)) return false;
     if (gsqacSearch.trim()) {
       const q = gsqacSearch.trim().toLowerCase();
       return [s.schoolName, s.udise, s.block, s.district].some((f) => String(f || "").toLowerCase().includes(q));
@@ -192,6 +189,7 @@ const PMShri = () => {
   const decliningFiltered = gsqac.decliningSchools.filter((s) => {
     if (gsqacSegment !== "All" && s.goiGog !== gsqacSegment) return false;
     if (gsqacDistrictFilter !== "All" && s.district !== gsqacDistrictFilter) return false;
+    if (priorityOnly && !isPriorityDistrict(s.district)) return false;
     return true;
   });
   const decliningPaged = decliningFiltered.slice(
@@ -210,11 +208,11 @@ const PMShri = () => {
   // total — with the state number kept alongside for reference.
   const displayTotal = gsqacDistrictFilter === "All" ? stateTotal : filteredDistricts[0];
   const statCards = [
-    { label: "Total PM Shri Schools", value: displayTotal?.totalSchools ?? 0, stateValue: stateTotal?.totalSchools ?? 0, accent: "#1976D2" },
-    { label: "Total Enrolment", value: displayTotal?.totalEnrollment?.toLocaleString() ?? 0, stateValue: stateTotal?.totalEnrollment?.toLocaleString() ?? 0, accent: "#2E7D32" },
-    { label: "Total Teachers", value: displayTotal?.totalTeachers?.toLocaleString() ?? 0, stateValue: stateTotal?.totalTeachers?.toLocaleString() ?? 0, accent: "#F0B429" },
-    { label: "GOI Schools", value: displayTotal?.goiSchools ?? 0, stateValue: stateTotal?.goiSchools ?? 0, accent: "#8E24AA" },
-    { label: "GOG Schools", value: displayTotal?.gogSchools ?? 0, stateValue: stateTotal?.gogSchools ?? 0, accent: "#00897B" },
+    { label: "Total PM Shri Schools", value: displayTotal?.totalSchools ?? 0, stateValue: stateTotal?.totalSchools ?? 0, gradient: `linear-gradient(135deg, ${colors.navy}, ${colors.navyLight})`, Icon: LocationCityIcon },
+    { label: "Total Enrolment", value: displayTotal?.totalEnrollment?.toLocaleString() ?? 0, stateValue: stateTotal?.totalEnrollment?.toLocaleString() ?? 0, gradient: "linear-gradient(135deg, #1F8A70, #3FB897)", Icon: SchoolIcon },
+    { label: "Total Teachers", value: displayTotal?.totalTeachers?.toLocaleString() ?? 0, stateValue: stateTotal?.totalTeachers?.toLocaleString() ?? 0, gradient: "linear-gradient(135deg, #B8860B, #F0B429)", Icon: EmojiEventsIcon },
+    { label: "GOI Schools", value: displayTotal?.goiSchools ?? 0, stateValue: stateTotal?.goiSchools ?? 0, gradient: "linear-gradient(135deg, #6A3DB8, #9B6DE0)", Icon: AccountBalanceIcon },
+    { label: "GOG Schools", value: displayTotal?.gogSchools ?? 0, stateValue: stateTotal?.gogSchools ?? 0, gradient: "linear-gradient(135deg, #00695C, #26A69A)", Icon: AccountBalanceIcon },
   ];
 
   return (
@@ -252,48 +250,114 @@ const PMShri = () => {
           onChange={(e) => setGsqacDistrictFilter(e.target.value)}
           options={[
             { value: "All", label: "All Districts" },
-            ...[...districts].sort((a, b) => a.district.localeCompare(b.district)).map((d) => ({ value: d.district, label: d.district })),
+            ...[...districts]
+              .filter((d) => !priorityOnly || isPriorityDistrict(d.district))
+              .sort((a, b) => a.district.localeCompare(b.district))
+              .map((d) => ({ value: d.district, label: `${d.district}${isPriorityDistrict(d.district) ? " ⭐" : ""}` })),
           ]}
         />
+
+        <ToggleButton
+          value="priority"
+          selected={priorityOnly}
+          onChange={() => {
+            const next = !priorityOnly;
+            setPriorityOnly(next);
+            if (next && gsqacDistrictFilter !== "All" && !isPriorityDistrict(gsqacDistrictFilter)) {
+              setGsqacDistrictFilter("All");
+            }
+          }}
+          size="small"
+          sx={{
+            textTransform: "none",
+            fontWeight: 700,
+            gap: 0.6,
+            px: 1.5,
+            color: priorityOnly ? "#8A6200" : undefined,
+            borderColor: priorityOnly ? "#F0B429" : undefined,
+            "&.Mui-selected": { bgcolor: "#FFF4D6", "&:hover": { bgcolor: "#FDEBB8" } },
+          }}
+        >
+          <StarIcon fontSize="small" sx={{ color: priorityOnly ? "#F0B429" : undefined }} />
+          Priority Districts Only
+        </ToggleButton>
       </Paper>
 
       {activeTab === 0 && (
       <>
-      <CombinedOverview selectedDistrict={gsqacDistrictFilter} />
+      <CombinedOverview selectedDistrict={gsqacDistrictFilter} priorityOnly={priorityOnly} priorityDistricts={PRIORITY_DISTRICTS} />
 
-      <Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", overflow: "hidden", mt: 2 }}>
-        <Grid container>
-          {statCards.map((stat, i) => (
-            <Grid
-              size={{ xs: 6, sm: 12 / statCards.length }}
-              key={stat.label}
+      <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
+        {statCards.map((stat) => (
+          <Grid size={{ xs: 6, md: 12 / statCards.length }} key={stat.label}>
+            <Paper
+              elevation={0}
               sx={{
-                p: 3,
-                borderRight: { sm: i < statCards.length - 1 ? "1px solid #E4E7F0" : "none" },
-                borderBottom: { xs: i < 4 ? "1px solid #E4E7F0" : "none", sm: "none" },
+                position: "relative",
+                borderRadius: 2.5,
+                background: stat.gradient,
+                color: "#fff",
+                height: "100%",
+                p: { xs: 1.3, sm: 1.6 },
+                display: "flex",
+                alignItems: "center",
+                gap: 1.3,
+                overflow: "hidden",
+                boxShadow: "0 4px 10px rgba(15,23,42,0.10)",
               }}
             >
-              <Box sx={{ width: 24, height: 3, borderRadius: 2, bgcolor: stat.accent, mb: 1.5 }} />
-              <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{stat.label.toUpperCase()}</Typography>
-              <Typography
+              <stat.Icon
                 sx={{
-                  fontFamily: '"Fraunces", serif',
-                  fontWeight: 700,
-                  fontSize: 26,
-                  color: "#16233B",
+                  position: "absolute",
+                  right: -10,
+                  bottom: -14,
+                  fontSize: 84,
+                  opacity: 0.16,
+                  transform: "rotate(-12deg)",
+                }}
+              />
+              <Box
+                sx={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  bgcolor: "rgba(255,255,255,0.22)",
+                  flexShrink: 0,
+                  zIndex: 1,
                 }}
               >
-                {stat.value}
-              </Typography>
-              {gsqacDistrictFilter !== "All" && (
-                <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 0.25 }}>
-                  State: {stat.stateValue}
+                <stat.Icon sx={{ fontSize: 18 }} />
+              </Box>
+              <Box sx={{ minWidth: 0, zIndex: 1 }}>
+                <Typography sx={{ fontSize: 10.5, opacity: 0.9, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, lineHeight: 1.2 }}>
+                  {stat.label}
                 </Typography>
-              )}
-            </Grid>
-          ))}
-        </Grid>
-      </Paper>
+                <Typography
+                  sx={{
+                    fontFamily: '"Fraunces", serif',
+                    fontWeight: 700,
+                    fontSize: 21,
+                    lineHeight: 1.3,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {stat.value}
+                </Typography>
+                {gsqacDistrictFilter !== "All" && (
+                  <Typography sx={{ fontSize: 10.5, opacity: 0.85, fontFamily: '"IBM Plex Mono", monospace' }}>
+                    State: {stat.stateValue}
+                  </Typography>
+                )}
+              </Box>
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
 
       <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
         <CardContent>
@@ -771,6 +835,7 @@ const PMShri = () => {
         allDistricts={allDistrictNames}
         allItems={allDistrictItems}
         syncDistrict={gsqacDistrictFilter}
+        focusDistricts={priorityOnly ? PRIORITY_DISTRICTS : []}
       />
       </>
       )}

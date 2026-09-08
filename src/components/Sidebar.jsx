@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Drawer,
   List,
@@ -6,7 +7,8 @@ import {
   ListItemIcon,
   ListItemText,
   Toolbar,
-  Typography,
+  Tooltip,
+  IconButton,
   Box,
 } from "@mui/material";
 
@@ -19,82 +21,82 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import DescriptionIcon from "@mui/icons-material/Description";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import PlaceIcon from "@mui/icons-material/Place";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { colors } from "../theme/theme";
 
-const drawerWidth = 240;
+export const DRAWER_WIDTH = 240;
+export const DRAWER_WIDTH_COLLAPSED = 68;
 
 const menuItems = [
   {
     text: "Dashboard",
     icon: <DashboardIcon />,
     path: "/",
+    color: "#5AA6EA",
   },
   {
     text: "PARAKH",
     icon: <SchoolIcon />,
     path: "/parakh",
+    color: "#3FB897",
   },
   {
     text: "PGI 2.0",
     icon: <AssessmentIcon />,
     path: "/pgi",
+    color: "#B18CE8",
   },
   {
     text: "SAT",
     icon: <FactCheckIcon />,
     path: "/sat",
+    color: "#F0B429",
   },
   {
     text: "Comparison",
     icon: <EmojiEventsIcon />,
     path: "/comparison",
+    color: "#F2994A",
   },
   {
     text: "PM Shri",
     icon: <AccountBalanceIcon />,
     path: "/pmshri",
+    color: "#4DB6E5",
   },
   {
     text: "CRC Visit",
     icon: <PlaceIcon />,
     path: "/live-visits",
+    color: "#E5737E",
   },
   {
     text: "Reports",
     icon: <DescriptionIcon />,
     path: "/reports",
+    color: "#9AA5B1",
   },
 ];
 
 // Shared list markup, rendered inside BOTH the permanent (desktop) drawer
 // and the temporary (mobile, overlay) drawer below — one source of truth
-// for the menu items and their styling.
-const DrawerContent = ({ onNavigate }) => (
+// for the menu items and their styling. `collapsed` (desktop only) hides
+// the text labels down to an icon rail, and `onToggleCollapse` renders the
+// expand/collapse chevron in place of the old plain "PARAKH" brand text.
+const DrawerContent = ({ onNavigate, collapsed = false, onToggleCollapse = null }) => (
   <>
-    <Toolbar sx={{ gap: 1.2 }}>
-      <Box
-        sx={{
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          background: `linear-gradient(135deg, ${colors.gold}, ${colors.goldLight})`,
-        }}
-      />
-      <Typography
-        sx={{
-          fontFamily: '"Fraunces", serif',
-          fontWeight: 700,
-          fontSize: 20,
-          letterSpacing: 0.3,
-        }}
-      >
-        PARAKH
-      </Typography>
+    <Toolbar sx={{ justifyContent: onToggleCollapse ? "flex-end" : "flex-start", px: collapsed ? 1 : 2 }}>
+      {onToggleCollapse && (
+        <IconButton onClick={onToggleCollapse} size="small" sx={{ color: "rgba(255,255,255,0.75)" }}>
+          {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+        </IconButton>
+      )}
     </Toolbar>
 
-    <List sx={{ px: 1.5 }}>
-      {menuItems.map((item) => (
-        <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+    <List sx={{ px: collapsed ? 0.75 : 1.5 }}>
+      {menuItems.map((item) => {
+        const button = (
           <ListItemButton
             component={NavLink}
             to={item.path}
@@ -103,7 +105,8 @@ const DrawerContent = ({ onNavigate }) => (
               color: "rgba(255,255,255,0.85)",
               textDecoration: "none",
               borderRadius: 2,
-              pl: 1.5,
+              pl: collapsed ? 1.1 : 1.5,
+              justifyContent: collapsed ? "center" : "flex-start",
               transition: "background-color 0.15s ease, color 0.15s ease",
               outline: "none",
 
@@ -111,8 +114,8 @@ const DrawerContent = ({ onNavigate }) => (
                 backgroundColor: "rgba(240,180,41,0.14)",
                 color: "#fff",
                 fontWeight: 600,
-                borderLeft: `3px solid ${colors.gold}`,
-                pl: "9px",
+                borderLeft: collapsed ? "none" : `3px solid ${colors.gold}`,
+                pl: collapsed ? 1.1 : "9px",
               },
 
               "&.active .MuiListItemIcon-root": {
@@ -133,25 +136,43 @@ const DrawerContent = ({ onNavigate }) => (
           >
             <ListItemIcon
               sx={{
-                color: "inherit",
-                minWidth: 40,
+                color: item.color,
+                minWidth: collapsed ? 0 : 40,
+                opacity: 0.9,
+                justifyContent: "center",
+                "& .MuiSvgIcon-root": { fontSize: 21 },
               }}
             >
               {item.icon}
             </ListItemIcon>
 
-            <ListItemText primary={item.text} />
+            {!collapsed && <ListItemText primary={item.text} />}
           </ListItemButton>
-        </ListItem>
-      ))}
+        );
+
+        return (
+          <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+            {collapsed ? (
+              <Tooltip title={item.text} placement="right">
+                <Box sx={{ width: "100%" }}>{button}</Box>
+              </Tooltip>
+            ) : (
+              button
+            )}
+          </ListItem>
+        );
+      })}
     </List>
   </>
 );
 
-// Permanent drawer on desktop (md+), temporary overlay drawer on mobile
-// (xs/sm) that opens via the hamburger button in DashboardLayout and
-// closes itself on backdrop click or on picking a menu item.
-const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
+// Permanent drawer on desktop (md+, collapsible to an icon rail via the
+// chevron button), temporary overlay drawer on mobile (xs/sm) that opens
+// via the hamburger button in DashboardLayout and closes itself on
+// backdrop click or on picking a menu item.
+const Sidebar = ({ mobileOpen = false, onClose = () => {}, collapsed = false, onToggleCollapse = () => {} }) => {
+  const width = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
+
   return (
     <>
       <Drawer
@@ -162,7 +183,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
         sx={{
           display: { xs: "block", md: "none" },
           "& .MuiDrawer-paper": {
-            width: drawerWidth,
+            width: DRAWER_WIDTH,
             background: colors.navy,
             color: "white",
             borderRight: "none",
@@ -176,16 +197,19 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
         variant="permanent"
         sx={{
           display: { xs: "none", md: "block" },
-          width: drawerWidth,
+          width,
+          transition: "width 0.2s ease",
           "& .MuiDrawer-paper": {
-            width: drawerWidth,
+            width,
             background: colors.navy,
             color: "white",
             borderRight: "none",
+            overflowX: "hidden",
+            transition: "width 0.2s ease",
           },
         }}
       >
-        <DrawerContent />
+        <DrawerContent collapsed={collapsed} onToggleCollapse={onToggleCollapse} />
       </Drawer>
     </>
   );

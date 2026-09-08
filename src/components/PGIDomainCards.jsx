@@ -3,6 +3,12 @@ import { gradeColor } from "./PGIHeader";
 
 const shortenDomain = (name = "") => name.split(" - ")[0].replace("Domain ", "D");
 
+// One accent colour per domain slot (not tied to grade) so each of the 6
+// domain cards is visually distinct at a glance, the way a real dashboard
+// panel set would be colour-keyed, rather than 6 identical white cards
+// that only differ in their numbers.
+const DOMAIN_ACCENTS = ["#1976D2", "#8E24AA", "#00897B", "#F0B429", "#D32F2F", "#5B6B85"];
+
 // domains2/label/label2 are optional — when passed, each card shows BOTH
 // years' scores stacked inside the same card (with a Δ), instead of two
 // separate rows of cards for the two years, which read as duplicated
@@ -26,19 +32,47 @@ const PGIDomainCards = ({
         {domains.map((d, i) => {
           const d2 = byDomain2?.get(d.domain);
           const delta = d2 ? Math.round((d2.percentAchieved - d.percentAchieved) * 10) / 10 : null;
+          const accent = DOMAIN_ACCENTS[i % DOMAIN_ACCENTS.length];
+          const shortLabel = shortenDomain(d.domain);
+          const domainNo = shortLabel.match(/^D\d+/)?.[0] || `D${i + 1}`;
+          const domainName = shortLabel.replace(/^D\d+:\s*/, "");
 
           return (
             <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }} key={i}>
-              <Card sx={{ borderRadius: 3, boxShadow: 3, height: "100%" }}>
+              <Card
+                sx={{
+                  borderRadius: 3,
+                  boxShadow: 3,
+                  height: "100%",
+                  borderTop: `4px solid ${accent}`,
+                  transition: "transform 0.15s, box-shadow 0.15s",
+                  "&:hover": { transform: "translateY(-3px)", boxShadow: 6 },
+                }}
+              >
                 <CardContent>
-                  <Typography
-                    fontSize={13}
-                    fontWeight="bold"
-                    color="text.secondary"
-                    sx={{ minHeight: 36 }}
-                  >
-                    {shortenDomain(d.domain)}
-                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, minHeight: 44, mb: 0.5 }}>
+                    <Box
+                      sx={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: "50%",
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        bgcolor: accent,
+                        color: "#fff",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        fontFamily: '"IBM Plex Mono", monospace',
+                      }}
+                    >
+                      {domainNo}
+                    </Box>
+                    <Typography fontSize={12.5} fontWeight={700} color="text.secondary" sx={{ lineHeight: 1.25 }}>
+                      {domainName}
+                    </Typography>
+                  </Box>
 
                   {domains2 && (
                     <Typography fontSize={10.5} fontWeight={700} color="text.secondary" sx={{ mt: 0.5 }}>
@@ -92,14 +126,28 @@ const PGIDomainCards = ({
                           "& .MuiLinearProgress-bar": { bgcolor: gradeColor(d2.grade) },
                         }}
                       />
-                      <Typography
-                        fontSize={12}
-                        fontWeight="bold"
-                        sx={{ color: delta == null ? gradeColor(d2.grade) : delta >= 0 ? "#2E7D32" : "#D32F2F" }}
-                      >
-                        {d2.percentAchieved.toFixed(1)}% · {d2.grade}
-                        {delta != null && ` (${delta >= 0 ? "+" : ""}${delta}pp)`}
-                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.7, flexWrap: "wrap" }}>
+                        <Typography fontSize={12} fontWeight="bold" sx={{ color: gradeColor(d2.grade) }}>
+                          {d2.percentAchieved.toFixed(1)}% · {d2.grade}
+                        </Typography>
+                        {delta != null && (
+                          <Box
+                            sx={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              fontFamily: '"IBM Plex Mono", monospace',
+                              px: 0.8,
+                              py: 0.1,
+                              borderRadius: 5,
+                              bgcolor: delta >= 0 ? "#E8F5E9" : "#FDECEA",
+                              color: delta >= 0 ? "#2E7D32" : "#D32F2F",
+                            }}
+                          >
+                            {delta >= 0 ? "▲" : "▼"} {delta >= 0 ? "+" : ""}
+                            {delta}pp
+                          </Box>
+                        )}
+                      </Box>
                     </>
                   )}
                 </CardContent>

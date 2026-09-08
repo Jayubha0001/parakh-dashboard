@@ -23,6 +23,7 @@ import Loading from "../components/Loading";
 import DistrictFilterBar from "../components/DistrictFilterBar";
 import ActionItemsQueue from "../components/ActionItemsQueue";
 import { colors, fontDisplay, fontMono } from "../theme/theme";
+import { isPriorityDistrict, PRIORITY_DISTRICTS } from "../utils/priorityDistricts";
 
 import {
   loadExcel,
@@ -93,6 +94,7 @@ const SAT = () => {
   const [satSubjectRowsSem1, setSatSubjectRowsSem1] = useState([]);
   const [satSubjectRowsSem2, setSatSubjectRowsSem2] = useState([]);
   const [district, setDistrict] = useState("All");
+  const [priorityOnly, setPriorityOnly] = useState(false);
   const [loBreakdown, setLoBreakdown] = useState(null);
 
   // Which semester's data drives the state-average/KPI/grade-wise/
@@ -267,6 +269,9 @@ const SAT = () => {
     semester === "all" ? allDistrictSatItemsAll : semester === "sem1" ? allDistrictSatItemsSem1 : allDistrictSatItemsSem2;
 
   const districts = ["All", ...new Set(satRanking.map((d) => d.District))];
+  const dropdownDistricts = priorityOnly
+    ? ["All", ...districts.slice(1).filter((d) => isPriorityDistrict(d))]
+    : districts;
 
   const sortedByScore = [...satRanking].sort(
     (a, b) => b.PercentAchieved - a.PercentAchieved
@@ -317,13 +322,21 @@ const SAT = () => {
     "Sem 2 (State Avg)": district !== "All" && stateSem2AvgAll != null ? Number(stateSem2AvgAll.toFixed(1)) : null,
   }));
 
-  const districtComparisonChartData =
-    district !== "All"
-      ? districtComparisonChartAll.filter((d) => d.District === district)
-      : districtComparisonChartAll;
+  const districtComparisonChartData = [...districtComparisonChartAll]
+    .filter((d) => district === "All" || d.District === district)
+    .filter((d) => !priorityOnly || isPriorityDistrict(d.District));
+
+  const avgAcrossPriorityGrade = (dataset, grade) => {
+    const vals = dataset
+      .filter((d) => isPriorityDistrict(d.District))
+      .map((d) => d[grade])
+      .filter((v) => typeof v === "number");
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  };
 
   const gradeComparisonChartData = (() => {
     const grades = [...new Set([...satGradeWiseSem2.grades, ...satGradeWiseSem1.grades])];
+    const showStateAvgBg = district !== "All" || priorityOnly;
 
     return grades.map((grade) => {
       const stateSem1 = satSummarySem1.gradeAverages.find((g) => g.grade === grade)?.average;
@@ -335,6 +348,9 @@ const SAT = () => {
       if (district !== "All") {
         sem1Value = satGradeWiseSem1.data.find((d) => d.District === district)?.[grade];
         sem2Value = satGradeWiseSem2.data.find((d) => d.District === district)?.[grade];
+      } else if (priorityOnly) {
+        sem1Value = avgAcrossPriorityGrade(satGradeWiseSem1.data, grade);
+        sem2Value = avgAcrossPriorityGrade(satGradeWiseSem2.data, grade);
       } else {
         sem1Value = stateSem1;
         sem2Value = stateSem2;
@@ -344,8 +360,8 @@ const SAT = () => {
         grade,
         "Sem 1": sem1Value != null ? Number(sem1Value.toFixed(1)) : null,
         "Sem 2": sem2Value != null ? Number(sem2Value.toFixed(1)) : null,
-        "Sem 1 (State Avg)": district !== "All" && stateSem1 != null ? Number(stateSem1.toFixed(1)) : null,
-        "Sem 2 (State Avg)": district !== "All" && stateSem2 != null ? Number(stateSem2.toFixed(1)) : null,
+        "Sem 1 (State Avg)": showStateAvgBg && stateSem1 != null ? Number(stateSem1.toFixed(1)) : null,
+        "Sem 2 (State Avg)": showStateAvgBg && stateSem2 != null ? Number(stateSem2.toFixed(1)) : null,
       };
     });
   })();
@@ -377,6 +393,12 @@ const SAT = () => {
 
     const sem1StateAvg = stateAvgBySubject(satSubjectRowsSem1);
     const sem2StateAvg = stateAvgBySubject(satSubjectRowsSem2);
+    const showStateAvgBg = district !== "All" || priorityOnly;
+
+    const avgAcrossPrioritySubject = (rows, subj) => {
+      const vals = rows.filter((s) => s.subject === subj && isPriorityDistrict(s.District)).map((s) => s.PercentAchieved);
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    };
 
     return subjects.map((subject) => {
       const stateSem1 = sem1StateAvg[subject];
@@ -388,6 +410,9 @@ const SAT = () => {
       if (district !== "All") {
         sem1Value = satSubjectRowsSem1.find((s) => s.District === district && s.subject === subject)?.PercentAchieved;
         sem2Value = satSubjectRowsSem2.find((s) => s.District === district && s.subject === subject)?.PercentAchieved;
+      } else if (priorityOnly) {
+        sem1Value = avgAcrossPrioritySubject(satSubjectRowsSem1, subject);
+        sem2Value = avgAcrossPrioritySubject(satSubjectRowsSem2, subject);
       } else {
         sem1Value = satSubjectWiseSem1.find((s) => s.subject === subject)?.PercentAchieved;
         sem2Value = satSubjectWiseSem2.find((s) => s.subject === subject)?.PercentAchieved;
@@ -397,31 +422,27 @@ const SAT = () => {
         subject: cleanSubjectLabel(subject),
         "Sem 1": sem1Value != null ? Number(sem1Value.toFixed(1)) : null,
         "Sem 2": sem2Value != null ? Number(sem2Value.toFixed(1)) : null,
-        "Sem 1 (State Avg)": district !== "All" && stateSem1 != null ? Number(stateSem1.toFixed(1)) : null,
-        "Sem 2 (State Avg)": district !== "All" && stateSem2 != null ? Number(stateSem2.toFixed(1)) : null,
+        "Sem 1 (State Avg)": (district !== "All" || priorityOnly) && stateSem1 != null ? Number(stateSem1.toFixed(1)) : null,
+        "Sem 2 (State Avg)": (district !== "All" || priorityOnly) && stateSem2 != null ? Number(stateSem2.toFixed(1)) : null,
       };
     });
   })();
 
-  const gradeHeatmapDataSem1 =
-    district !== "All"
-      ? satGradeWiseSem1.data.filter((d) => d.District === district)
-      : satGradeWiseSem1.data;
+  const gradeHeatmapDataSem1 = satGradeWiseSem1.data
+    .filter((d) => district === "All" || d.District === district)
+    .filter((d) => !priorityOnly || isPriorityDistrict(d.District));
 
-  const gradeHeatmapDataSem2 =
-    district !== "All"
-      ? satGradeWiseSem2.data.filter((d) => d.District === district)
-      : satGradeWiseSem2.data;
+  const gradeHeatmapDataSem2 = satGradeWiseSem2.data
+    .filter((d) => district === "All" || d.District === district)
+    .filter((d) => !priorityOnly || isPriorityDistrict(d.District));
 
-  const subjectHeatmapDataSem1 =
-    district !== "All"
-      ? satSubjectHeatmapSem1.data.filter((d) => d.District === district)
-      : satSubjectHeatmapSem1.data;
+  const subjectHeatmapDataSem1 = satSubjectHeatmapSem1.data
+    .filter((d) => district === "All" || d.District === district)
+    .filter((d) => !priorityOnly || isPriorityDistrict(d.District));
 
-  const subjectHeatmapDataSem2 =
-    district !== "All"
-      ? satSubjectHeatmapSem2.data.filter((d) => d.District === district)
-      : satSubjectHeatmapSem2.data;
+  const subjectHeatmapDataSem2 = satSubjectHeatmapSem2.data
+    .filter((d) => district === "All" || d.District === district)
+    .filter((d) => !priorityOnly || isPriorityDistrict(d.District));
 
   if (loading) {
     return (
@@ -510,32 +531,45 @@ const SAT = () => {
             <Paper
               elevation={0}
               sx={{
+                position: "relative",
                 borderRadius: 2.5,
                 background: kpi.gradient,
                 color: "#fff",
                 height: "100%",
-                p: 1.4,
+                p: 1.6,
                 display: "flex",
                 alignItems: "center",
-                gap: 1.1,
+                gap: 1.3,
+                overflow: "hidden",
                 boxShadow: "0 4px 10px rgba(15,23,42,0.10)",
               }}
             >
+              <kpi.Icon
+                sx={{
+                  position: "absolute",
+                  right: -10,
+                  bottom: -14,
+                  fontSize: 84,
+                  opacity: 0.16,
+                  transform: "rotate(-12deg)",
+                }}
+              />
               <Box
                 sx={{
-                  width: 30,
-                  height: 30,
+                  width: 34,
+                  height: 34,
                   borderRadius: "50%",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   bgcolor: "rgba(255,255,255,0.22)",
                   flexShrink: 0,
+                  zIndex: 1,
                 }}
               >
-                <kpi.Icon sx={{ fontSize: 16 }} />
+                <kpi.Icon sx={{ fontSize: 18 }} />
               </Box>
-              <Box sx={{ minWidth: 0 }}>
+              <Box sx={{ minWidth: 0, zIndex: 1 }}>
                 <Typography sx={{ fontSize: 10.5, opacity: 0.9, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, lineHeight: 1.2 }}>
                   {kpi.label}
                 </Typography>
@@ -544,7 +578,7 @@ const SAT = () => {
                     sx={{
                       fontFamily: fontDisplay,
                       fontWeight: 700,
-                      fontSize: 18,
+                      fontSize: 21,
                       lineHeight: 1.3,
                       whiteSpace: "nowrap",
                       overflow: "hidden",
@@ -599,99 +633,18 @@ const SAT = () => {
         </Grid>
       </Paper>
 
-      {/* Leaderboard: Top 5 / Needs Support */}
-      <Grid container spacing={2} mb={2.5}>
-        {[
-          { title: "Top SAT Districts", icon: "🎯", data: top5, rankBase: 1, accent: "#1F8A70" },
-          { title: "SAT — Needs Support", icon: "📉", data: bottom5, rankBase: satSummary.totalDistricts || 33, reverse: true, accent: "#D32F2F" },
-        ].map((panel) => (
-          <Grid size={{ xs: 12, sm: 6 }} key={panel.title}>
-            <Card sx={{ borderRadius: 3, boxShadow: 3, borderLeft: `4px solid ${panel.accent}`, height: "100%" }}>
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.25 }}>
-                  <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: panel.accent }} />
-                  <Typography sx={{ fontFamily: fontMono, fontSize: 10.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: panel.accent }}>
-                    {panel.reverse ? "Attention needed" : "Leading the state"}
-                  </Typography>
-                </Box>
-                <Typography sx={{ fontFamily: fontDisplay, fontWeight: 600, fontSize: 18, mb: 2 }}>
-                  {panel.icon} {panel.title}
-                </Typography>
-
-                {panel.data.map((item, index) => {
-                  const rank = panel.reverse ? panel.rankBase - index : panel.rankBase + index;
-                  const medal = rank === 1 ? "#F0B429" : rank === 2 ? "#9AA5B1" : rank === 3 ? "#B08D57" : "transparent";
-                  const medalText = rank <= 3 && !panel.reverse ? "#fff" : "#16233B";
-
-                  return (
-                    <Box
-                      key={item.District}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.5,
-                        py: 1.1,
-                        borderBottom: index < panel.data.length - 1 ? "1px solid #EEF0F5" : "none",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: 26,
-                          height: 26,
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          fontFamily: '"IBM Plex Mono", monospace',
-                          bgcolor: !panel.reverse && rank <= 3 ? medal : "#F1F3F8",
-                          color: !panel.reverse && rank <= 3 ? medalText : "#5B6B85",
-                          border: !panel.reverse && rank <= 3 ? "none" : "1px solid #E4E7F0",
-                        }}
-                      >
-                        {rank}
-                      </Box>
-
-                      <Typography sx={{ flex: 1, fontWeight: 500, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {item.District}
-                      </Typography>
-
-                      <Box sx={{ width: 70, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
-                        <Box
-                          sx={{
-                            width: `${Math.min(item.Score, 100)}%`,
-                            height: "100%",
-                            bgcolor: panel.reverse ? "#D32F2F" : "#2E7D32",
-                          }}
-                        />
-                      </Box>
-
-                      <Typography
-                        sx={{
-                          fontFamily: '"IBM Plex Mono", monospace',
-                          fontWeight: 700,
-                          fontSize: 13,
-                          width: 46,
-                          textAlign: "right",
-                          color: panel.reverse ? "error.main" : "success.main",
-                        }}
-                      >
-                        {item.Score}%
-                      </Typography>
-                    </Box>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
       {/* District Filter */}
       <Box mt={1} mb={2}>
-        <DistrictFilterBar district={district} setDistrict={setDistrict} districts={districts} />
+        <DistrictFilterBar
+          district={district}
+          setDistrict={setDistrict}
+          districts={dropdownDistricts}
+          priorityOnly={priorityOnly}
+          onPriorityOnlyChange={(v) => {
+            setPriorityOnly(v);
+            if (v && district !== "All" && !isPriorityDistrict(district)) setDistrict("All");
+          }}
+        />
       </Box>
 
       {/* District-wise bar chart — Sem 1 vs Sem 2, always both */}
@@ -738,7 +691,12 @@ const SAT = () => {
               </Typography>
             </Box>
             <Typography sx={{ fontFamily: fontDisplay, fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-              SAT — Grade-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district} vs Gujarat State Average` : " · Gujarat State Average"}
+              SAT — Grade-wise Performance (%) · Semester 1 vs Semester 2
+              {district !== "All"
+                ? ` · ${district} vs Gujarat State Average`
+                : priorityOnly
+                ? " · ⭐ Priority Districts Avg vs Gujarat State Average"
+                : " · Gujarat State Average"}
             </Typography>
 
             <ResponsiveContainer width="100%" height={340}>
@@ -777,7 +735,12 @@ const SAT = () => {
               </Typography>
             </Box>
             <Typography sx={{ fontFamily: fontDisplay, fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-              SAT — Subject-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district} vs Gujarat State Average` : " · Gujarat State-wide"}
+              SAT — Subject-wise Performance (%) · Semester 1 vs Semester 2
+              {district !== "All"
+                ? ` · ${district} vs Gujarat State Average`
+                : priorityOnly
+                ? " · ⭐ Priority Districts Avg vs Gujarat State-wide"
+                : " · Gujarat State-wide"}
             </Typography>
 
             <ResponsiveContainer width="100%" height={340}>
@@ -849,6 +812,7 @@ const SAT = () => {
         allDistricts={districts.slice(1)}
         allItems={allDistrictSatItems}
         syncDistrict={district}
+        focusDistricts={priorityOnly ? PRIORITY_DISTRICTS : []}
       />
     </DashboardLayout>
   );

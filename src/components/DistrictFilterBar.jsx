@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Paper, TextField, MenuItem, Button, Box, ToggleButton } from "@mui/material";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
+import StarIcon from "@mui/icons-material/Star";
 import GujaratDistrictMap from "./GujaratDistrictMap";
+import { isPriorityDistrict } from "../utils/priorityDistricts";
 
 // A lightweight District-only filter (District dropdown) for pages that
 // show one row per district (PARAKH, PGI 2.0, Comparison) but don't have a
@@ -15,8 +17,31 @@ import GujaratDistrictMap from "./GujaratDistrictMap";
 // has. Pass `mapData` (an optional { [districtName]: number } lookup,
 // e.g. PGI % achieved per district) to shade the map by that metric —
 // otherwise the map still works, just without the shading.
-const DistrictFilterBar = ({ district, setDistrict, districts = [], mapData = null, mapValueSuffix = "%" }) => {
+//
+// Pass `priorityOnly`/`onPriorityOnlyChange` (lifted state from the page)
+// to show a "⭐ Priority Districts Only" toggle that narrows every list on
+// the page down to the state's 10 focus districts.
+const DistrictFilterBar = ({
+  district,
+  setDistrict,
+  districts = [],
+  mapData = null,
+  mapValueSuffix = "%",
+  priorityOnly = null,
+  onPriorityOnlyChange = null,
+  hideMapToggle = false,
+}) => {
   const [showMap, setShowMap] = useState(false);
+
+  const sortedDistricts =
+    districts.length <= 1
+      ? districts
+      : [
+          districts[0], // "All"
+          ...[...districts.slice(1)].sort(
+            (a, b) => Number(isPriorityDistrict(b)) - Number(isPriorityDistrict(a))
+          ),
+        ];
 
   return (
     <>
@@ -42,9 +67,10 @@ const DistrictFilterBar = ({ district, setDistrict, districts = [], mapData = nu
           size="small"
           sx={{ minWidth: 220 }}
         >
-          {districts.map((d) => (
+          {sortedDistricts.map((d) => (
             <MenuItem key={d} value={d}>
               {d === "All" ? "All Districts" : d}
+              {isPriorityDistrict(d) ? " ⭐" : ""}
             </MenuItem>
           ))}
         </TextField>
@@ -62,19 +88,42 @@ const DistrictFilterBar = ({ district, setDistrict, districts = [], mapData = nu
 
         <Box sx={{ flex: 1 }} />
 
-        <ToggleButton
-          value="map"
-          selected={showMap}
-          onChange={() => setShowMap((v) => !v)}
-          size="small"
-          sx={{ textTransform: "none", fontWeight: 600, gap: 0.75, px: 1.5 }}
-        >
-          <MapOutlinedIcon fontSize="small" />
-          {showMap ? "Hide map" : "Select on map"}
-        </ToggleButton>
+        {onPriorityOnlyChange && (
+          <ToggleButton
+            value="priority"
+            selected={priorityOnly}
+            onChange={() => onPriorityOnlyChange(!priorityOnly)}
+            size="small"
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              gap: 0.6,
+              px: 1.5,
+              color: priorityOnly ? "#8A6200" : undefined,
+              borderColor: priorityOnly ? "#F0B429" : undefined,
+              "&.Mui-selected": { bgcolor: "#FFF4D6", "&:hover": { bgcolor: "#FDEBB8" } },
+            }}
+          >
+            <StarIcon fontSize="small" sx={{ color: priorityOnly ? "#F0B429" : undefined }} />
+            Priority Districts Only
+          </ToggleButton>
+        )}
+
+        {!hideMapToggle && (
+          <ToggleButton
+            value="map"
+            selected={showMap}
+            onChange={() => setShowMap((v) => !v)}
+            size="small"
+            sx={{ textTransform: "none", fontWeight: 600, gap: 0.75, px: 1.5 }}
+          >
+            <MapOutlinedIcon fontSize="small" />
+            {showMap ? "Hide map" : "Select on map"}
+          </ToggleButton>
+        )}
       </Paper>
 
-      {showMap && (
+      {!hideMapToggle && showMap && (
         <Box sx={{ mb: 2 }}>
           <GujaratDistrictMap
             district={district}

@@ -16,7 +16,7 @@ import pgiD202526 from "../data/pgiD202526.json";
 import statePgi202526 from "../data/statePgi202526.json";
 import districtPgiIndicators202526 from "../data/districtPgiIndicators202526.json";
 import PriorityChip from "../components/PriorityChip";
-import { isPriorityDistrict } from "../utils/priorityDistricts";
+import { isPriorityDistrict, PRIORITY_DISTRICTS } from "../utils/priorityDistricts";
 
 import {
   loadExcel,
@@ -54,6 +54,7 @@ const PGI = () => {
   const [districtRanking2425, setDistrictRanking2425] = useState([]);
   const [heatmap2425, setHeatmap2425] = useState({ categories: [], data: [] });
   const [district, setDistrict] = useState("All");
+  const [priorityOnly, setPriorityOnly] = useState(false);
   const [actionItems, setActionItems] = useState([]);
   const [allDistrictNames, setAllDistrictNames] = useState([]);
   const [allDistrictItems, setAllDistrictItems] = useState([]);
@@ -121,9 +122,13 @@ const PGI = () => {
   const lowestDistrict = sortedByScore[sortedByScore.length - 1];
 
   const districts = ["All", ...new Set(mergedRanking.map((d) => d.District))];
+  const dropdownDistricts = priorityOnly
+    ? ["All", ...districts.slice(1).filter((d) => isPriorityDistrict(d))]
+    : districts;
 
-  const filteredMergedRanking =
-    district === "All" ? mergedRanking : mergedRanking.filter((d) => d.District === district);
+  const filteredMergedRanking = mergedRanking
+    .filter((d) => district === "All" || d.District === district)
+    .filter((d) => !priorityOnly || isPriorityDistrict(d.District));
   const filteredSortedRanking = [...filteredMergedRanking].sort(
     (a, b) => (b.pct2526 ?? b.pct2425) - (a.pct2526 ?? a.pct2425)
   );
@@ -164,8 +169,12 @@ const PGI = () => {
   const heatmapPct2425 = toPctRows(heatmap2425.data);
   const heatmapPct2526 = toPctRows(pgiD202526.heatmapData);
 
-  const filteredHeatmap2425 = district === "All" ? heatmapPct2425 : heatmapPct2425.filter((d) => d.District === district);
-  const filteredHeatmap2526 = district === "All" ? heatmapPct2526 : heatmapPct2526.filter((d) => d.District === district);
+  const filteredHeatmap2425 = heatmapPct2425
+    .filter((d) => district === "All" || d.District === district)
+    .filter((d) => !priorityOnly || isPriorityDistrict(d.District));
+  const filteredHeatmap2526 = heatmapPct2526
+    .filter((d) => district === "All" || d.District === district)
+    .filter((d) => !priorityOnly || isPriorityDistrict(d.District));
 
   if (loading) {
     return (
@@ -209,7 +218,12 @@ const PGI = () => {
         <DistrictFilterBar
           district={district}
           setDistrict={setDistrict}
-          districts={districts}
+          districts={dropdownDistricts}
+          priorityOnly={priorityOnly}
+          onPriorityOnlyChange={(v) => {
+            setPriorityOnly(v);
+            if (v && district !== "All" && !isPriorityDistrict(district)) setDistrict("All");
+          }}
         />
       </Box>
 
@@ -252,7 +266,15 @@ const PGI = () => {
               </TableHead>
               <TableBody>
                 {filteredSortedRanking.map((d) => (
-                  <TableRow key={d.District} hover sx={isPriorityDistrict(d.District) ? { bgcolor: "#FFFBEF" } : undefined}>
+                  <TableRow
+                    key={d.District}
+                    hover
+                    sx={
+                      isPriorityDistrict(d.District)
+                        ? { bgcolor: "#FFFBEF", borderLeft: "3px solid #F0B429" }
+                        : undefined
+                    }
+                  >
                     <TableCell sx={{ fontWeight: 600 }}>
                       {d.District}
                       <PriorityChip district={d.District} />
@@ -327,6 +349,7 @@ const PGI = () => {
         allDistricts={allDistrictNames}
         allItems={allDistrictItems}
         syncDistrict={district}
+        focusDistricts={priorityOnly ? PRIORITY_DISTRICTS : []}
       />
     </DashboardLayout>
   );

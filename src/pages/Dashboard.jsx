@@ -17,6 +17,12 @@ import {
   Button,
 } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import LocationCityIcon from "@mui/icons-material/LocationCity";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import PriorityHighIcon from "@mui/icons-material/PriorityHigh";
+import SchoolIcon from "@mui/icons-material/School";
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 
 import {
   ResponsiveContainer,
@@ -39,7 +45,7 @@ import PGIRankingChart from "../charts/PGIRankingChart";
 import SATSemesterComparison from "../components/SATSemesterComparison";
 import ActionItemsQueue from "../components/ActionItemsQueue";
 import NationalBenchmarkPanel from "../components/NationalBenchmarkPanel";
-import { colors } from "../theme/theme";
+import { colors, fontDisplay, fontMono } from "../theme/theme";
 
 import {
   loadExcel,
@@ -72,8 +78,12 @@ import {
 } from "../services/dataService";
 import { PGIIndicatorSection, PARAKHCompetencySection, SATLOBreakdownSection } from "../components/DistrictDeepDive";
 import DropdownFilter from "../components/DropdownFilter";
+import GujaratBubbleMap from "../components/GujaratBubbleMap";
+import ExecutiveOverviewPanel from "../components/ExecutiveOverviewPanel";
 import statePgi202526 from "../data/statePgi202526.json";
 import pgiD202526 from "../data/pgiD202526.json";
+import districtPgiIndicators202526 from "../data/districtPgiIndicators202526.json";
+import { PRIORITY_DISTRICTS, isPriorityDistrict } from "../utils/priorityDistricts";
 
 const Dashboard = () => {
   // -----------------------------
@@ -113,6 +123,7 @@ const Dashboard = () => {
   const [satSemester, setSatSemester] = useState("sem2");
 
   const [district, setDistrict] = useState("All");
+  const [priorityOnly, setPriorityOnly] = useState(false);
 
   const [stage, setStage] = useState("Overall");
 
@@ -213,6 +224,9 @@ const Dashboard = () => {
       )
     ),
   ];
+  const dropdownDistricts = priorityOnly
+    ? ["All", ...districts.slice(1).filter((d) => isPriorityDistrict(d))]
+    : districts;
 
   // -----------------------------
   // Filter Data (District only — Stage/Subject change WHICH score is
@@ -225,6 +239,10 @@ const Dashboard = () => {
       district !== "All" &&
       item.District !== district
     ) {
+      return false;
+    }
+
+    if (priorityOnly && !isPriorityDistrict(item.District)) {
       return false;
     }
 
@@ -455,10 +473,33 @@ const pgiTableDataAll = [...pgiRanking]
     Grade: d.Grade,
   }));
 
-const pgiTableData =
-  district !== "All"
-    ? pgiTableDataAll.filter((d) => d.District === district)
-    : pgiTableDataAll;
+const pgiTableData = pgiTableDataAll
+  .filter((d) => district === "All" || d.District === district)
+  .filter((d) => !priorityOnly || isPriorityDistrict(d.District));
+
+// -----------------------------
+// Priority Districts Spotlight — the state's 10 focus districts, pulled
+// out with PARAKH + both years of PGI side by side so leadership doesn't
+// have to hunt through the full 33-district tables to check on them.
+// Sorted by 2025-26 PGI % ascending (lowest/most-in-need first).
+// -----------------------------
+
+const pgi2526ByDistrict = Object.fromEntries(
+  pgiD202526.ranking.map((d) => [d.District, d])
+);
+
+const priorityRows = PRIORITY_DISTRICTS.map((name) => {
+  const parakhEntry = stateWideChartData.find((d) => d.District === name);
+  const pgi2425 = pgiByDistrict[name] ?? null;
+  const pgi2526 = pgi2526ByDistrict[name]?.PercentAchieved ?? null;
+  return {
+    District: name,
+    parakh: parakhEntry?.Score ?? null,
+    pgi2425,
+    pgi2526,
+    delta: pgi2425 != null && pgi2526 != null ? Math.round((pgi2526 - pgi2425) * 10) / 10 : null,
+  };
+}).sort((a, b) => (a.pgi2526 ?? 999) - (b.pgi2526 ?? 999));
 
 // -----------------------------
 // SAT (Student Assessment Test) — Top5/Bottom5, filtered chart (+ state
@@ -489,6 +530,15 @@ const satDistrictComparisonChartData =
 
 const satGradeComparisonChartData = (() => {
   const grades = [...new Set([...satGradeWiseSem2.grades, ...satGradeWiseSem1.grades])];
+  const showStateAvgBg = district !== "All" || priorityOnly;
+
+  const avgAcrossPriority = (dataset, grade) => {
+    const vals = dataset
+      .filter((d) => isPriorityDistrict(d.District))
+      .map((d) => d[grade])
+      .filter((v) => typeof v === "number");
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  };
 
   return grades.map((grade) => {
     const stateSem1 = satSummarySem1.gradeAverages.find((g) => g.grade === grade)?.average;
@@ -500,6 +550,9 @@ const satGradeComparisonChartData = (() => {
     if (district !== "All") {
       sem1Value = satGradeWiseSem1.data.find((d) => d.District === district)?.[grade];
       sem2Value = satGradeWiseSem2.data.find((d) => d.District === district)?.[grade];
+    } else if (priorityOnly) {
+      sem1Value = avgAcrossPriority(satGradeWiseSem1.data, grade);
+      sem2Value = avgAcrossPriority(satGradeWiseSem2.data, grade);
     } else {
       sem1Value = stateSem1;
       sem2Value = stateSem2;
@@ -509,8 +562,8 @@ const satGradeComparisonChartData = (() => {
       grade,
       "Sem 1": sem1Value != null ? Number(sem1Value.toFixed(1)) : null,
       "Sem 2": sem2Value != null ? Number(sem2Value.toFixed(1)) : null,
-      "Sem 1 (State Avg)": district !== "All" && stateSem1 != null ? Number(stateSem1.toFixed(1)) : null,
-      "Sem 2 (State Avg)": district !== "All" && stateSem2 != null ? Number(stateSem2.toFixed(1)) : null,
+      "Sem 1 (State Avg)": showStateAvgBg && stateSem1 != null ? Number(stateSem1.toFixed(1)) : null,
+      "Sem 2 (State Avg)": showStateAvgBg && stateSem2 != null ? Number(stateSem2.toFixed(1)) : null,
     };
   });
 })();
@@ -572,254 +625,40 @@ const satSubjectComparisonChartData = (() => {
 
       <Header />
 
-      <Paper
-        elevation={0}
-        sx={{
-          mt: { xs: 1.5, md: 2 },
-          borderRadius: 4,
-          border: "1px solid #E4E7F0",
-          overflow: "hidden",
-        }}
-      >
-        <Grid container>
-          {[
-            {
-              group: "PARAKH",
-              label: "Districts Covered",
-              value: totalDistricts,
-              suffix: "",
-              accent: "#1976D2",
-            },
-            {
-              group: "PARAKH",
-              label: "State Average",
-              value: averageScore,
-              suffix: "%",
-              accent: "#2E7D32",
-            },
-            {
-              group: "PARAKH",
-              label: "Top District",
-              value: topDistrict?.District || "-",
-              suffix: "",
-              accent: "#F0B429",
-              sub: `${chartData[0]?.Score || 0}%`,
-              isText: true,
-            },
-            {
-              group: "PARAKH",
-              label: "Needs Support",
-              value: lowestDistrict?.District || "-",
-              suffix: "",
-              accent: "#D32F2F",
-              sub: `${chartData[chartData.length - 1]?.Score || 0}%`,
-              isText: true,
-            },
-            {
-              group: "PGI-D 2.0",
-              label: "State Score (2025-26)",
-              value: statePgi202526.overall?.percentAchieved?.toFixed(1) ?? "-",
-              suffix: "%",
-              accent: "#1976D2",
-              sub: `24-25: ${pgiSummary.overall?.percentAchieved?.toFixed(1) ?? "-"}%`,
-            },
-            {
-              group: "PGI-D 2.0",
-              label: "District Average (2025-26)",
-              value:
-                pgiD202526.ranking.length > 0
-                  ? (pgiD202526.ranking.reduce((s, d) => s + d.PercentAchieved, 0) / pgiD202526.ranking.length).toFixed(1)
-                  : "-",
-              suffix: "%",
-              accent: "#2E7D32",
-              sub: `24-25: ${pgiStateAverage.toFixed(1)}%`,
-            },
-            {
-              group: "PGI-D 2.0",
-              label: "Top District",
-              value: pgiTop5[0]?.District || "-",
-              suffix: "",
-              accent: "#F0B429",
-              sub: `${pgiTop5[0]?.Score || 0}%`,
-              isText: true,
-            },
-            {
-              group: "PGI-D 2.0",
-              label: "Needs Support",
-              value: pgiBottom5[0]?.District || "-",
-              suffix: "",
-              accent: "#D32F2F",
-              sub: `${pgiBottom5[0]?.Score || 0}%`,
-              isText: true,
-            },
-          ].map((stat, i) => (
-            <Grid
-              size={{ xs: 6, sm: 3, md: 1.5 }}
-              key={stat.group + stat.label}
-              sx={{
-                p: { xs: 1.5, sm: 2, md: 2.5 },
-                borderRight: { sm: i !== 3 && i !== 7 ? "1px solid #E4E7F0" : "none" },
-                borderLeft: i === 4 ? { sm: "3px solid #0F172A" } : "none",
-                borderBottom: { xs: i < 6 ? "1px solid #E4E7F0" : "none", sm: "none" },
-                position: "relative",
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.7, mb: 1 }}>
-                <Box sx={{ width: 20, height: 3, borderRadius: 2, bgcolor: stat.accent }} />
-                <Typography sx={{ fontSize: 9.5, fontWeight: 700, color: "text.secondary", letterSpacing: 0.5 }}>
-                  {stat.group}
-                </Typography>
-              </Box>
+      {/* The PARAKH / PGI-D headline KPI rows used to live here as gradient
+          cards, but they duplicated numbers the Executive Snapshot panel
+          below already covers (state average, top/bottom districts,
+          priority split) — removed so the snapshot panel gets the space
+          and reads as the primary "first thing you see" block instead of
+          competing with a KPI strip above it. */}
 
-              <Typography sx={{ fontSize: 11, color: "text.secondary", letterSpacing: 0.3 }}>
-                {stat.label.toUpperCase()}
-              </Typography>
-
-              <Typography
-                sx={{
-                  fontFamily: '"Fraunces", serif',
-                  fontWeight: 700,
-                  fontSize: stat.isText ? 18 : 26,
-                  mt: 0.3,
-                  color: "#16233B",
-                  lineHeight: 1.2,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {stat.value}
-                {stat.suffix}
-              </Typography>
-
-              {stat.sub && (
-                <Typography
-                  sx={{
-                    fontFamily: '"IBM Plex Mono", monospace',
-                    fontWeight: 600,
-                    fontSize: 13,
-                    color: stat.accent,
-                  }}
-                >
-                  {stat.sub}
-                </Typography>
-              )}
-            </Grid>
-          ))}
-        </Grid>
-      </Paper>
-
-      {/* Leaderboard: Top 5 / Bottom 5 — PARAKH + PGI-D */}
-      <Grid container spacing={2} mt={0.5}>
-        {[
-          { title: "Top PARAKH Districts", icon: "🎓", data: top5Districts, rankBase: 1, tone: "success.main", subtitle: `Ranked by: ${stage}${subject !== "Overall" ? ` · ${subject}` : ""}` },
-          { title: "PARAKH — Needs Support", icon: "📉", data: bottom5Districts, rankBase: 33, tone: "error.main", reverse: true, subtitle: `Ranked by: ${stage}${subject !== "Overall" ? ` · ${subject}` : ""}` },
-          { title: "Top PGI-D 2.0 Districts", icon: "🏛️", data: pgiTop5, rankBase: 1, tone: "success.main" },
-          { title: "PGI-D 2.0 — Needs Support", icon: "📉", data: pgiBottom5, rankBase: 33, tone: "error.main", reverse: true },
-        ].map((panel) => (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={panel.title}>
-            <Card sx={{ borderRadius: 3, boxShadow: 3, height: "100%" }}>
-              <CardContent>
-                <Typography
-                  sx={{
-                    fontFamily: '"Fraunces", serif',
-                    fontWeight: 600,
-                    fontSize: 18,
-                    mb: panel.subtitle ? 0.3 : 2,
-                  }}
-                >
-                  {panel.icon} {panel.title}
-                </Typography>
-
-                {panel.subtitle && (
-                  <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 1.5 }}>
-                    {panel.subtitle}
-                  </Typography>
-                )}
-
-                {panel.data.map((item, index) => {
-                  const rank = panel.reverse ? panel.rankBase - index : panel.rankBase + index;
-                  const medal = rank === 1 ? "#F0B429" : rank === 2 ? "#9AA5B1" : rank === 3 ? "#B08D57" : "transparent";
-                  const medalText = rank <= 3 && !panel.reverse ? "#fff" : "#16233B";
-
-                  return (
-                    <Box
-                      key={item.District}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.5,
-                        py: 1.1,
-                        borderBottom: index < panel.data.length - 1 ? "1px solid #EEF0F5" : "none",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: 26,
-                          height: 26,
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          fontFamily: '"IBM Plex Mono", monospace',
-                          bgcolor: !panel.reverse && rank <= 3 ? medal : "#F1F3F8",
-                          color: !panel.reverse && rank <= 3 ? medalText : "#5B6B85",
-                          border: !panel.reverse && rank <= 3 ? "none" : "1px solid #E4E7F0",
-                        }}
-                      >
-                        {rank}
-                      </Box>
-
-                      <Typography
-                        sx={{
-                          flex: 1,
-                          fontWeight: 500,
-                          fontSize: 14,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {item.District}
-                      </Typography>
-
-                      <Box sx={{ width: 70, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
-                        <Box
-                          sx={{
-                            width: `${Math.min(item.Score, 100)}%`,
-                            height: "100%",
-                            bgcolor: panel.reverse ? "#D32F2F" : "#2E7D32",
-                          }}
-                        />
-                      </Box>
-
-                      <Typography
-                        sx={{
-                          fontFamily: '"IBM Plex Mono", monospace',
-                          fontWeight: 700,
-                          fontSize: 13,
-                          width: 46,
-                          textAlign: "right",
-                          color: panel.reverse ? "error.main" : "success.main",
-                        }}
-                      >
-                        {item.Score}%
-                      </Typography>
-                    </Box>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      <ExecutiveOverviewPanel
+        parakhData={stateWideChartData}
+        pgiRanking={pgiD202526.ranking}
+        satData={satSemesterComparison}
+        priorityOnly={priorityOnly}
+        districts={districts}
+        district={district}
+        setDistrict={setDistrict}
+      />
 
 {/* District Ranking */}
 
-<Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 5, mb: 1 }}>
+<DistrictFilterBar
+  district={district}
+  setDistrict={setDistrict}
+  districts={dropdownDistricts}
+  mapData={pgiByDistrict}
+  mapValueSuffix="% PGI"
+  priorityOnly={priorityOnly}
+  hideMapToggle
+  onPriorityOnlyChange={(v) => {
+    setPriorityOnly(v);
+    if (v && district !== "All" && !isPriorityDistrict(district)) setDistrict("All");
+  }}
+/>
+
+<Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 2.5, mb: 1 }}>
   <Box sx={{ width: 4, height: 26, borderRadius: 2, bgcolor: "#1976D2" }} />
   <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: "#16233B" }}>
     📚 PARAKH — Learning Outcomes
@@ -828,14 +667,6 @@ const satSubjectComparisonChartData = (() => {
 <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 2 }}>
   District-wise mastery by grade band
 </Typography>
-
-<DistrictFilterBar
-  district={district}
-  setDistrict={setDistrict}
-  districts={districts}
-  mapData={pgiByDistrict}
-  mapValueSuffix="% PGI"
-/>
 
 <NationalBenchmarkPanel
   district={district}
@@ -1133,7 +964,12 @@ const satSubjectComparisonChartData = (() => {
   <Card elevation={3} sx={{ mt: 2 }}>
     <CardContent>
       <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-        SAT — Grade-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district} vs Gujarat State Average` : " · Gujarat State Average"}
+        SAT — Grade-wise Performance (%) · Semester 1 vs Semester 2
+        {district !== "All"
+          ? ` · ${district} vs Gujarat State Average`
+          : priorityOnly
+          ? " · ⭐ Priority Districts Avg vs Gujarat State Average"
+          : " · Gujarat State Average"}
       </Typography>
 
       <ResponsiveContainer width="100%" height={340}>
@@ -1177,7 +1013,11 @@ const satSubjectComparisonChartData = (() => {
   </Card>
 )}
 
-<SATSemesterComparison data={satSemesterComparison} district={district} />
+<SATSemesterComparison
+  data={satSemesterComparison}
+  district={district}
+  priorityDistricts={priorityOnly ? PRIORITY_DISTRICTS : []}
+/>
 
 {district !== "All" && (districtPgiIndicators?.overall || districtCompetencies || districtLoBreakdown?.length > 0) && (
   <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
@@ -1193,12 +1033,16 @@ const satSubjectComparisonChartData = (() => {
       {districtPgiIndicators?.overall && (
         <>
           <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 17, color: "#16233B", mb: 1 }}>
-            🏛️ PGI-D 2.0 — Full Indicator Breakdown (70 Indicators)
+            🏛️ PGI-D 2.0 — Full Indicator Breakdown (70 Indicators) — 2024-25 vs 2025-26
           </Typography>
           <PGIIndicatorSection
             indicators={districtPgiIndicators.indicators}
             domainSummary={districtPgiIndicators.domainSummary}
             overall={districtPgiIndicators.overall}
+            indicators2={districtPgiIndicators202526[district]?.indicators ?? null}
+            overall2={districtPgiIndicators202526[district]?.overall ?? null}
+            label="24-25"
+            label2="25-26"
           />
         </>
       )}
@@ -1229,6 +1073,7 @@ const satSubjectComparisonChartData = (() => {
   allDistricts={allDistrictNames}
   allItems={allDistrictItems}
   syncDistrict={district}
+  focusDistricts={priorityOnly ? PRIORITY_DISTRICTS : []}
 />
 
 </DashboardLayout>

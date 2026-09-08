@@ -47,11 +47,26 @@ const BAR_COLORS = {
 
 // Looks up a district's own value for a PDF benchmark row (e.g. "Language",
 // "Mathematics — Boys", "Language — Rural") against the matching per-district
-// sheet data already loaded on the PARAKH page.
-const buildDistrictRows = (rows, gradeKey, district, subjectData, genderData, locationData, managementData, socialGroupData) => {
+// sheet data already loaded on the PARAKH page. When no single district is
+// picked but a `priorityDistricts` list is given (the "Priority Districts
+// Only" toggle), the same column is instead AVERAGED across those 10
+// districts, so the extra bar reads as "how are our focus districts doing"
+// rather than one specific place.
+const buildDistrictRows = (rows, gradeKey, district, subjectData, genderData, locationData, managementData, socialGroupData, priorityDistricts = null) => {
+  const usePriorityAvg = (!district || district === "All") && priorityDistricts && priorityDistricts.length > 0;
+
   if (!district || district === "All") {
-    return rows;
+    if (!usePriorityAvg) return rows;
   }
+
+  const avgAcross = (dataset, col) => {
+    const vals = dataset
+      .filter((d) => priorityDistricts.includes(d.District))
+      .map((d) => d[col])
+      .filter((v) => typeof v === "number");
+    if (!vals.length) return null;
+    return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100);
+  };
 
   return rows.map((row) => {
     let districtValue = null;
@@ -60,9 +75,13 @@ const buildDistrictRows = (rows, gradeKey, district, subjectData, genderData, lo
     // 1:1 to a "Grade X - Subject" column in PARAKH_Subject_Performance.
     if (SUBJECT_COLUMN_ALIASES[row.name]) {
       const col = `${GRADE_LABEL[gradeKey]} - ${SUBJECT_COLUMN_ALIASES[row.name]}`;
-      const districtRow = subjectData.find((d) => d.District === district);
-      if (districtRow && typeof districtRow[col] === "number") {
-        districtValue = Math.round(districtRow[col] * 100);
+      if (usePriorityAvg) {
+        districtValue = avgAcross(subjectData, col);
+      } else {
+        const districtRow = subjectData.find((d) => d.District === district);
+        if (districtRow && typeof districtRow[col] === "number") {
+          districtValue = Math.round(districtRow[col] * 100);
+        }
       }
       return { ...row, district: districtValue };
     }
@@ -84,6 +103,17 @@ const buildDistrictRows = (rows, gradeKey, district, subjectData, genderData, lo
     };
     const socialMap = { SC: "SC (%)", ST: "ST (%)", OBC: "OBC (%)", Others: "General/Others (%)" };
 
+    const resolveCol = (dataset, colMap) => {
+      const col = colMap[group];
+      if (!col) return null;
+      // Column names in the sheet can have slightly different whitespace
+      // than the literal map value, so match on a normalised key —
+      // needed for both the single-district lookup and the averaging path.
+      const sample = dataset[0] || {};
+      const match = Object.keys(sample).find((k) => k.replace(/\s+/g, " ").trim() === col);
+      return match || null;
+    };
+
     const districtRowFrom = (dataset, colMap) => {
       const col = colMap[group];
       if (!col) return null;
@@ -93,10 +123,17 @@ const buildDistrictRows = (rows, gradeKey, district, subjectData, genderData, lo
       return match && typeof dRow[match] === "number" ? Math.round(dRow[match] * 100) : null;
     };
 
-    if (genderMap[group]) districtValue = districtRowFrom(genderData, genderMap);
-    else if (locationMap[group]) districtValue = districtRowFrom(locationData, locationMap);
-    else if (managementMap[group]) districtValue = districtRowFrom(managementData, managementMap);
-    else if (socialMap[group]) districtValue = districtRowFrom(socialGroupData, socialMap);
+    if (usePriorityAvg) {
+      if (genderMap[group]) districtValue = avgAcross(genderData, resolveCol(genderData, genderMap));
+      else if (locationMap[group]) districtValue = avgAcross(locationData, resolveCol(locationData, locationMap));
+      else if (managementMap[group]) districtValue = avgAcross(managementData, resolveCol(managementData, managementMap));
+      else if (socialMap[group]) districtValue = avgAcross(socialGroupData, resolveCol(socialGroupData, socialMap));
+    } else {
+      if (genderMap[group]) districtValue = districtRowFrom(genderData, genderMap);
+      else if (locationMap[group]) districtValue = districtRowFrom(locationData, locationMap);
+      else if (managementMap[group]) districtValue = districtRowFrom(managementData, managementMap);
+      else if (socialMap[group]) districtValue = districtRowFrom(socialGroupData, socialMap);
+    }
 
     return { ...row, district: districtValue };
   });
@@ -106,12 +143,12 @@ const buildDistrictRows = (rows, gradeKey, district, subjectData, genderData, lo
 // merged across all three grades into a single lookup keyed by row name, so
 // each subject/group shows one combined chart instead of needing a grade
 // tab to switch between three separate copies of the same row.
-const combineAcrossGrades = (sectionKey, district, subjectData, genderData, locationData, managementData, socialGroupData) => {
+const combineAcrossGrades = (sectionKey, district, subjectData, genderData, locationData, managementData, socialGroupData, priorityDistricts = null) => {
   const byName = new Map();
 
   GRADES.forEach((gradeKey) => {
     const raw = PARAKH_NATIONAL_BENCHMARKS[gradeKey][sectionKey] || [];
-    const enriched = buildDistrictRows(raw, gradeKey, district, subjectData, genderData, locationData, managementData, socialGroupData);
+    const enriched = buildDistrictRows(raw, gradeKey, district, subjectData, genderData, locationData, managementData, socialGroupData, priorityDistricts);
 
     enriched.forEach((row) => {
       if (!byName.has(row.name)) byName.set(row.name, { name: row.name, points: [] });
@@ -129,10 +166,10 @@ const combineAcrossGrades = (sectionKey, district, subjectData, genderData, loca
 
 // One standing (vertical) bar chart per subject/group, grades along the
 // X-axis, so all three grades are visible together without a tab click.
-const BenchmarkChart = ({ item, showDistrict }) => {
+const BenchmarkChart = ({ item, showDistrict, districtBarLabel = "District" }) => {
   const data = item.points.map((p) => ({
     grade: p.grade,
-    ...(showDistrict && p.district != null ? { District: p.district } : {}),
+    ...(showDistrict && p.district != null ? { [districtBarLabel]: p.district } : {}),
     Gujarat: p.Gujarat,
     National: p.National,
   }));
@@ -146,7 +183,7 @@ const BenchmarkChart = ({ item, showDistrict }) => {
           <XAxis dataKey="grade" tick={{ fontSize: 11 }} />
           <YAxis domain={[0, 100]} unit="%" tick={{ fontSize: 10 }} />
           <RechartsTooltip formatter={(value) => `${value}%`} />
-          {showDistrict && <Bar dataKey="District" fill={BAR_COLORS.district} radius={[3, 3, 0, 0]} barSize={14} />}
+          {showDistrict && <Bar dataKey={districtBarLabel} fill={BAR_COLORS.district} radius={[3, 3, 0, 0]} barSize={14} />}
           <Bar dataKey="Gujarat" fill={BAR_COLORS.state} radius={[3, 3, 0, 0]} barSize={14} />
           <Bar dataKey="National" fill={BAR_COLORS.national} radius={[3, 3, 0, 0]} barSize={14} />
         </BarChart>
@@ -155,11 +192,11 @@ const BenchmarkChart = ({ item, showDistrict }) => {
   );
 };
 
-const CategoryChartGrid = ({ items, showDistrict }) => (
+const CategoryChartGrid = ({ items, showDistrict, districtBarLabel }) => (
   <Grid container spacing={2}>
     {items.map((item) => (
       <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.name}>
-        <BenchmarkChart item={item} showDistrict={showDistrict} />
+        <BenchmarkChart item={item} showDistrict={showDistrict} districtBarLabel={districtBarLabel} />
       </Grid>
     ))}
   </Grid>
@@ -180,12 +217,25 @@ const NationalBenchmarkPanel = ({
   locationData = [],
   managementData = [],
   socialGroupData = [],
+  priorityOnly = false,
+  priorityDistricts = [],
 }) => {
-  const showDistrict = district !== "All";
+  const usePriorityAvg = district === "All" && priorityOnly && priorityDistricts.length > 0;
+  const showDistrict = district !== "All" || usePriorityAvg;
+  const districtBarLabel = district !== "All" ? "District" : "Priority Avg";
   const [category, setCategory] = useState("subject");
 
   const combine = (sectionKey) =>
-    combineAcrossGrades(sectionKey, district, subjectData, genderData, locationData, managementData, socialGroupData);
+    combineAcrossGrades(
+      sectionKey,
+      district,
+      subjectData,
+      genderData,
+      locationData,
+      managementData,
+      socialGroupData,
+      usePriorityAvg ? priorityDistricts : null
+    );
 
   const totalSchools = GRADES.reduce((s, g) => s + PARAKH_NATIONAL_BENCHMARKS[g].participation.schools, 0);
   const totalStudents = GRADES.reduce((s, g) => s + PARAKH_NATIONAL_BENCHMARKS[g].participation.students, 0);
@@ -195,7 +245,7 @@ const NationalBenchmarkPanel = ({
       <CardContent>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 1 }}>
           <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, color: "#16233B" }}>
-            🇮🇳 {district !== "All" ? `${district} vs Gujarat vs National` : "Gujarat vs National"} — PARAKH Rashtriya Sarvekshan 2024
+            🇮🇳 {district !== "All" ? `${district} vs Gujarat vs National` : usePriorityAvg ? "Priority Districts Avg vs Gujarat vs National" : "Gujarat vs National"} — PARAKH Rashtriya Sarvekshan 2024
           </Typography>
 
           <Chip
@@ -211,7 +261,8 @@ const NationalBenchmarkPanel = ({
           <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 2, ml: 1.5, flexWrap: "wrap" }}>
             {showDistrict && (
               <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.6 }}>
-                <Box sx={{ width: 10, height: 10, bgcolor: "#F0B429", borderRadius: "2px" }} /> {district}
+                <Box sx={{ width: 10, height: 10, bgcolor: "#F0B429", borderRadius: "2px" }} />{" "}
+                {district !== "All" ? district : `Priority Avg (${priorityDistricts.length})`}
               </Box>
             )}
             <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.6 }}>
@@ -243,7 +294,7 @@ const NationalBenchmarkPanel = ({
               <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B" }}>{o.label}</Typography>
             </AccordionSummary>
             <AccordionDetails sx={{ px: 2.5, pb: 2.5 }}>
-              <CategoryChartGrid items={combine(o.key)} showDistrict={showDistrict} />
+              <CategoryChartGrid items={combine(o.key)} showDistrict={showDistrict} districtBarLabel={districtBarLabel} />
             </AccordionDetails>
           </Accordion>
         ))}

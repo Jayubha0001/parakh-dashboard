@@ -106,6 +106,9 @@ const GujaratDistrictMap = ({
   dataByDistrict = null,
   metricLabel = "Value",
   valueSuffix = "",
+  priorityDistricts = [],
+  variant = "choropleth",
+  compact = false,
 }) => {
   const [hovered, setHovered] = useState(null);
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
@@ -202,7 +205,7 @@ const GujaratDistrictMap = ({
       <Box
         ref={containerRef}
         onMouseMove={handleMove}
-        sx={{ position: "relative", width: "100%", maxWidth: 640, mx: "auto" }}
+        sx={{ position: "relative", width: "100%", maxWidth: compact ? 420 : 640, mx: "auto" }}
       >
         <svg
           viewBox={GUJARAT_MAP_VIEWBOX}
@@ -226,13 +229,31 @@ const GujaratDistrictMap = ({
             }
             if (isSelected) fill = "#1565C0";
 
+            const isPriority = yourName && priorityDistricts.includes(yourName);
+
+            // Bubble variant: the district shape is just a faint base-map
+            // outline (context only) — the coloured, clickable marker is
+            // the circle drawn afterwards, at the shape's centroid.
+            if (variant === "bubble") {
+              return (
+                <path
+                  key={p.name}
+                  d={p.d}
+                  fill="#EEF0F5"
+                  stroke="#D5D9E3"
+                  strokeWidth={0.6}
+                />
+              );
+            }
+
             return (
               <path
                 key={p.name}
                 d={p.d}
                 fill={fill}
-                stroke={isSelected ? "#0D47A1" : "#8a5a2b"}
-                strokeWidth={isSelected ? 2.2 : isHovered ? 1.6 : 0.8}
+                stroke={isSelected ? "#0D47A1" : isPriority ? "#F0B429" : "#8a5a2b"}
+                strokeWidth={isSelected ? 2.2 : isPriority ? 2.4 : isHovered ? 1.6 : 0.8}
+                strokeDasharray={isPriority && !isSelected ? "4,2" : undefined}
                 opacity={isHovered && !isSelected ? 0.85 : 1}
                 style={{ cursor: yourName ? "pointer" : "default" }}
                 onMouseEnter={() => setHovered(p.name)}
@@ -242,34 +263,90 @@ const GujaratDistrictMap = ({
             );
           })}
 
+          {/* Bubble markers — one per district, positioned at the shape's
+              centroid. Size marks a priority district (bigger), colour
+              marks the metric value, exactly like the reference layout:
+              a base map with a coloured, sized circle per district. */}
+          {variant === "bubble" &&
+            GUJARAT_DISTRICT_PATHS.map((p) => {
+              const normName = normalize(p.name);
+              const yourName = geoNameToYourName[normName];
+              const isSelected =
+                district !== "All" &&
+                yourName &&
+                normalize(yourName) === normalize(district);
+              const isHovered = hovered === p.name;
+              const val = valueByGeoName[normName];
+              const isPriority = yourName && priorityDistricts.includes(yourName);
+
+              let fill = paletteColorFor(p.name);
+              if (dataByDistrict && typeof val === "number") {
+                fill = interpolateColor(
+                  maxVal > minVal ? (val - minVal) / (maxVal - minVal) : 0.5
+                );
+              }
+
+              const r = (isPriority ? 15 : 10.5) * (isSelected ? 1.15 : 1);
+
+              return (
+                <g key={`bubble-${p.name}`}>
+                  {isPriority && (
+                    <circle
+                      cx={p.cx}
+                      cy={p.cy}
+                      r={r + 3}
+                      fill="none"
+                      stroke="#F0B429"
+                      strokeWidth={1.6}
+                      strokeDasharray="3,2"
+                    />
+                  )}
+                  <circle
+                    cx={p.cx}
+                    cy={p.cy}
+                    r={r}
+                    fill={isSelected ? "#1565C0" : fill}
+                    stroke={isSelected ? "#0D47A1" : "#ffffff"}
+                    strokeWidth={isSelected ? 1.8 : 1}
+                    opacity={isHovered && !isSelected ? 0.85 : 0.94}
+                    style={{ cursor: yourName ? "pointer" : "default" }}
+                    onMouseEnter={() => setHovered(p.name)}
+                    onMouseLeave={() => setHovered(null)}
+                    onClick={() => yourName && setDistrict(yourName)}
+                  />
+                </g>
+              );
+            })}
+
           {/* Persistent district-name labels, like the reference map —
               placed at each shape's centroid (cx/cy from the boundary
               file). pointer-events "none" so they never block clicks on
               the path underneath them. */}
-          {GUJARAT_DISTRICT_PATHS.map((p) => {
-            const normName = normalize(p.name);
-            const yourName = geoNameToYourName[normName];
-            const isSelected =
-              district !== "All" &&
-              yourName &&
-              normalize(yourName) === normalize(district);
-            return (
-              <text
-                key={`label-${p.name}`}
-                x={p.cx}
-                y={p.cy}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                pointerEvents="none"
-                style={{
-                  fontSize: isSelected ? 8.5 : 7,
-                  fontWeight: isSelected ? 700 : 600,
-                  fill: isSelected ? "#ffffff" : "#5A3A1B",
-                  paintOrder: "stroke",
-                  stroke: "#ffffff",
-                  strokeWidth: isSelected ? 0 : 2,
-                  strokeLinejoin: "round",
-                }}
+          {!compact &&
+            GUJARAT_DISTRICT_PATHS.map((p) => {
+              const normName = normalize(p.name);
+              const yourName = geoNameToYourName[normName];
+              const isSelected =
+                district !== "All" &&
+                yourName &&
+                normalize(yourName) === normalize(district);
+              return (
+                <text
+                  key={`label-${p.name}`}
+                  x={p.cx}
+                  y={p.cy}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  pointerEvents="none"
+                  style={{
+                    fontSize: isSelected ? 8.5 : 7,
+                    fontWeight: isSelected ? 700 : 600,
+                    fill: isSelected ? "#ffffff" : "#5A3A1B",
+                    paintOrder: "stroke",
+                    stroke: "#ffffff",
+                    strokeWidth: isSelected ? 0 : 2,
+                    strokeLinejoin: "round",
+                  }}
               >
                 {p.name}
               </text>
@@ -327,6 +404,15 @@ const GujaratDistrictMap = ({
             {minVal}
             {valueSuffix} – {maxVal}
             {valueSuffix}
+          </Typography>
+        </Box>
+      )}
+
+      {priorityDistricts.length > 0 && (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, mt: 1 }}>
+          <Box sx={{ width: 22, height: 12, border: "2.4px dashed #F0B429", borderRadius: 1 }} />
+          <Typography sx={{ fontSize: 11.5, color: "text.secondary" }}>
+            ⭐ Dashed gold border = one of the 10 priority districts
           </Typography>
         </Box>
       )}

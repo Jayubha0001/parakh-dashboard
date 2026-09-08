@@ -69,7 +69,7 @@ const CompareRow = ({ label, district, state }) => (
 // — shown as N/A rather than a blank/misleading zero.
 // `selectedDistrict` is passed down from the ONE district filter at the
 // top of the page — this card no longer keeps its own separate filter.
-const CombinedOverview = ({ selectedDistrict = "All" }) => {
+const CombinedOverview = ({ selectedDistrict = "All", priorityOnly = false, priorityDistricts = [] }) => {
   const goiEnr = latest(goi.stateEnrollment);
   const goiGSQAC = latest(goi.stateGSQAC);
   const goiG1012 = latest(goi.stateGrade1012);
@@ -88,24 +88,60 @@ const CombinedOverview = ({ selectedDistrict = "All" }) => {
     { label: "Avg Grade 12 Board %", goi: `${goiG1012.avgGrade12.toFixed(1)}%`, gog: "N/A — primary schools only" },
   ];
 
-  const enrollmentChartData = [
-    { year: "2024-25", GOI: goi.stateEnrollment.find((r) => r.year === "2024-25")?.totalEnrollment, GOG: gogEnr24 },
-    { year: "2025-26", GOI: goiEnr.totalEnrollment, GOG: gogEnr25 },
+  // Priority-districts-only aggregates — computed straight from the raw
+  // per-district arrays (not the state-wide summaries above), so toggling
+  // "Priority Districts Only" actually narrows these numbers down to the
+  // 10 focus districts instead of leaving the state totals unchanged.
+  const inPriority = (d) => priorityDistricts.includes(d);
+
+  const goiPriorityEnrRows = goi.districtEnrollment.filter((d) => !d.District?.includes("STATE") && inPriority(d.District));
+  const goiPrioritySchools = goiPriorityEnrRows.reduce((s, d) => s + (Number(d["No. of Schools"]) || 0), 0);
+  const goiPriorityEnr = goiPriorityEnrRows.reduce((s, d) => s + (Number(d["Enrollment 2025-26"]) || 0), 0);
+  const goiPriorityGSQAC = avg(goi.districtGSQAC.filter((d) => inPriority(d.District)), "Avg GSQAC% 2024-25");
+  const goiPriorityGrade10 = avg(goi.districtGrade10.filter((d) => inPriority(d.District)), "Avg Result% 2025-26");
+  const goiPriorityGrade12 = avg(goi.districtGrade12.filter((d) => inPriority(d.District)), "Avg Overall% 2025-26");
+
+  const gogPriorityEnrRows = gog.districtEnrollResult.filter((d) => inPriority(d.District));
+  const gogPrioritySchools = gogPriorityEnrRows.reduce((s, d) => s + (Number(d["Total Schools"]) || 0), 0);
+  const gogPriorityEnr = gogPriorityEnrRows.reduce((s, d) => s + (Number(d["Enrollment 2025-26"]) || 0), 0);
+  const gogPriorityGSQAC = avg(gog.districtGSQACResult.filter((d) => inPriority(d.District)), "Avg % (2024-25)");
+
+  const priorityRows = [
+    { label: "Schools Covered", goi: `${goiPrioritySchools}`, gog: `${gogPrioritySchools}` },
+    { label: "Total Enrollment (latest)", goi: fmt(goiPriorityEnr), gog: fmt(gogPriorityEnr) },
+    { label: "Avg GSQAC %", goi: goiPriorityGSQAC != null ? `${goiPriorityGSQAC.toFixed(1)}%` : "—", gog: gogPriorityGSQAC != null ? `${gogPriorityGSQAC.toFixed(1)}%` : "—" },
+    { label: "Avg Grade 10 Board %", goi: goiPriorityGrade10 != null ? `${goiPriorityGrade10.toFixed(1)}%` : "—", gog: "N/A — primary schools only" },
+    { label: "Avg Grade 12 Board %", goi: goiPriorityGrade12 != null ? `${goiPriorityGrade12.toFixed(1)}%` : "—", gog: "N/A — primary schools only" },
   ];
 
-  const gsqacChartData = [
-    { year: "2024-25", GOI: Number(goi.stateGSQAC.find((r) => r.year === "2024-25")?.avgPct?.toFixed(1)), GOG: gogAvgGSQAC != null ? Number(gogAvgGSQAC.toFixed(1)) : null },
-  ];
+  const usePriorityView = selectedDistrict === "All" && priorityOnly && priorityDistricts.length > 0;
+  const overviewRows = usePriorityView ? priorityRows : rows;
 
-  const districtComparison = buildDistrictComparison();
-  const selectedRow = selectedDistrict === "All" ? null : districtComparison.find((d) => d.District === selectedDistrict);
+  const enrollmentChartData = usePriorityView
+    ? [{ year: "2025-26", GOI: goiPriorityEnr, GOG: gogPriorityEnr }]
+    : [
+        { year: "2024-25", GOI: goi.stateEnrollment.find((r) => r.year === "2024-25")?.totalEnrollment, GOG: gogEnr24 },
+        { year: "2025-26", GOI: goiEnr.totalEnrollment, GOG: gogEnr25 },
+      ];
+
+  const gsqacChartData = usePriorityView
+    ? [{ year: "2024-25", GOI: goiPriorityGSQAC != null ? Number(goiPriorityGSQAC.toFixed(1)) : null, GOG: gogPriorityGSQAC != null ? Number(gogPriorityGSQAC.toFixed(1)) : null }]
+    : [{ year: "2024-25", GOI: Number(goi.stateGSQAC.find((r) => r.year === "2024-25")?.avgPct?.toFixed(1)), GOG: gogAvgGSQAC != null ? Number(gogAvgGSQAC.toFixed(1)) : null }];
+
+  const districtComparisonAll = buildDistrictComparison();
+  const districtComparison = priorityOnly ? districtComparisonAll.filter((d) => inPriority(d.District)) : districtComparisonAll;
+  const selectedRow = selectedDistrict === "All" ? null : districtComparisonAll.find((d) => d.District === selectedDistrict);
 
   return (
     <CardShell accent="#0F172A">
       <SectionHeading
         eyebrow="Combined Overview"
         title="GOI Analysis vs GOG 426 Analysis — Side by Side"
-        subtitle="Merged view across both source analyses. Use the District filter above to drill into one district — it applies here too."
+        subtitle={
+          usePriorityView
+            ? "⭐ Priority Districts Only — totals below are the sum/average across the 10 focus districts, not the full state."
+            : "Merged view across both source analyses. Use the District filter above to drill into one district — it applies here too."
+        }
       />
 
       {selectedDistrict === "All" ? (
@@ -114,9 +150,9 @@ const CombinedOverview = ({ selectedDistrict = "All" }) => {
             <Grid size={{ xs: 12, md: 6 }}>
               <Paper elevation={0} sx={{ border: "1px solid #E4E7F0", borderLeft: "4px solid #1976D2", borderRadius: 2.5, p: 2, height: "100%" }}>
                 <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: "#1976D2", textTransform: "uppercase", letterSpacing: 0.4, mb: 1 }}>
-                  GOI Analysis — State
+                  GOI Analysis — {usePriorityView ? "Priority Districts (10)" : "State"}
                 </Typography>
-                {rows.map((r) => (
+                {overviewRows.map((r) => (
                   <Box key={r.label} sx={{ display: "flex", justifyContent: "space-between", py: 0.6, borderBottom: "1px solid #F0F1F5" }}>
                     <Typography sx={{ fontSize: 12.5, color: "text.secondary" }}>{r.label}</Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, fontFamily: '"IBM Plex Mono", monospace', color: "#16233B" }}>{r.goi}</Typography>
@@ -127,9 +163,9 @@ const CombinedOverview = ({ selectedDistrict = "All" }) => {
             <Grid size={{ xs: 12, md: 6 }}>
               <Paper elevation={0} sx={{ border: "1px solid #E4E7F0", borderLeft: "4px solid #8E24AA", borderRadius: 2.5, p: 2, height: "100%" }}>
                 <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: "#8E24AA", textTransform: "uppercase", letterSpacing: 0.4, mb: 1 }}>
-                  GOG 426 Analysis — State
+                  GOG 426 Analysis — {usePriorityView ? "Priority Districts (10)" : "State"}
                 </Typography>
-                {rows.map((r) => (
+                {overviewRows.map((r) => (
                   <Box key={r.label} sx={{ display: "flex", justifyContent: "space-between", py: 0.6, borderBottom: "1px solid #F0F1F5" }}>
                     <Typography sx={{ fontSize: 12.5, color: "text.secondary" }}>{r.label}</Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, fontFamily: '"IBM Plex Mono", monospace', color: "#16233B" }}>{r.gog}</Typography>
@@ -141,7 +177,9 @@ const CombinedOverview = ({ selectedDistrict = "All" }) => {
 
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid size={{ xs: 12, md: 6 }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#16233B", mb: 1 }}>Enrollment — GOI vs GOG</Typography>
+              <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#16233B", mb: 1 }}>
+                Enrollment — GOI vs GOG{usePriorityView ? " (Priority Districts)" : ""}
+              </Typography>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={enrollmentChartData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -155,7 +193,9 @@ const CombinedOverview = ({ selectedDistrict = "All" }) => {
               </ResponsiveContainer>
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#16233B", mb: 1 }}>Avg GSQAC % (2024-25) — GOI vs GOG</Typography>
+              <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#16233B", mb: 1 }}>
+                Avg GSQAC % (2024-25) — GOI vs GOG{usePriorityView ? " (Priority Districts)" : ""}
+              </Typography>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={gsqacChartData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -171,7 +211,7 @@ const CombinedOverview = ({ selectedDistrict = "All" }) => {
           </Grid>
 
           <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#16233B", mb: 1 }}>
-            District-wise: GOI vs GOG, Enrollment & GSQAC Merged
+            District-wise: GOI vs GOG, Enrollment & GSQAC Merged{priorityOnly ? ` — ⭐ Priority Districts Only (${districtComparison.length})` : ""}
           </Typography>
           <AnalysisDataTable
             rows={districtComparison}

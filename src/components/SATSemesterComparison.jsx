@@ -60,8 +60,14 @@ const buildStateAverageRow = (allRows) => {
   };
 };
 
-const SATSemesterComparison = ({ data = [], district = "All" }) => {
-  const rows = district !== "All" ? data.filter((d) => d.District === district) : data;
+const SATSemesterComparison = ({ data = [], district = "All", priorityDistricts = [] }) => {
+  const priorityOnly = district === "All" && priorityDistricts.length > 0;
+  const rows =
+    district !== "All"
+      ? data.filter((d) => d.District === district)
+      : priorityOnly
+      ? data.filter((d) => priorityDistricts.includes(d.District))
+      : data;
   const stateAverageRow = buildStateAverageRow(data);
 
   const chartRows = district !== "All" && stateAverageRow ? [...rows, stateAverageRow] : rows;
@@ -81,6 +87,8 @@ const SATSemesterComparison = ({ data = [], district = "All" }) => {
         <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 2 }}>
           {district !== "All"
             ? `${district} · both semesters, plus the combined total`
+            : priorityOnly
+            ? `⭐ Priority districts only (${rows.length}) · both semesters, plus the combined total`
             : "District-wise, both semesters, plus the combined total"}
         </Typography>
 
