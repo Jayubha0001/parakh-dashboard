@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
 import { Box, Grid, Paper, Card, CardContent, Typography, ToggleButtonGroup, ToggleButton } from "@mui/material";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import LocationCityIcon from "@mui/icons-material/LocationCity";
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
-import PriorityHighIcon from "@mui/icons-material/PriorityHigh";
 import {
   ResponsiveContainer,
   BarChart,
@@ -51,6 +47,7 @@ import {
   getSATSem1DistrictSubjectWise,
 } from "../services/dataService";
 import { SATLOBreakdownSection } from "../components/DistrictDeepDive";
+import PageSnapshotPanel from "../components/PageSnapshotPanel";
 
 // Three-band read, same thresholds as the rest of the app's band colouring
 // (Strong / Watch / Needs Support) so this table means the same thing as
@@ -497,141 +494,58 @@ const SAT = () => {
         }
       />
 
-      {/* KPI Cards */}
-      <Grid container spacing={1.5} mb={2}>
-        {[
+      {(() => {
+        const priorityRows = satRanking.filter((d) => isPriorityDistrict(d.District));
+        const otherRows = satRanking.filter((d) => !isPriorityDistrict(d.District));
+        const avgOf = (rows) => {
+          const vals = rows.map((d) => d.PercentAchieved).filter((v) => typeof v === "number");
+          return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+        };
+        const snapshotByDistrict = Object.fromEntries(satRanking.map((d) => [d.District, d.PercentAchieved]));
+        const snapshotCompareData = [
           {
-            label: "State Average",
-            value: `${satSummary.stateAverage.toFixed(1)}%`,
-            gradient: `linear-gradient(135deg, ${colors.navy}, ${colors.navyLight})`,
-            Icon: TrendingUpIcon,
+            label: "SAT",
+            Priority: avgOf(priorityRows) != null ? Number(avgOf(priorityRows).toFixed(1)) : null,
+            Other: avgOf(otherRows) != null ? Number(avgOf(otherRows).toFixed(1)) : null,
           },
-          {
-            label: "Districts Assessed",
-            value: satSummary.totalDistricts,
-            gradient: "linear-gradient(135deg, #6A3DB8, #9B6DE0)",
-            Icon: LocationCityIcon,
-          },
-          {
-            label: "Top District",
-            value: topDistrict?.District || "-",
-            sub: `${topDistrict?.PercentAchieved?.toFixed(1) || 0}%`,
-            gradient: "linear-gradient(135deg, #1F8A70, #3FB897)",
-            Icon: EmojiEventsIcon,
-          },
-          {
-            label: "Needs Support",
-            value: lowestDistrict?.District || "-",
-            sub: `${lowestDistrict?.PercentAchieved?.toFixed(1) || 0}%`,
-            gradient: "linear-gradient(135deg, #D32F2F, #E5737E)",
-            Icon: PriorityHighIcon,
-          },
-        ].map((kpi) => (
-          <Grid size={{ xs: 6, md: 3 }} key={kpi.label}>
-            <Paper
-              elevation={0}
-              sx={{
-                position: "relative",
-                borderRadius: 2.5,
-                background: kpi.gradient,
-                color: "#fff",
-                height: "100%",
-                p: 1.6,
-                display: "flex",
-                alignItems: "center",
-                gap: 1.3,
-                overflow: "hidden",
-                boxShadow: "0 4px 10px rgba(15,23,42,0.10)",
-              }}
-            >
-              <kpi.Icon
-                sx={{
-                  position: "absolute",
-                  right: -10,
-                  bottom: -14,
-                  fontSize: 84,
-                  opacity: 0.16,
-                  transform: "rotate(-12deg)",
-                }}
-              />
-              <Box
-                sx={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  bgcolor: "rgba(255,255,255,0.22)",
-                  flexShrink: 0,
-                  zIndex: 1,
-                }}
-              >
-                <kpi.Icon sx={{ fontSize: 18 }} />
-              </Box>
-              <Box sx={{ minWidth: 0, zIndex: 1 }}>
-                <Typography sx={{ fontSize: 10.5, opacity: 0.9, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, lineHeight: 1.2 }}>
-                  {kpi.label}
-                </Typography>
-                <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.6 }}>
-                  <Typography
-                    sx={{
-                      fontFamily: fontDisplay,
-                      fontWeight: 700,
-                      fontSize: 21,
-                      lineHeight: 1.3,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {kpi.value}
-                  </Typography>
-                  {kpi.sub && (
-                    <Typography sx={{ fontFamily: fontMono, fontSize: 11.5, fontWeight: 700, opacity: 0.95 }}>
-                      {kpi.sub}
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
+        ];
+        const gradeAvgOf = (rows, grade) => {
+          const vals = rows.map((d) => d[grade]).filter((v) => typeof v === "number");
+          return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+        };
+        const priorityGradeRows = satGradeWise.data.filter((d) => isPriorityDistrict(d.District));
+        const otherGradeRows = satGradeWise.data.filter((d) => !isPriorityDistrict(d.District));
+        const snapshotBreakdownData = satGradeWise.grades.map((grade) => ({
+          label: grade,
+          Priority: Math.round(gradeAvgOf(priorityGradeRows, grade)),
+          Other: Math.round(gradeAvgOf(otherGradeRows, grade)),
+        }));
+        const snapshotPriorityList = [...priorityRows]
+          .sort((a, b) => b.PercentAchieved - a.PercentAchieved)
+          .map((d) => ({ District: d.District, Value: d.PercentAchieved }));
 
-      {/* Grade-wise state overview */}
-      <Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", borderLeft: `4px solid ${colors.navy}`, p: 2.25, mb: 2 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5 }}>
-          <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: colors.navy }} />
-          <Typography sx={{ fontFamily: fontMono, fontSize: 10.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: colors.navy }}>
-            Grade breakdown
-          </Typography>
-        </Box>
-        <Typography sx={{ fontFamily: fontDisplay, fontWeight: 600, fontSize: 17, mb: 2, color: "#16233B" }}>
-          Grade-wise State Average
-        </Typography>
-        <Grid container spacing={1}>
-          {satGradeWise.grades.map((grade) => {
-            const avg = satSummary.gradeAverages.find((g) => g.grade === grade)?.average || 0;
-            const band = avg >= 60 ? "#1F8A70" : avg >= 45 ? colors.gold : "#D32F2F";
-            return (
-              <Grid size={{ xs: 6, md: 2 }} key={grade}>
-                <Box sx={{ p: 1.2, borderRadius: 2, "&:hover": { bgcolor: "#FAFBFD" } }}>
-                  <Typography sx={{ fontSize: 11, color: colors.slate, fontWeight: 600 }}>{grade}</Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
-                    <Box sx={{ flex: 1, height: 7, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
-                      <Box sx={{ width: `${Math.min(avg, 100)}%`, height: "100%", bgcolor: band, borderRadius: 4 }} />
-                    </Box>
-                    <Typography sx={{ fontFamily: fontMono, fontSize: 11.5, fontWeight: 700, width: 34, color: band }}>
-                      {avg.toFixed(0)}%
-                    </Typography>
-                  </Box>
-                </Box>
-              </Grid>
-            );
-          })}
-        </Grid>
-      </Paper>
+        return (
+          <PageSnapshotPanel
+            title="SAT — District Snapshot"
+            metricLabel="SAT"
+            district={district}
+            setDistrict={setDistrict}
+            districts={districts.slice(1)}
+            priorityOnly={priorityOnly}
+            dataByDistrict={snapshotByDistrict}
+            totalDistricts={satRanking.length}
+            priorityCount={priorityRows.length}
+            otherCount={otherRows.length}
+            compareData={snapshotCompareData}
+            breakdownTitle="SAT — Grade-wise Avg (%)"
+            breakdownData={snapshotBreakdownData}
+            priorityListTitle="⭐ Priority Districts — SAT Performance"
+            priorityList={snapshotPriorityList}
+            stateAvg={satSummary.stateAverage}
+            rankOf={(d) => satRanking.findIndex((r) => r.District === d) + 1}
+          />
+        );
+      })()}
 
       {/* District Filter */}
       <Box mt={1} mb={2}>

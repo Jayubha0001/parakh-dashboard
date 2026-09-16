@@ -21,9 +21,11 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import DescriptionIcon from "@mui/icons-material/Description";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import PlaceIcon from "@mui/icons-material/Place";
+import BarChartIcon from "@mui/icons-material/BarChart";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { colors } from "../theme/theme";
+import { SHOW_ATTENDANCE_TAB, SHOW_CRC_VISIT_TAB } from "../config/featureFlags";
 
 export const DRAWER_WIDTH = 240;
 export const DRAWER_WIDTH_COLLAPSED = 68;
@@ -54,16 +56,16 @@ const menuItems = [
     color: "#F0B429",
   },
   {
-    text: "Comparison",
-    icon: <EmojiEventsIcon />,
-    path: "/comparison",
-    color: "#F2994A",
-  },
-  {
     text: "PM Shri",
     icon: <AccountBalanceIcon />,
     path: "/pmshri",
     color: "#4DB6E5",
+  },
+  {
+    text: "Attendance",
+    icon: <BarChartIcon />,
+    path: "/attendance",
+    color: "#F2994A",
   },
   {
     text: "CRC Visit",
@@ -72,12 +74,27 @@ const menuItems = [
     color: "#E5737E",
   },
   {
+    text: "Comparison",
+    icon: <EmojiEventsIcon />,
+    path: "/comparison",
+    color: "#F2994A",
+  },
+  {
     text: "Reports",
     icon: <DescriptionIcon />,
     path: "/reports",
     color: "#9AA5B1",
   },
 ];
+
+// Tabs behind a feature flag (see src/config/featureFlags.js) are simply
+// left out of this list — turning a flag on/off is the only thing needed
+// to show/hide a tab, no other change here.
+const visibleMenuItems = menuItems.filter((item) => {
+  if (item.path === "/attendance") return SHOW_ATTENDANCE_TAB;
+  if (item.path === "/live-visits") return SHOW_CRC_VISIT_TAB;
+  return true;
+});
 
 // Shared list markup, rendered inside BOTH the permanent (desktop) drawer
 // and the temporary (mobile, overlay) drawer below — one source of truth
@@ -95,7 +112,7 @@ const DrawerContent = ({ onNavigate, collapsed = false, onToggleCollapse = null 
     </Toolbar>
 
     <List sx={{ px: collapsed ? 0.75 : 1.5 }}>
-      {menuItems.map((item) => {
+      {visibleMenuItems.map((item) => {
         const button = (
           <ListItemButton
             component={NavLink}
@@ -198,14 +215,19 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {}, collapsed = false, on
         sx={{
           display: { xs: "none", md: "block" },
           width,
-          transition: "width 0.2s ease",
+          // No width transition here on purpose: animating this width
+          // forces the flex-1 main content area to resize on every
+          // animation frame for ~0.2s, and every chart on the page
+          // (there can be a dozen+ recharts ResponsiveContainers on the
+          // heavier pages) re-measures on each of those resizes — that's
+          // what made the collapse button feel like it froze the page.
+          // An instant width change fires one resize instead of many.
           "& .MuiDrawer-paper": {
             width,
             background: colors.navy,
             color: "white",
             borderRight: "none",
             overflowX: "hidden",
-            transition: "width 0.2s ease",
           },
         }}
       >

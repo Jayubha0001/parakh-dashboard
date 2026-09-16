@@ -13,14 +13,73 @@ const DOMAIN_ACCENTS = ["#1976D2", "#8E24AA", "#00897B", "#F0B429", "#D32F2F", "
 // years' scores stacked inside the same card (with a Δ), instead of two
 // separate rows of cards for the two years, which read as duplicated
 // domain lists at a glance.
+//
+// `compact` swaps the full card grid (progress bars, /max weight, grade
+// chips — a lot of vertical space) for a single row of small tiles with
+// just the % and the year-over-year delta. Use this when the section is
+// living inside another card (e.g. folded into the District Snapshot
+// panel) rather than standing on its own on the page.
 const PGIDomainCards = ({
   domains = [],
   domains2 = null,
   label = "24-25",
   label2 = "25-26",
   title = "📚 Domain-wise Score — Gujarat State (2024-25)",
+  compact = false,
 }) => {
   const byDomain2 = domains2 ? new Map(domains2.map((d) => [d.domain, d])) : null;
+
+  if (compact) {
+    return (
+      <Box>
+        <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "#16233B", mb: 1 }}>
+          {title}
+        </Typography>
+        <Grid container spacing={1}>
+          {domains.map((d, i) => {
+            const d2 = byDomain2?.get(d.domain);
+            const delta = d2 ? Math.round((d2.percentAchieved - d.percentAchieved) * 10) / 10 : null;
+            const accent = DOMAIN_ACCENTS[i % DOMAIN_ACCENTS.length];
+            const shortLabel = shortenDomain(d.domain);
+            const domainNo = shortLabel.match(/^D\d+/)?.[0] || `D${i + 1}`;
+            const domainName = shortLabel.replace(/^D\d+:\s*/, "");
+
+            return (
+              <Grid size={{ xs: 6, sm: 4, md: 2 }} key={i}>
+                <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: "#F5F6FA", borderLeft: `3px solid ${accent}`, height: "100%" }}>
+                  <Typography
+                    sx={{ fontSize: 10, fontWeight: 700, color: "#5B6B85", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                    title={domainName}
+                  >
+                    {domainNo} · {domainName}
+                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.5, mt: 0.3 }}>
+                    <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, fontWeight: 700, color: "#16233B" }}>
+                      {d.percentAchieved.toFixed(0)}%
+                    </Typography>
+                    {d2 && (
+                      <>
+                        <Typography sx={{ fontSize: 10, color: "#9AA5B1" }}>→</Typography>
+                        <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, fontWeight: 700, color: accent }}>
+                          {d2.percentAchieved.toFixed(0)}%
+                        </Typography>
+                      </>
+                    )}
+                  </Box>
+                  {delta != null && (
+                    <Typography sx={{ fontSize: 10, fontWeight: 700, color: delta >= 0 ? "#2E7D32" : "#D32F2F" }}>
+                      {delta >= 0 ? "▲" : "▼"} {delta >= 0 ? "+" : ""}
+                      {delta}pp
+                    </Typography>
+                  )}
+                </Box>
+              </Grid>
+            );
+          })}
+        </Grid>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ mt: 2.5 }}>

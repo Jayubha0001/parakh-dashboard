@@ -56,8 +56,23 @@ const GujaratBubbleMap = ({
   metricLabel = "Value",
   valueSuffix = "",
   priorityDistricts = [],
+  light = false,
 }) => {
   const [hovered, setHovered] = useState(null);
+
+  // The dark-theme defaults were far too faint (white-ish outline/fill at
+  // 0.04–0.14 opacity) against both the navy Executive Snapshot panel and
+  // the white PageSnapshotPanel cards — it rendered as a handful of
+  // floating dots with no real Gujarat outline underneath them. `light`
+  // switches to ink/slate for white cards; the dark-mode values below are
+  // now visible enough to actually read as a state outline too.
+  const labelColor = light ? "#16233B" : "rgba(255,255,255,0.9)";
+  const legendColor = light ? "#5B6B85" : "rgba(255,255,255,0.75)";
+  const outlineFill = light ? "#F5F6FA" : "rgba(255,255,255,0.08)";
+  const outlineStroke = light ? "#C7CEDB" : "rgba(255,255,255,0.42)";
+  const bubbleStroke = light ? "#fff" : "rgba(255,255,255,0.6)";
+  const bubbleSelectedStroke = light ? "#16233B" : "#fff";
+  const tooltipBg = light ? "rgba(22,35,59,0.92)" : "rgba(0,0,0,0.8)";
 
   const pathsByNormalized = {};
   GUJARAT_DISTRICT_PATHS.forEach((p) => (pathsByNormalized[normalize(p.name)] = normalize(p.name)));
@@ -75,14 +90,14 @@ const GujaratBubbleMap = ({
 
   return (
     <Box>
-      <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", mb: 0.5 }}>
+      <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: labelColor, mb: 0.5 }}>
         Gujarat — {metricLabel} by District
       </Typography>
       <Box sx={{ position: "relative" }}>
         <svg viewBox={GUJARAT_MAP_VIEWBOX} style={{ width: "100%", height: "auto", maxHeight: 230, display: "block" }}>
           {/* Faint state outline for geographic context */}
           {GUJARAT_DISTRICT_PATHS.map((p) => (
-            <path key={`outline-${p.name}`} d={p.d} fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.14)" strokeWidth={0.6} />
+            <path key={`outline-${p.name}`} d={p.d} fill={outlineFill} stroke={outlineStroke} strokeWidth={light ? 0.6 : 0.9} />
           ))}
 
           {/* Bubbles */}
@@ -104,7 +119,7 @@ const GujaratBubbleMap = ({
                   cy={p.cy}
                   r={r}
                   fill={colorForPct(val, minVal, maxVal)}
-                  stroke={isSelected ? "#fff" : "rgba(255,255,255,0.5)"}
+                  stroke={isSelected ? bubbleSelectedStroke : bubbleStroke}
                   strokeWidth={isSelected ? 1.8 : 0.8}
                   opacity={isHovered || isSelected ? 1 : 0.9}
                 />
@@ -119,7 +134,7 @@ const GujaratBubbleMap = ({
               position: "absolute",
               top: 4,
               right: 4,
-              bgcolor: "rgba(0,0,0,0.75)",
+              bgcolor: tooltipBg,
               color: "#fff",
               px: 1.2,
               py: 0.6,
@@ -143,19 +158,19 @@ const GujaratBubbleMap = ({
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1.5, mt: 0.5, flexWrap: "wrap" }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.4 }}>
           <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#1F8A70" }} />
-          <Typography sx={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}>High</Typography>
+          <Typography sx={{ fontSize: 10, color: legendColor }}>High</Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.4 }}>
           <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#F0B429" }} />
-          <Typography sx={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}>Mid</Typography>
+          <Typography sx={{ fontSize: 10, color: legendColor }}>Mid</Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.4 }}>
           <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#D32F2F" }} />
-          <Typography sx={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}>Low</Typography>
+          <Typography sx={{ fontSize: 10, color: legendColor }}>Low</Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.4 }}>
           <Box sx={{ width: 12, height: 12, borderRadius: "50%", border: "1.8px solid #F0B429" }} />
-          <Typography sx={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}>Priority</Typography>
+          <Typography sx={{ fontSize: 10, color: legendColor }}>Priority</Typography>
         </Box>
       </Box>
     </Box>

@@ -122,6 +122,8 @@ const ExecutiveOverviewPanel = ({
   return (
     <Box
       sx={{
+        position: "relative",
+        overflow: "hidden",
         borderRadius: 4,
         background: `linear-gradient(160deg, ${colors.navy}, ${colors.navyLight})`,
         borderTop: `3px solid ${GOLD}`,
@@ -130,7 +132,22 @@ const ExecutiveOverviewPanel = ({
         boxShadow: "0 8px 24px rgba(15,23,42,0.25)",
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 0.3 }}>
+      {/* Soft gold glow in the corner — gives this panel its own identity
+          instead of reading as a dark copy of the white per-page snapshot
+          cards elsewhere in the app. */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: -60,
+          right: -60,
+          width: 220,
+          height: 220,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${GOLD}26, transparent 70%)`,
+          pointerEvents: "none",
+        }}
+      />
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 0.3, position: "relative" }}>
         <Typography
           sx={{
             fontSize: 10.5,
@@ -142,8 +159,22 @@ const ExecutiveOverviewPanel = ({
         >
           Government of Gujarat · School Education Department
         </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+          <Box
+            sx={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              bgcolor: GOLD,
+              boxShadow: `0 0 0 3px ${GOLD}33`,
+            }}
+          />
+          <Typography sx={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: "rgba(255,255,255,0.6)" }}>
+            Live Snapshot
+          </Typography>
+        </Box>
       </Box>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 2, pb: 1.5, borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 2, pb: 1.5, borderBottom: "1px solid rgba(255,255,255,0.12)", position: "relative" }}>
         <Typography sx={{ fontFamily: fontDisplay, fontWeight: 700, fontSize: 18, color: "#fff" }}>
           📊 Gujarat Education — Executive Snapshot
         </Typography>
@@ -203,7 +234,7 @@ const ExecutiveOverviewPanel = ({
 
         {/* Priority vs Other split — or, with one district picked, that
             district's own PGI-D % as a simple gauge ring. */}
-        <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 2 }} sx={{ borderLeft: { md: "1px solid rgba(255,255,255,0.1)" }, pl: { md: 2.5 } }}>
           <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", mb: 0.5 }}>
             {isSingleDistrict ? "PGI-D 2025-26 Score" : "Districts Covered"}
           </Typography>
@@ -270,7 +301,7 @@ const ExecutiveOverviewPanel = ({
 
         {/* Avg score comparison — Priority vs Other, or this district vs
             the state average once one is picked. */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} sx={{ borderLeft: { md: "1px solid rgba(255,255,255,0.1)" }, pl: { md: 2.5 } }}>
           <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", mb: 1 }}>
             {isSingleDistrict ? `${district} vs State Average` : "Avg Score — Priority vs Other"}
           </Typography>
@@ -297,7 +328,7 @@ const ExecutiveOverviewPanel = ({
 
         {/* PGI-D grade distribution — or, with one district picked, that
             district's profile card (rank, grade, GSQAC, priority status). */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} sx={{ borderLeft: { md: "1px solid rgba(255,255,255,0.1)" }, pl: { md: 2.5 } }}>
           <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", mb: 1 }}>
             {isSingleDistrict ? `${district} — Profile` : "PGI-D 2025-26 — Grade Split"}
           </Typography>
@@ -331,7 +362,7 @@ const ExecutiveOverviewPanel = ({
 
         {/* The 10 districts, by name — the selected one (if it's among
             them) gets a brighter highlight so it's easy to spot. */}
-        <Grid size={{ xs: 12, md: 12 }}>
+        <Grid size={{ xs: 12, md: 12 }} sx={{ borderTop: "1px solid rgba(255,255,255,0.1)", pt: 2, mt: 0.5 }}>
           <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", mb: 1 }}>
             ⭐ The 10 Priority Districts (PGI-D 25-26)
           </Typography>

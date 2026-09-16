@@ -33,11 +33,13 @@ import {
   buildDistrictSummariesForYear,
   PM_SHRI_YEAR_LABELS,
   COLOR_GRADE_KEY,
+  colorGradeFromScore,
 } from "../services/dataService";
 import { isPriorityDistrict, PRIORITY_DISTRICTS } from "../utils/priorityDistricts";
 import PriorityChip from "../components/PriorityChip";
 import ActionItemsQueue from "../components/ActionItemsQueue";
 import DropdownFilter from "../components/DropdownFilter";
+import PageSnapshotPanel from "../components/PageSnapshotPanel";
 import GOIAnalysisPanel from "../components/pmshri/GOIAnalysisPanel";
 import GOGAnalysisPanel from "../components/pmshri/GOGAnalysisPanel";
 import CombinedOverview from "../components/pmshri/CombinedOverview";
@@ -239,6 +241,60 @@ const PMShri = () => {
 
       {activeTab === 1 && <GOIAnalysisPanel selectedDistrict={gsqacDistrictFilter} />}
       {activeTab === 2 && <GOGAnalysisPanel selectedDistrict={gsqacDistrictFilter} />}
+
+      {(() => {
+        const gsqacDistricts = gsqac.districts;
+        const snapshotByDistrict = Object.fromEntries(gsqacDistricts.map((d) => [d.district, d.avgPct]));
+        const priorityRows = gsqacDistricts.filter((d) => isPriorityDistrict(d.district));
+        const otherRows = gsqacDistricts.filter((d) => !isPriorityDistrict(d.district));
+        const avgOf = (rows) => {
+          const vals = rows.map((d) => d.avgPct).filter((v) => typeof v === "number");
+          return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+        };
+        const snapshotCompareData = [
+          {
+            label: "GSQAC",
+            Priority: avgOf(priorityRows) != null ? Number(avgOf(priorityRows).toFixed(1)) : null,
+            Other: avgOf(otherRows) != null ? Number(avgOf(otherRows).toFixed(1)) : null,
+          },
+        ];
+        const gradeOf = (pct) => colorGradeFromScore(pct)?.grade || "—";
+        const allGrades = [...new Set(gsqacDistricts.map((d) => gradeOf(d.avgPct)))];
+        const snapshotBreakdownData = allGrades
+          .map((g) => ({
+            label: g,
+            Priority: priorityRows.filter((d) => gradeOf(d.avgPct) === g).length,
+            Other: otherRows.filter((d) => gradeOf(d.avgPct) === g).length,
+          }))
+          .filter((g) => g.Priority > 0 || g.Other > 0)
+          .sort((a, b) => b.Priority + b.Other - (a.Priority + a.Other));
+        const snapshotPriorityList = [...priorityRows]
+          .sort((a, b) => b.avgPct - a.avgPct)
+          .map((d) => ({ District: d.district, Value: d.avgPct }));
+        const sortedByAvgPct = [...gsqacDistricts].sort((a, b) => b.avgPct - a.avgPct);
+
+        return (
+          <PageSnapshotPanel
+            title="PM Shri (GSQAC) — District Snapshot"
+            metricLabel="GSQAC"
+            district={gsqacDistrictFilter}
+            setDistrict={setGsqacDistrictFilter}
+            districts={gsqacDistricts.map((d) => d.district)}
+            priorityOnly={priorityOnly}
+            dataByDistrict={snapshotByDistrict}
+            totalDistricts={gsqacDistricts.length}
+            priorityCount={priorityRows.length}
+            otherCount={otherRows.length}
+            compareData={snapshotCompareData}
+            breakdownTitle="GSQAC — Quality Grade Split"
+            breakdownData={snapshotBreakdownData}
+            priorityListTitle="⭐ Priority Districts — GSQAC Performance"
+            priorityList={snapshotPriorityList}
+            stateAvg={gsqac.state.avgPct}
+            rankOf={(d) => sortedByAvgPct.findIndex((r) => r.district === d) + 1}
+          />
+        );
+      })()}
 
       <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: 2, mt: 2, display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
         <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: "text.secondary" }}>

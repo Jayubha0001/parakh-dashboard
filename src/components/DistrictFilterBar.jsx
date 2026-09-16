@@ -1,9 +1,6 @@
-import { useState } from "react";
 import { Paper, TextField, MenuItem, Button, Box, ToggleButton } from "@mui/material";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
-import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
 import StarIcon from "@mui/icons-material/Star";
-import GujaratDistrictMap from "./GujaratDistrictMap";
 import { isPriorityDistrict } from "../utils/priorityDistricts";
 
 // A lightweight District-only filter (District dropdown) for pages that
@@ -11,12 +8,9 @@ import { isPriorityDistrict } from "../utils/priorityDistricts";
 // Stage/Subject axis the way the home Dashboard does. Selecting a district
 // applies immediately — no separate "Apply" click needed.
 //
-// An optional map view sits behind the "Map" toggle: clicking a district
-// on the map sets the exact same `district` state as the dropdown, so it
-// filters every chart/table on the page the same way the dropdown always
-// has. Pass `mapData` (an optional { [districtName]: number } lookup,
-// e.g. PGI % achieved per district) to shade the map by that metric —
-// otherwise the map still works, just without the shading.
+// Map-based district selection now lives in the page's Executive Snapshot
+// panel (GujaratBubbleMap), so this bar no longer duplicates it with its
+// own "Select on map" toggle.
 //
 // Pass `priorityOnly`/`onPriorityOnlyChange` (lifted state from the page)
 // to show a "⭐ Priority Districts Only" toggle that narrows every list on
@@ -25,14 +19,9 @@ const DistrictFilterBar = ({
   district,
   setDistrict,
   districts = [],
-  mapData = null,
-  mapValueSuffix = "%",
   priorityOnly = null,
   onPriorityOnlyChange = null,
-  hideMapToggle = false,
 }) => {
-  const [showMap, setShowMap] = useState(false);
-
   const sortedDistricts =
     districts.length <= 1
       ? districts
@@ -49,10 +38,9 @@ const DistrictFilterBar = ({
         elevation={0}
         sx={{
           p: 2.5,
-          mb: showMap ? 0 : 2,
-          borderRadius: showMap ? "12px 12px 0 0" : 3,
+          mb: 2,
+          borderRadius: 3,
           border: "1px solid #E4E7F0",
-          borderBottom: showMap ? "none" : "1px solid #E4E7F0",
           display: "flex",
           gap: 2,
           alignItems: "center",
@@ -108,32 +96,7 @@ const DistrictFilterBar = ({
             Priority Districts Only
           </ToggleButton>
         )}
-
-        {!hideMapToggle && (
-          <ToggleButton
-            value="map"
-            selected={showMap}
-            onChange={() => setShowMap((v) => !v)}
-            size="small"
-            sx={{ textTransform: "none", fontWeight: 600, gap: 0.75, px: 1.5 }}
-          >
-            <MapOutlinedIcon fontSize="small" />
-            {showMap ? "Hide map" : "Select on map"}
-          </ToggleButton>
-        )}
       </Paper>
-
-      {!hideMapToggle && showMap && (
-        <Box sx={{ mb: 2 }}>
-          <GujaratDistrictMap
-            district={district}
-            setDistrict={setDistrict}
-            districts={districts}
-            dataByDistrict={mapData}
-            valueSuffix={mapValueSuffix}
-          />
-        </Box>
-      )}
     </>
   );
 };

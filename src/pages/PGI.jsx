@@ -4,7 +4,6 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 
 import DashboardLayout from "../components/DashboardLayout";
 import Header from "../components/Header";
-import PGIKPICards from "../components/PGIKPICards";
 import PGIDomainCards from "../components/PGIDomainCards";
 import HeatMapTable from "../components/HeatMapTable";
 import Loading from "../components/Loading";
@@ -16,6 +15,7 @@ import pgiD202526 from "../data/pgiD202526.json";
 import statePgi202526 from "../data/statePgi202526.json";
 import districtPgiIndicators202526 from "../data/districtPgiIndicators202526.json";
 import PriorityChip from "../components/PriorityChip";
+import PageSnapshotPanel from "../components/PageSnapshotPanel";
 import { isPriorityDistrict, PRIORITY_DISTRICTS } from "../utils/priorityDistricts";
 
 import {
@@ -176,6 +176,48 @@ const PGI = () => {
     .filter((d) => district === "All" || d.District === district)
     .filter((d) => !priorityOnly || isPriorityDistrict(d.District));
 
+  // ---- Snapshot panel props (PGI-D 2025-26, Priority vs Other) ----
+  const snapshotByDistrict = Object.fromEntries(
+    mergedRanking.map((d) => [d.District, d.pct2526 ?? d.pct2425])
+  );
+  const priorityRows = mergedRanking.filter((d) => isPriorityDistrict(d.District));
+  const otherRows = mergedRanking.filter((d) => !isPriorityDistrict(d.District));
+  const avgOf = (rows, field) => {
+    const vals = rows.map((d) => d[field]).filter((v) => typeof v === "number");
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  };
+  const round1 = (v) => (v != null ? Number(v.toFixed(1)) : null);
+  // Both years, side by side — not just whichever year happens to be
+  // filled in for a district — so the comparison reads as "how has this
+  // moved", not a single snapshot that quietly drops 2024-25.
+  const snapshotCompareData = [
+    {
+      label: "2024-25",
+      Priority: round1(avgOf(priorityRows, "pct2425")),
+      Other: round1(avgOf(otherRows, "pct2425")),
+    },
+    {
+      label: "2025-26",
+      Priority: round1(avgOf(priorityRows, "pct2526")),
+      Other: round1(avgOf(otherRows, "pct2526")),
+    },
+  ];
+  const allGrades = [...new Set(mergedRanking.map((d) => d.grade2526 ?? d.grade2425).filter(Boolean))];
+  const snapshotBreakdownData = allGrades
+    .map((grade) => ({
+      label: grade,
+      Priority: priorityRows.filter((d) => (d.grade2526 ?? d.grade2425) === grade).length,
+      Other: otherRows.filter((d) => (d.grade2526 ?? d.grade2425) === grade).length,
+    }))
+    .filter((g) => g.Priority > 0 || g.Other > 0)
+    .sort((a, b) => b.Priority + b.Other - (a.Priority + a.Other));
+  const snapshotPriorityList = [...priorityRows]
+    .sort((a, b) => (b.pct2526 ?? b.pct2425) - (a.pct2526 ?? a.pct2425))
+    .map((d) => ({ District: d.District, Value: d.pct2526 ?? d.pct2425 }));
+  const snapshotByDistrict2425 = Object.fromEntries(mergedRanking.map((d) => [d.District, d.pct2425]));
+  const snapshotStateAvg = stateAvg2526 ?? stateAvg2425;
+  const snapshotRankOf = (d) => sortedByScore.findIndex((r) => r.District === d) + 1;
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -199,19 +241,38 @@ const PGI = () => {
         }}
       />
 
-      <PGIKPICards
-        overall={stateSummary.overall}
-        totalDistricts={districtRanking2425.length}
-        topDistrict={{ District: topDistrict.District, PercentAchieved: topDistrict.pct2526 ?? topDistrict.pct2425 }}
-        lowestDistrict={{ District: lowestDistrict.District, PercentAchieved: lowestDistrict.pct2526 ?? lowestDistrict.pct2425 }}
-      />
-
-      <PGIDomainCards
-        domains={stateSummary.domains}
-        domains2={statePgi202526.domains}
-        label="24-25"
-        label2="25-26"
-        title="📚 Domain-wise Score — Gujarat State PGI 2.0 (2024-25 vs 2025-26)"
+      <PageSnapshotPanel
+        title="Gujarat PGI 2.0 — District Snapshot"
+        metricLabel="PGI-D 25-26"
+        district={district}
+        setDistrict={setDistrict}
+        districts={districts.slice(1)}
+        priorityOnly={priorityOnly}
+        dataByDistrict={snapshotByDistrict}
+        totalDistricts={mergedRanking.length}
+        priorityCount={priorityRows.length}
+        otherCount={otherRows.length}
+        compareData={snapshotCompareData}
+        breakdownTitle="PGI-D 2025-26 — Grade Split"
+        breakdownData={snapshotBreakdownData}
+        priorityListTitle="⭐ The 10 Priority Districts (PGI-D 25-26)"
+        priorityList={snapshotPriorityList}
+        stateAvg={snapshotStateAvg}
+        dataByDistrictPrevYear={snapshotByDistrict2425}
+        stateAvgPrevYear={stateAvg2425}
+        yearLabel="2025-26"
+        prevYearLabel="2024-25"
+        rankOf={snapshotRankOf}
+        extraSection={
+          <PGIDomainCards
+            compact
+            domains={stateSummary.domains}
+            domains2={statePgi202526.domains}
+            label="24-25"
+            label2="25-26"
+            title="📚 Domain-wise Score — Gujarat State PGI 2.0 (2024-25 vs 2025-26)"
+          />
+        }
       />
 
       <Box mt={2.5}>

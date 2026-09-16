@@ -77,7 +77,6 @@ import {
   getSATDistrictLOBreakdown,
 } from "../services/dataService";
 import { PGIIndicatorSection, PARAKHCompetencySection, SATLOBreakdownSection } from "../components/DistrictDeepDive";
-import DropdownFilter from "../components/DropdownFilter";
 import GujaratBubbleMap from "../components/GujaratBubbleMap";
 import ExecutiveOverviewPanel from "../components/ExecutiveOverviewPanel";
 import statePgi202526 from "../data/statePgi202526.json";
@@ -120,7 +119,8 @@ const Dashboard = () => {
   // Which semester's data drives the SAT overview/KPI/grade-wise/chart/
   // table sections below. The Sem1 vs Sem2 comparison section always
   // shows both semesters together regardless of this toggle.
-  const [satSemester, setSatSemester] = useState("sem2");
+  // (SAT Semester toggle removed — the summary box below now always
+  // shows both semesters, so this state no longer drives anything.)
 
   const [district, setDistrict] = useState("All");
   const [priorityOnly, setPriorityOnly] = useState(false);
@@ -477,6 +477,23 @@ const pgiTableData = pgiTableDataAll
   .filter((d) => district === "All" || d.District === district)
   .filter((d) => !priorityOnly || isPriorityDistrict(d.District));
 
+// 2025-26 PGI-D ranking, filtered the same way as the 2024-25 table above,
+// so the "District-wise PGI-D % Achieved" chart can plot both years side
+// by side instead of only ever showing 2024-25.
+const pgiTableDataAll2526 = [...pgiD202526.ranking]
+  .sort((a, b) => b.PercentAchieved - a.PercentAchieved)
+  .map((d, index) => ({
+    Rank: index + 1,
+    District: d.District,
+    Score: d.Score,
+    PercentAchieved: d.PercentAchieved,
+    Grade: d.Grade,
+  }));
+
+const pgiTableData2526 = pgiTableDataAll2526
+  .filter((d) => district === "All" || d.District === district)
+  .filter((d) => !priorityOnly || isPriorityDistrict(d.District));
+
 // -----------------------------
 // Priority Districts Spotlight — the state's 10 focus districts, pulled
 // out with PARAKH + both years of PGI side by side so leadership doesn't
@@ -508,13 +525,10 @@ const priorityRows = PRIORITY_DISTRICTS.map((name) => {
 // responds to the district filter above.
 // -----------------------------
 
-// Active SAT dataset, based on the Semester 1 / Semester 2 toggle.
-const satGradeWise = satSemester === "sem1" ? satGradeWiseSem1 : satGradeWiseSem2;
-const satSummary = satSemester === "sem1" ? satSummarySem1 : satSummarySem2;
-
 // -----------------------------
-// Sem 1 vs Sem 2 comparison data — always both semesters, independent
-// of the satSemester toggle above (which only drives the KPI/table).
+// Sem 1 vs Sem 2 comparison data — always both semesters; the state
+// summary box above now always shows both too, so there's no separate
+// single-semester toggle left driving anything on this page.
 // -----------------------------
 
 const satDistrictComparisonChartAll = satSemesterComparison.map((d) => ({
@@ -648,10 +662,7 @@ const satSubjectComparisonChartData = (() => {
   district={district}
   setDistrict={setDistrict}
   districts={dropdownDistricts}
-  mapData={pgiByDistrict}
-  mapValueSuffix="% PGI"
   priorityOnly={priorityOnly}
-  hideMapToggle
   onPriorityOnlyChange={(v) => {
     setPriorityOnly(v);
     if (v && district !== "All" && !isPriorityDistrict(district)) setDistrict("All");
@@ -850,69 +861,104 @@ const satSubjectComparisonChartData = (() => {
   <Grid container spacing={2}>
     <Grid size={{ xs: 12, sm: 4 }}>
       <Box sx={{ p: 2, borderRadius: 2, bgcolor: "#F5F6FA", textAlign: "center", height: "100%" }}>
-        <Typography sx={{ fontSize: 12, color: "text.secondary" }}>STATE OVERALL SCORE (2024-25)</Typography>
-        <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 28, color: "#0F172A" }}>
-          {pgiSummary.overall?.score?.toFixed(1) ?? "-"}
-          <Typography component="span" sx={{ fontSize: 14, color: "text.secondary" }}>
-            {" "}/ {pgiSummary.overall?.maxWeight ?? 1000}
-          </Typography>
-        </Typography>
-        <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, fontWeight: 700, color: "#F0B429" }}>
-          {pgiSummary.overall?.grade || "-"} · {pgiSummary.overall?.percentAchieved?.toFixed(1) ?? 0}%
-        </Typography>
+        <Typography sx={{ fontSize: 12, color: "text.secondary" }}>STATE OVERALL SCORE</Typography>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.4, mt: 0.5 }}>
+          <Box>
+            <Typography sx={{ fontSize: 10.5, color: "text.secondary", fontWeight: 600 }}>2024-25</Typography>
+            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: colors.navyLight }}>
+              {pgiSummary.overall?.score?.toFixed(1) ?? "-"}
+              <Typography component="span" sx={{ fontSize: 12, color: "text.secondary" }}>
+                {" "}/ {pgiSummary.overall?.maxWeight ?? 1000}
+              </Typography>
+            </Typography>
+            <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11.5, fontWeight: 700, color: colors.navyLight }}>
+              {pgiSummary.overall?.grade || "-"} · {pgiSummary.overall?.percentAchieved?.toFixed(1) ?? 0}%
+            </Typography>
+          </Box>
+          <Box sx={{ borderTop: "1px dashed #D8DCE6", pt: 0.6, mt: 0.2 }}>
+            <Typography sx={{ fontSize: 10.5, color: "text.secondary", fontWeight: 600 }}>2025-26</Typography>
+            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: "#8A6200" }}>
+              {statePgi202526.overall?.score?.toFixed(1) ?? "-"}
+              <Typography component="span" sx={{ fontSize: 12, color: "text.secondary" }}>
+                {" "}/ {statePgi202526.overall?.maxWeight ?? 1000}
+              </Typography>
+            </Typography>
+            <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11.5, fontWeight: 700, color: "#F0B429" }}>
+              {statePgi202526.overall?.grade || "-"} · {statePgi202526.overall?.percentAchieved?.toFixed(1) ?? 0}%
+              {pgiSummary.overall?.percentAchieved != null && statePgi202526.overall?.percentAchieved != null && (
+                <>
+                  {" "}({(statePgi202526.overall.percentAchieved - pgiSummary.overall.percentAchieved >= 0 ? "+" : "") +
+                    (Math.round((statePgi202526.overall.percentAchieved - pgiSummary.overall.percentAchieved) * 10) / 10)}
+                  pp)
+                </>
+              )}
+            </Typography>
+          </Box>
+        </Box>
       </Box>
     </Grid>
 
     <Grid size={{ xs: 12, sm: 8 }}>
       <Grid container spacing={1}>
-        {pgiSummary.domains.slice(0, 6).map((d) => (
-          <Grid size={{ xs: 6, md: 4 }} key={d.domain}>
-            <Box sx={{ p: 1.2 }}>
-              <Typography sx={{ fontSize: 11, color: "text.secondary", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {d.domain.split(" - ")[0].replace("Domain ", "D")}
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box sx={{ flex: 1, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
-                  <Box sx={{ width: `${Math.min(d.percentAchieved, 100)}%`, height: "100%", bgcolor: "#1976D2" }} />
-                </Box>
-                <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 700, width: 34 }}>
-                  {d.percentAchieved.toFixed(0)}%
+        {pgiSummary.domains.slice(0, 6).map((d) => {
+          const d2526 = statePgi202526.domains.find((x) => x.domain === d.domain);
+          return (
+            <Grid size={{ xs: 6, md: 4 }} key={d.domain}>
+              <Box sx={{ p: 1.2 }}>
+                <Typography sx={{ fontSize: 11, color: "text.secondary", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {d.domain.split(" - ")[0].replace("Domain ", "D")}
                 </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box sx={{ flex: 1, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
+                    <Box sx={{ width: `${Math.min(d.percentAchieved, 100)}%`, height: "100%", bgcolor: colors.navyLight }} />
+                  </Box>
+                  <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 700, width: 66, textAlign: "right" }}>
+                    {d.percentAchieved.toFixed(0)}% (24-25)
+                  </Typography>
+                </Box>
+                {d2526 && (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.3 }}>
+                    <Box sx={{ flex: 1, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
+                      <Box sx={{ width: `${Math.min(d2526.percentAchieved, 100)}%`, height: "100%", bgcolor: colors.gold }} />
+                    </Box>
+                    <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 700, width: 66, textAlign: "right", color: "#8A6200" }}>
+                      {d2526.percentAchieved.toFixed(0)}% (25-26)
+                    </Typography>
+                  </Box>
+                )}
               </Box>
-            </Box>
-          </Grid>
-        ))}
+            </Grid>
+          );
+        })}
       </Grid>
     </Grid>
   </Grid>
 </Paper>
 
-<PGIRankingChart data={pgiTableData} allData={pgiTableDataAll} />
+<PGIRankingChart
+  data={pgiTableData}
+  allData={pgiTableDataAll}
+  data2526={pgiTableData2526}
+  allData2526={pgiTableDataAll2526}
+/>
 
-<PGITable data={pgiTableData} allData={pgiTableDataAll} />
+<PGITable
+  data={pgiTableData}
+  allData={pgiTableDataAll}
+  data2526={pgiTableData2526}
+  allData2526={pgiTableDataAll2526}
+/>
 
 {/* SAT — Student Assessment Test */}
 <Box mt={5} mb={2}>
-  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1.5 }}>
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-      <Box sx={{ width: 4, height: 26, borderRadius: 2, bgcolor: "#6A1B9A" }} />
-      <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: "#16233B" }}>
-        📝 SAT — Student Assessment Test
-      </Typography>
-    </Box>
-
-    <DropdownFilter
-      minWidth={160}
-      value={satSemester}
-      onChange={(e) => setSatSemester(e.target.value)}
-      options={[
-        { value: "sem2", label: "Semester 2" },
-        { value: "sem1", label: "Semester 1" },
-      ]}
-    />
+  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+    <Box sx={{ width: 4, height: 26, borderRadius: 2, bgcolor: "#6A1B9A" }} />
+    <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: "#16233B" }}>
+      📝 SAT — Student Assessment Test
+    </Typography>
   </Box>
   <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.5, ml: 2.5 }}>
-    District-wise SAT ({satSemester === "sem1" ? "Semester 1" : "Semester 2"}) performance, plus Semester 1 vs Semester 2 comparison below · filtered by the same District selector above
+    District-wise SAT performance — Semester 1 vs Semester 2, plus the full comparison below · filtered by the same District selector above
   </Typography>
 </Box>
 
@@ -921,22 +967,33 @@ const satSubjectComparisonChartData = (() => {
     <Grid size={{ xs: 12, sm: 4 }}>
       <Box sx={{ p: 2, borderRadius: 2, bgcolor: "#F5F6FA", textAlign: "center", height: "100%" }}>
         <Typography sx={{ fontSize: 12, color: "text.secondary" }}>STATE AVERAGE SCORE</Typography>
-        <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 28, color: "#0F172A" }}>
-          {satSummary.stateAverage.toFixed(1)}
-          <Typography component="span" sx={{ fontSize: 14, color: "text.secondary" }}>
-            {" "}%
-          </Typography>
-        </Typography>
-        <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, fontWeight: 700, color: "#6A1B9A" }}>
-          {satSummary.totalDistricts} Districts Covered
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.4, mt: 0.5 }}>
+          <Box>
+            <Typography sx={{ fontSize: 10.5, color: "text.secondary", fontWeight: 600 }}>Semester 1</Typography>
+            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: colors.navyLight }}>
+              {satSummarySem1.stateAverage.toFixed(1)}
+              <Typography component="span" sx={{ fontSize: 12, color: "text.secondary" }}> %</Typography>
+            </Typography>
+          </Box>
+          <Box sx={{ borderTop: "1px dashed #D8DCE6", pt: 0.6, mt: 0.2 }}>
+            <Typography sx={{ fontSize: 10.5, color: "text.secondary", fontWeight: 600 }}>Semester 2</Typography>
+            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: "#8A6200" }}>
+              {satSummarySem2.stateAverage.toFixed(1)}
+              <Typography component="span" sx={{ fontSize: 12, color: "text.secondary" }}> %</Typography>
+            </Typography>
+          </Box>
+        </Box>
+        <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, fontWeight: 700, color: "#6A1B9A", mt: 0.8 }}>
+          {(satSummarySem2.totalDistricts || satSummarySem1.totalDistricts)} Districts Covered
         </Typography>
       </Box>
     </Grid>
 
     <Grid size={{ xs: 12, sm: 8 }}>
       <Grid container spacing={1}>
-        {satGradeWise.grades.map((grade) => {
-          const avg = satSummary.gradeAverages.find((g) => g.grade === grade)?.average || 0;
+        {[...new Set([...satGradeWiseSem1.grades, ...satGradeWiseSem2.grades])].map((grade) => {
+          const avgSem1 = satSummarySem1.gradeAverages.find((g) => g.grade === grade)?.average || 0;
+          const avgSem2 = satSummarySem2.gradeAverages.find((g) => g.grade === grade)?.average || 0;
           return (
             <Grid size={{ xs: 6, md: 4 }} key={grade}>
               <Box sx={{ p: 1.2 }}>
@@ -945,10 +1002,18 @@ const satSubjectComparisonChartData = (() => {
                 </Typography>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Box sx={{ flex: 1, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
-                    <Box sx={{ width: `${Math.min(avg, 100)}%`, height: "100%", bgcolor: "#6A1B9A" }} />
+                    <Box sx={{ width: `${Math.min(avgSem1, 100)}%`, height: "100%", bgcolor: colors.navyLight }} />
                   </Box>
-                  <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 700, width: 34 }}>
-                    {avg.toFixed(0)}%
+                  <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10.5, fontWeight: 700, width: 68, textAlign: "right" }}>
+                    {avgSem1.toFixed(0)}% (Sem1)
+                  </Typography>
+                </Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.3 }}>
+                  <Box sx={{ flex: 1, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
+                    <Box sx={{ width: `${Math.min(avgSem2, 100)}%`, height: "100%", bgcolor: colors.gold }} />
+                  </Box>
+                  <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10.5, fontWeight: 700, width: 68, textAlign: "right", color: "#8A6200" }}>
+                    {avgSem2.toFixed(0)}% (Sem2)
                   </Typography>
                 </Box>
               </Box>

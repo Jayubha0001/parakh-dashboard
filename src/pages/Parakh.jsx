@@ -10,11 +10,13 @@ import ContextualSummaryCards from "../components/ContextualSummaryCards";
 import DistrictFilterBar from "../components/DistrictFilterBar";
 import ActionItemsQueue from "../components/ActionItemsQueue";
 import NationalBenchmarkPanel from "../components/NationalBenchmarkPanel";
+import PageSnapshotPanel from "../components/PageSnapshotPanel";
 import { PARAKHCompetencySection } from "../components/DistrictDeepDive";
 import { isPriorityDistrict, PRIORITY_DISTRICTS } from "../utils/priorityDistricts";
 
 import {
   loadExcel,
+  getSheetData,
   getSubjectHeatmap,
   getGenderComparison,
   getLocationComparison,
@@ -50,11 +52,13 @@ const PARAKH = () => {
   const [district, setDistrict] = useState("All");
   const [priorityOnly, setPriorityOnly] = useState(false);
   const [competencies, setCompetencies] = useState(null);
+  const [overall, setOverall] = useState([]);
 
   useEffect(() => {
     async function fetchData() {
       const workbook = await loadExcel();
 
+      setOverall(getSheetData(workbook, "Dashboard_PARAKH"));
       setSubject(getSubjectHeatmap(workbook));
       setGender(getGenderComparison(workbook));
       setLocation(getLocationComparison(workbook));
@@ -118,6 +122,60 @@ const PARAKH = () => {
   return (
     <DashboardLayout>
       <Header />
+
+      {overall.length > 0 && (() => {
+        const dataByDistrict = Object.fromEntries(overall.map((d) => [d.District, (d.Overall ?? 0) * 100]));
+        const priorityRows = overall.filter((d) => isPriorityDistrict(d.District));
+        const otherRows = overall.filter((d) => !isPriorityDistrict(d.District));
+        const avgOf = (rows, col) => {
+          const vals = rows.map((d) => (d[col] ?? null)).filter((v) => typeof v === "number");
+          return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length) * 100 : null;
+        };
+        const compareData = [
+          {
+            label: "PARAKH",
+            Priority: avgOf(priorityRows, "Overall") != null ? Number(avgOf(priorityRows, "Overall").toFixed(1)) : null,
+            Other: avgOf(otherRows, "Overall") != null ? Number(avgOf(otherRows, "Overall").toFixed(1)) : null,
+          },
+        ];
+        const breakdownData = ["Foundational", "Preparatory", "Middle"]
+          .filter((stage) => overall.some((d) => typeof d[stage] === "number"))
+          .map((stage) => ({
+            label: stage,
+            Priority: Math.round(avgOf(priorityRows, stage) ?? 0),
+            Other: Math.round(avgOf(otherRows, stage) ?? 0),
+          }));
+        const priorityList = [...priorityRows]
+          .sort((a, b) => (b.Overall ?? 0) - (a.Overall ?? 0))
+          .map((d) => ({ District: d.District, Value: (d.Overall ?? 0) * 100 }));
+        const stateAvg =
+          overall.length > 0
+            ? (overall.reduce((s, d) => s + (d.Overall ?? 0), 0) / overall.length) * 100
+            : null;
+        const sortedByOverall = [...overall].sort((a, b) => (b.Overall ?? 0) - (a.Overall ?? 0));
+
+        return (
+          <PageSnapshotPanel
+            title="PARAKH — District Snapshot"
+            metricLabel="PARAKH"
+            district={district}
+            setDistrict={setDistrict}
+            districts={overall.map((d) => d.District)}
+            priorityOnly={priorityOnly}
+            dataByDistrict={dataByDistrict}
+            totalDistricts={overall.length}
+            priorityCount={priorityRows.length}
+            otherCount={otherRows.length}
+            compareData={compareData}
+            breakdownTitle="PARAKH — Stage-wise Avg (%)"
+            breakdownData={breakdownData}
+            priorityListTitle="⭐ Priority Districts — PARAKH Performance"
+            priorityList={priorityList}
+            stateAvg={stateAvg}
+            rankOf={(d) => sortedByOverall.findIndex((r) => r.District === d) + 1}
+          />
+        );
+      })()}
 
       <DistrictFilterBar
         district={district}
