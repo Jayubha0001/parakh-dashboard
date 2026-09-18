@@ -48,40 +48,6 @@ const ExecutiveOverviewPanel = ({
         { name: "Other", value: otherParakh.length || 23 },
       ];
 
-  const compareData = [
-    { metric: "PARAKH", Priority: avgOf(priorityParakh, "Score"), Other: avgOf(otherParakh, "Score") },
-    { metric: "SAT", Priority: avgOf(prioritySat, "Combined"), Other: avgOf(otherSat, "Combined") },
-    { metric: "PGI-D", Priority: avgOf(priorityPgi, "PercentAchieved"), Other: avgOf(otherPgi, "PercentAchieved") },
-  ].map((r) => ({
-    ...r,
-    Priority: r.Priority != null ? Number(r.Priority.toFixed(1)) : null,
-    Other: r.Other != null ? Number(r.Other.toFixed(1)) : null,
-  }));
-
-  const allGrades = [...new Set(pgiRanking.map((d) => d.Grade).filter(Boolean))];
-  const gradeGroups = allGrades
-    .map((grade) => ({
-      grade,
-      Priority: priorityPgi.filter((d) => d.Grade === grade).length,
-      Other: otherPgi.filter((d) => d.Grade === grade).length,
-    }))
-    .filter((g) => g.Priority > 0 || g.Other > 0)
-    .sort((a, b) => b.Priority + b.Other - (a.Priority + a.Other));
-
-  const priorityList = [...priorityPgi].sort((a, b) => b.PercentAchieved - a.PercentAchieved);
-
-  // When a single district is picked (map click or the dropdown above),
-  // every widget in this panel switches from "Priority vs Other" to that
-  // district's own numbers vs the state average — the whole panel follows
-  // the one filter instead of only the map reacting to it.
-  const isSingleDistrict = district !== "All";
-  const selectedPgi = pgiRanking.find((d) => d.District === district);
-  const selectedParakh = parakhData.find((d) => d.District === district);
-  const selectedSat = satCombined.find((d) => d.District === district);
-  const selectedGsqac = goiData.districtGSQAC.find((d) => d.District === district)?.["Avg GSQAC% 2024-25"];
-  const pgiRankSorted = [...pgiRanking].sort((a, b) => b.PercentAchieved - a.PercentAchieved);
-  const selectedRank = pgiRankSorted.findIndex((d) => d.District === district) + 1;
-
   // Metric switcher for the bubble map — PARAKH / PGI-D / SAT scores are
   // all already on this page; GSQAC (PM Shri) is a static import since
   // Dashboard doesn't otherwise load it. Each option is a plain
@@ -104,20 +70,86 @@ const ExecutiveOverviewPanel = ({
     gsqac: { label: "GSQAC (PM Shri)", data: gsqacByDistrict },
   };
 
-  // District-focus versions of the comparison bar + grade split panels.
-  const stateAvgParakh = avgOf(parakhData, "Score");
-  const stateAvgSat = avgOf(satCombined, "Combined");
-  const stateAvgPgi = avgOf(pgiRanking, "PercentAchieved");
+  // Every other widget in this panel — the comparison bar, the split
+  // chart, and the priority-district list — now follows the SAME
+  // metric toggle the map uses, instead of the comparison bar always
+  // showing all three domains at once and the split chart always being
+  // PGI-D's grades regardless of what's selected above.
+  const activeRows = {
+    parakh: parakhData.map((d) => ({ District: d.District, value: d.Score })),
+    pgi: pgiRanking.map((d) => ({ District: d.District, value: d.PercentAchieved, grade: d.Grade })),
+    sat: satCombined.map((d) => ({ District: d.District, value: d.Combined })),
+    gsqac: goiData.districtGSQAC.map((d) => ({ District: d.District, value: d["Avg GSQAC% 2024-25"] })),
+  }[mapMetric] || [];
 
+  const activePriorityRows = activeRows.filter((d) => isPriorityDistrict(d.District));
+  const activeOtherRows = activeRows.filter((d) => !isPriorityDistrict(d.District));
+  const activeMetricLabel = MAP_METRICS[mapMetric].label;
+
+  const compareData = [
+    {
+      metric: activeMetricLabel,
+      Priority: avgOf(activePriorityRows, "value") != null ? Number(avgOf(activePriorityRows, "value").toFixed(1)) : null,
+      Other: avgOf(activeOtherRows, "value") != null ? Number(avgOf(activeOtherRows, "value").toFixed(1)) : null,
+    },
+  ];
+
+  // PGI-D already has real grade labels (Prachesta-1, Akanshi-1, …); the
+  // other three metrics don't, so they get a High/71%+ · Mid/51-70% ·
+  // Low/<51% tier split instead — the same score bands used elsewhere in
+  // the app (scoreColor) rather than inventing a new scale.
+  const tierOf = (pct) => {
+    if (pct == null) return null;
+    if (pct >= 71) return "High";
+    if (pct >= 51) return "Mid";
+    return "Low";
+  };
+
+  const gradeGroups =
+    mapMetric === "pgi"
+      ? [...new Set(pgiRanking.map((d) => d.Grade).filter(Boolean))]
+          .map((grade) => ({
+            grade,
+            Priority: priorityPgi.filter((d) => d.Grade === grade).length,
+            Other: otherPgi.filter((d) => d.Grade === grade).length,
+          }))
+          .filter((g) => g.Priority > 0 || g.Other > 0)
+          .sort((a, b) => b.Priority + b.Other - (a.Priority + a.Other))
+      : ["High", "Mid", "Low"]
+          .map((grade) => ({
+            grade,
+            Priority: activePriorityRows.filter((d) => tierOf(d.value) === grade).length,
+            Other: activeOtherRows.filter((d) => tierOf(d.value) === grade).length,
+          }))
+          .filter((g) => g.Priority > 0 || g.Other > 0);
+
+  const priorityList = [...activePriorityRows].sort((a, b) => b.value - a.value);
+
+  // When a single district is picked (map click or the dropdown above),
+  // every widget in this panel switches from "Priority vs Other" to that
+  // district's own numbers vs the state average — the whole panel follows
+  // the one filter instead of only the map reacting to it.
+  const isSingleDistrict = district !== "All";
+  const selectedPgi = pgiRanking.find((d) => d.District === district);
+  const selectedParakh = parakhData.find((d) => d.District === district);
+  const selectedSat = satCombined.find((d) => d.District === district);
+  const selectedGsqac = goiData.districtGSQAC.find((d) => d.District === district)?.["Avg GSQAC% 2024-25"];
+  const pgiRankSorted = [...pgiRanking].sort((a, b) => b.PercentAchieved - a.PercentAchieved);
+  const selectedRank = pgiRankSorted.findIndex((d) => d.District === district) + 1;
+  const selectedActive = activeRows.find((d) => d.District === district);
+
+  // District-focus version of the comparison bar — now also just the
+  // selected metric (District vs State Avg), matching the "All Districts"
+  // view instead of always listing PARAKH/SAT/PGI-D side by side
+  // regardless of what's picked above.
+  const stateAvgActive = avgOf(activeRows, "value");
   const districtCompareData = [
-    { metric: "PARAKH", District: selectedParakh?.Score, "State Avg": stateAvgParakh },
-    { metric: "SAT", District: selectedSat?.Combined, "State Avg": stateAvgSat },
-    { metric: "PGI-D", District: selectedPgi?.PercentAchieved, "State Avg": stateAvgPgi },
-  ].map((r) => ({
-    ...r,
-    District: r.District != null ? Number(r.District.toFixed(1)) : null,
-    "State Avg": r["State Avg"] != null ? Number(r["State Avg"].toFixed(1)) : null,
-  }));
+    {
+      metric: activeMetricLabel,
+      District: selectedActive?.value != null ? Number(selectedActive.value.toFixed(1)) : null,
+      "State Avg": stateAvgActive != null ? Number(stateAvgActive.toFixed(1)) : null,
+    },
+  ];
 
   return (
     <Box
@@ -303,7 +335,7 @@ const ExecutiveOverviewPanel = ({
             the state average once one is picked. */}
         <Grid size={{ xs: 12, sm: 6, md: 3 }} sx={{ borderLeft: { md: "1px solid rgba(255,255,255,0.1)" }, pl: { md: 2.5 } }}>
           <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", mb: 1 }}>
-            {isSingleDistrict ? `${district} vs State Average` : "Avg Score — Priority vs Other"}
+            {isSingleDistrict ? `${district} vs State Average` : `Avg ${activeMetricLabel} Score — Priority vs Other`}
           </Typography>
           <ResponsiveContainer width="100%" height={175}>
             <BarChart data={isSingleDistrict ? districtCompareData : compareData} margin={{ left: -18, right: 8 }}>
@@ -330,7 +362,7 @@ const ExecutiveOverviewPanel = ({
             district's profile card (rank, grade, GSQAC, priority status). */}
         <Grid size={{ xs: 12, sm: 6, md: 3 }} sx={{ borderLeft: { md: "1px solid rgba(255,255,255,0.1)" }, pl: { md: 2.5 } }}>
           <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", mb: 1 }}>
-            {isSingleDistrict ? `${district} — Profile` : "PGI-D 2025-26 — Grade Split"}
+            {isSingleDistrict ? `${district} — Profile` : `${activeMetricLabel} — ${mapMetric === "pgi" ? "Grade" : "Tier"} Split`}
           </Typography>
           {isSingleDistrict ? (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.7 }}>
@@ -364,7 +396,7 @@ const ExecutiveOverviewPanel = ({
             them) gets a brighter highlight so it's easy to spot. */}
         <Grid size={{ xs: 12, md: 12 }} sx={{ borderTop: "1px solid rgba(255,255,255,0.1)", pt: 2, mt: 0.5 }}>
           <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", mb: 1 }}>
-            ⭐ The 10 Priority Districts (PGI-D 25-26)
+            ⭐ The 10 Priority Districts ({activeMetricLabel})
           </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.8 }}>
             {priorityList.map((d) => {
@@ -389,7 +421,7 @@ const ExecutiveOverviewPanel = ({
                     {d.District}
                   </Typography>
                   <Typography sx={{ fontFamily: fontMono, fontSize: 11, fontWeight: 700, color: GOLD }}>
-                    {d.PercentAchieved.toFixed(1)}%
+                    {d.value != null ? `${d.value.toFixed(1)}%` : "—"}
                   </Typography>
                 </Box>
               );

@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis
 import { fontDisplay, fontMono } from "../theme/theme";
 import { isPriorityDistrict } from "../utils/priorityDistricts";
 import GujaratBubbleMap from "./GujaratBubbleMap";
+import { useLanguage } from "../i18n/LanguageContext";
 
 // Light/teal "Executive Snapshot" card — same structure as the dashboard's
 // dark navy+gold panel (map, coverage donut, Priority-vs-Other bar,
@@ -52,6 +53,7 @@ const PageSnapshotPanel = ({
   // instead of floating it as a second, separate card on the page.
   extraSection = null,
 }) => {
+  const { t } = useLanguage();
   const isSingleDistrict = district !== "All";
   const selectedValue = dataByDistrict[district];
   const selectedRank = isSingleDistrict ? rankOf(district) : null;
@@ -104,10 +106,10 @@ const PageSnapshotPanel = ({
         </Typography>
         <Typography sx={{ fontSize: 11.5, color: SLATE }}>
           {isSingleDistrict
-            ? `📍 Showing: ${district}`
+            ? `📍 ${district}`
             : priorityOnly
-            ? "⭐ Showing the 10 priority districts only"
-            : `⭐ Priority (${priorityCount}) vs Other (${otherCount}) districts, throughout`}
+            ? `⭐ ${t("priority_vs_other")} (${priorityCount})`
+            : `⭐ ${t("priority_vs_other")} (${priorityCount}) vs ${t("other_districts")} (${otherCount})`}
         </Typography>
       </Box>
 
@@ -129,7 +131,7 @@ const PageSnapshotPanel = ({
         {/* Coverage donut */}
         <Grid size={{ xs: 12, md: 3 }}>
           <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: INK, mb: 1 }}>
-            Districts Covered
+            {t("districts_covered")}
           </Typography>
           <Box sx={{ height: 190, position: "relative" }}>
             <ResponsiveContainer width="100%" height="85%">

@@ -2,6 +2,7 @@ import { Paper, TextField, MenuItem, Button, Box, ToggleButton } from "@mui/mate
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import StarIcon from "@mui/icons-material/Star";
 import { isPriorityDistrict } from "../utils/priorityDistricts";
+import { useLanguage } from "../i18n/LanguageContext";
 
 // A lightweight District-only filter (District dropdown) for pages that
 // show one row per district (PARAKH, PGI 2.0, Comparison) but don't have a
@@ -22,6 +23,7 @@ const DistrictFilterBar = ({
   priorityOnly = null,
   onPriorityOnlyChange = null,
 }) => {
+  const { t } = useLanguage();
   const sortedDistricts =
     districts.length <= 1
       ? districts
@@ -49,7 +51,7 @@ const DistrictFilterBar = ({
       >
         <TextField
           select
-          label="District"
+          label={t("district_label")}
           value={district}
           onChange={(e) => setDistrict(e.target.value)}
           size="small"
@@ -57,7 +59,7 @@ const DistrictFilterBar = ({
         >
           {sortedDistricts.map((d) => (
             <MenuItem key={d} value={d}>
-              {d === "All" ? "All Districts" : d}
+              {d === "All" ? t("all_districts") : d}
               {isPriorityDistrict(d) ? " ⭐" : ""}
             </MenuItem>
           ))}
@@ -70,7 +72,7 @@ const DistrictFilterBar = ({
             onClick={() => setDistrict("All")}
             sx={{ textTransform: "none", fontWeight: 600 }}
           >
-            Clear
+            {t("reset")}
           </Button>
         )}
 
@@ -93,7 +95,7 @@ const DistrictFilterBar = ({
             }}
           >
             <StarIcon fontSize="small" sx={{ color: priorityOnly ? "#F0B429" : undefined }} />
-            Priority Districts Only
+            {t("priority_districts_only")}
           </ToggleButton>
         )}
       </Paper>

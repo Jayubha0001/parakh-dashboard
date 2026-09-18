@@ -15,6 +15,7 @@ import {
   TableCell,
   Chip,
 } from "@mui/material";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const scoreColor = (pct) => {
   if (pct >= 71) return "#2E7D32";
@@ -53,6 +54,7 @@ export const PGIIndicatorSection = ({
   label = "2024-25",
   label2 = "2025-26",
 }) => {
+  const { t } = useLanguage();
   const groups = groupIndicatorsByCategory(indicators, domainSummary);
   const [selectedCategory, setSelectedCategory] = useState(groups[0]?.category || "");
 
@@ -112,7 +114,7 @@ export const PGIIndicatorSection = ({
         </Box>
       )}
 
-      <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 1.5 }}>Category</Typography>
+      <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 1.5 }}>{t("category")}</Typography>
 
       {groups.map((g) => {
         const pct = g.maxWeight ? (g.score / g.maxWeight) * 100 : 0;
@@ -140,10 +142,10 @@ export const PGIIndicatorSection = ({
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ bgcolor: "#F5F6FA" }}>
-                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Domain</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Indicator</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>{t("domain")}</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>{t("indicator")}</TableCell>
                     <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
-                      {indicators2ByIndNo ? label : "Score"}
+                      {indicators2ByIndNo ? label : t("score")}
                     </TableCell>
                     {indicators2ByIndNo && (
                       <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
@@ -169,7 +171,7 @@ export const PGIIndicatorSection = ({
                           {item.indicator}
                           {isWeak && (
                             <Chip
-                              label="Weak"
+                              label={t("weak")}
                               size="small"
                               sx={{ ml: 1, height: 18, fontSize: 10, fontWeight: 700, bgcolor: "#D32F2F", color: "#fff" }}
                             />
@@ -271,6 +273,7 @@ export const PGIIndicatorSection = ({
 // 45%, matching the Watch/Support line used everywhere else SAT % shows up
 // (SATHeatMapChart, WhatIfSimulator), unlike PGI-D's own 31% Akanshi line.
 export const SATLOBreakdownSection = ({ los = [] }) => {
+  const { t } = useLanguage();
   const subjects = [...new Set(los.map((l) => l.subject))];
   const groups = subjects.map((subject) => ({
     subject,
@@ -282,7 +285,7 @@ export const SATLOBreakdownSection = ({ los = [] }) => {
   if (los.length === 0) {
     return (
       <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
-        No Learning-Outcome level data available for this district.
+        {t("no_lo_data")}
       </Typography>
     );
   }
@@ -300,7 +303,7 @@ export const SATLOBreakdownSection = ({ los = [] }) => {
                 <Typography
                   sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, fontSize: 13, color: scoreColor(avgPct) }}
                 >
-                  Avg {avgPct.toFixed(1)}%
+                  {t("avg")} {avgPct.toFixed(1)}%
                 </Typography>
               </Box>
             </AccordionSummary>
@@ -309,10 +312,10 @@ export const SATLOBreakdownSection = ({ los = [] }) => {
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ bgcolor: "#F5F6FA" }}>
-                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>LO Code</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Learning Outcome</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>{t("lo_code")}</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>{t("learning_outcome")}</TableCell>
                     <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
-                      Score
+                      {t("score")}
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -328,7 +331,7 @@ export const SATLOBreakdownSection = ({ los = [] }) => {
                           {item.indicator}
                           {isWeak && (
                             <Chip
-                              label="Weak"
+                              label={t("weak")}
                               size="small"
                               sx={{ ml: 1, height: 18, fontSize: 10, fontWeight: 700, bgcolor: "#D32F2F", color: "#fff" }}
                             />
@@ -358,11 +361,10 @@ export const SATLOBreakdownSection = ({ los = [] }) => {
       {weakLOs.length > 0 && (
         <Box sx={{ mt: 2, p: 2.5, borderRadius: 2, bgcolor: "#FFFBEF", border: "1px dashed #F0B429" }}>
           <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 16, color: "#16233B", mb: 0.5 }}>
-            🎯 Action Points — Weakest Learning Outcomes ({weakLOs.length})
+            🎯 {t("action_points_weakest_los")} ({weakLOs.length})
           </Typography>
           <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 1.5 }}>
-            Every Learning Outcome below is under 45% — the specific SAT lines dragging this district's subject
-            scores down, weakest first.
+            {t("action_points_los_note")}
           </Typography>
 
           <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
@@ -370,11 +372,11 @@ export const SATLOBreakdownSection = ({ los = [] }) => {
               <Box component="li" key={i} sx={{ mb: 1.2 }}>
                 <Typography sx={{ fontSize: 13.5, color: "#16233B" }}>
                   <strong>{item.indicator}</strong>{" "}
-                  <span style={{ color: "#5B6B85", fontSize: 12 }}>({item.subject})</span> — currently{" "}
+                  <span style={{ color: "#5B6B85", fontSize: 12 }}>({item.subject})</span> — {t("currently")}{" "}
                   <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, color: "#B71C1C" }}>
                     {item.obtainedMarks.toFixed(1)} / {item.totalMarks} ({item.pct.toFixed(1)}%)
                   </span>
-                  . Needs a targeted push before the next assessment cycle.
+                  . {t("needs_targeted_push")}
                 </Typography>
               </Box>
             ))}
@@ -386,6 +388,7 @@ export const SATLOBreakdownSection = ({ los = [] }) => {
 };
 
 const SingleSubjectCompetencyTable = ({ data = [] }) => {
+  const { t } = useLanguage();
   const subject = data[0]?.subject;
   const avgDistrict = data.length ? data.reduce((s, r) => s + r.district, 0) / data.length : 0;
   const avgPct = avgDistrict * 100;
@@ -410,22 +413,22 @@ const SingleSubjectCompetencyTable = ({ data = [] }) => {
             color: scoreColor(avgPct),
           }}
         >
-          Avg {avgPct.toFixed(1)}%
+          {t("avg")} {avgPct.toFixed(1)}%
         </Typography>
       </Box>
 
       <Table size="small">
         <TableHead>
           <TableRow sx={{ bgcolor: "#F5F6FA" }}>
-            <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Competency</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>{t("competency")}</TableCell>
             <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
-              National %
+              {t("national_pct")}
             </TableCell>
             <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
-              District %
+              {t("district_pct")}
             </TableCell>
             <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>
-              Gap
+              {t("gap")}
             </TableCell>
           </TableRow>
         </TableHead>
@@ -442,7 +445,7 @@ const SingleSubjectCompetencyTable = ({ data = [] }) => {
                   {row.description}
                   {isWeak && (
                     <Chip
-                      label="Weak"
+                      label={t("weak")}
                       size="small"
                       sx={{ ml: 1, height: 18, fontSize: 10, fontWeight: 700, bgcolor: "#D32F2F", color: "#fff" }}
                     />
@@ -483,26 +486,25 @@ const SingleSubjectCompetencyTable = ({ data = [] }) => {
       {weakRows.length > 0 && (
         <Box sx={{ mt: 2, p: 2.5, borderRadius: 2, bgcolor: "#FFFBEF", border: "1px dashed #F0B429" }}>
           <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 16, color: "#16233B", mb: 0.5 }}>
-            🎯 Action Points — Weakest Competencies ({weakRows.length})
+            🎯 {t("action_points_weakest_competencies")} ({weakRows.length})
           </Typography>
           <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 1.5 }}>
-            Every {subject} competency below is either under 45% or at least 3 points behind the national benchmark
-            — in order from weakest to least-weak.
+            {t("action_points_competencies_note", { subject })}
           </Typography>
 
           <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
             {weakRows.map((row, i) => (
               <Box component="li" key={i} sx={{ mb: 1.2 }}>
                 <Typography sx={{ fontSize: 13.5, color: "#16233B" }}>
-                  <strong>{row.description}</strong> — currently{" "}
+                  <strong>{row.description}</strong> — {t("currently")}{" "}
                   <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, color: "#B71C1C" }}>
                     {row.districtPct.toFixed(1)}%
                   </span>{" "}
-                  vs national {(row.national * 100).toFixed(1)}%
+                  {t("vs_national")} {(row.national * 100).toFixed(1)}%
                   {row.gapPct <= -3 && (
                     <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, color: "#B71C1C" }}>
                       {" "}
-                      ({row.gapPct.toFixed(1)}% gap)
+                      ({row.gapPct.toFixed(1)}% {t("gap_suffix")})
                     </span>
                   )}
                   .
@@ -524,7 +526,8 @@ const SingleSubjectCompetencyTable = ({ data = [] }) => {
 // (Grade 3) — Mathematics") instead of a stage dropdown plus a
 // separate subject accordion to open every time.
 export const PARAKHCompetencySection = ({ competencies }) => {
-  const stageLabels = ["Foundational (Grade 3)", "Preparatory (Grade 6)", "Middle (Grade 9)"];
+  const { t } = useLanguage();
+  const stageLabels = [t("stage_foundational"), t("stage_preparatory"), t("stage_middle")];
   const stageData = [competencies.g3, competencies.g6, competencies.g9];
 
   const options = stageData.flatMap((data, stageIndex) => {
@@ -541,7 +544,7 @@ export const PARAKHCompetencySection = ({ competencies }) => {
 
   return (
     <Box>
-      <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 1.5 }}>Stage &amp; Subject</Typography>
+      <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 1.5 }}>{t("stage_and_subject")}</Typography>
 
       {/* Every stage+subject combo is its own expandable row, always in
           the DOM. On screen only the expanded row is open; the global
