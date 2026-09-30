@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "./i18n/LanguageContext";
+import { FeatureFlagsProvider } from "./config/FeatureFlagsContext";
 
 import Dashboard from "./pages/Dashboard";
 import PARAKH from "./pages/Parakh";
@@ -10,10 +11,14 @@ import PMShri from "./pages/PMShri";
 import Attendance from "./pages/Attendance";
 import Reports from "./pages/Reports";
 import LiveVisits from "./pages/LiveVisits";
+import DataDownload from "./pages/DataDownload";
+import KeyInsights from "./pages/KeyInsights";
+import Settings from "./pages/Settings";
 
 function App() {
   return (
     <LanguageProvider>
+      <FeatureFlagsProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -25,8 +30,12 @@ function App() {
           <Route path="/attendance" element={<Attendance />} />
           <Route path="/live-visits" element={<LiveVisits />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/data-download" element={<DataDownload />} />
+          <Route path="/insights" element={<KeyInsights />} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
       </BrowserRouter>
+      </FeatureFlagsProvider>
     </LanguageProvider>
   );
 }

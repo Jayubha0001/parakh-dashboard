@@ -80,6 +80,11 @@ const hashString = (s) => {
   return Math.abs(h);
 };
 
+const bandColorFor = (val, bands) => {
+  const hit = bands.find((b) => val >= b.min);
+  return hit ? hit.color : bands[bands.length - 1].color;
+};
+
 const paletteColorFor = (name) => PALETTE[hashString(name) % PALETTE.length];
 
 /**
@@ -109,6 +114,15 @@ const GujaratDistrictMap = ({
   priorityDistricts = [],
   variant = "choropleth",
   compact = false,
+  // Optional discrete colour bands, highest first:
+  // [{ min: 60, color: "#1B9E5A", label: "≥ 60%" }, ...]. When given, each
+  // district takes the colour of the first band its value reaches, and the
+  // gradient legend is replaced by a band legend.
+  bands = null,
+  // `bare` drops the Paper card + "Select District" heading so the map can
+  // sit inside another card.
+  bare = false,
+  hideLabels = false,
 }) => {
   const [hovered, setHovered] = useState(null);
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
@@ -170,23 +184,27 @@ const GujaratDistrictMap = ({
   return (
     <Paper
       elevation={0}
-      sx={{
-        p: 2.5,
-        borderRadius: 3,
-        border: "1px solid #E4E7F0",
-        position: "relative",
-      }}
+      sx={
+        bare
+          ? { p: 0, border: "none", bgcolor: "transparent", position: "relative" }
+          : {
+              p: 2.5,
+              borderRadius: 3,
+              border: "1px solid #E4E7F0",
+              position: "relative",
+            }
+      }
     >
       <Box
         sx={{
-          display: "flex",
+          display: bare && district === "All" ? "none" : "flex",
           alignItems: "center",
           justifyContent: "space-between",
           mb: 1,
         }}
       >
         <Typography sx={{ fontWeight: 700, fontSize: 15 }}>
-          Select District
+          {bare ? "" : "Select District"}
         </Typography>
 
         {district !== "All" && (
@@ -223,11 +241,13 @@ const GujaratDistrictMap = ({
 
             let fill = paletteColorFor(p.name); // colourful default (no metric)
             if (dataByDistrict && typeof val === "number") {
-              fill = interpolateColor(
-                maxVal > minVal ? (val - minVal) / (maxVal - minVal) : 0.5
-              );
+              fill = bands
+                ? bandColorFor(val, bands)
+                : interpolateColor(
+                    maxVal > minVal ? (val - minVal) / (maxVal - minVal) : 0.5
+                  );
             }
-            if (isSelected) fill = "#1565C0";
+            if (isSelected) fill = "#0B4F6C";
 
             const isPriority = yourName && priorityDistricts.includes(yourName);
 
@@ -322,7 +342,7 @@ const GujaratDistrictMap = ({
               placed at each shape's centroid (cx/cy from the boundary
               file). pointer-events "none" so they never block clicks on
               the path underneath them. */}
-          {!compact &&
+          {!compact && !hideLabels &&
             GUJARAT_DISTRICT_PATHS.map((p) => {
               const normName = normalize(p.name);
               const yourName = geoNameToYourName[normName];
@@ -385,7 +405,18 @@ const GujaratDistrictMap = ({
         )}
       </Box>
 
-      {dataByDistrict && (
+      {dataByDistrict && bands && (
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, mt: 1.5 }}>
+          {bands.map((b) => (
+            <Box key={b.label} sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+              <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: b.color }} />
+              <Typography sx={{ fontSize: 11.5, color: "text.secondary" }}>{b.label}</Typography>
+            </Box>
+          ))}
+        </Box>
+      )}
+
+      {dataByDistrict && !bands && (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1.5 }}>
           <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
             {metricLabel}

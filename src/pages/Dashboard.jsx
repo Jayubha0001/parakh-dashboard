@@ -37,7 +37,7 @@ import {
   LabelList,
 } from "recharts";
 
-import Header from "../components/Header";
+import DashboardHeroBanner, { DASHBOARD_KPI_ICONS } from "../components/DashboardHeroBanner";
 import DashboardLayout from "../components/DashboardLayout";
 import DistrictFilterBar from "../components/DistrictFilterBar";
 import PGITable from "../components/PGITable";
@@ -54,6 +54,7 @@ import {
   getStatePGISummary,
   getDistrictPGIRanking,
   getSubjectHeatmap,
+  getSATWeakestLOs,
   getGenderComparison,
   getLocationComparison,
   getManagementComparison,
@@ -77,8 +78,10 @@ import {
   getSATDistrictLOBreakdown,
 } from "../services/dataService";
 import { PGIIndicatorSection, PARAKHCompetencySection, SATLOBreakdownSection } from "../components/DistrictDeepDive";
-import GujaratBubbleMap from "../components/GujaratBubbleMap";
-import ExecutiveOverviewPanel from "../components/ExecutiveOverviewPanel";
+import DashboardOverviewGrid from "../components/DashboardOverviewGrid";
+import { levelsByDistrict } from "../utils/overviewValues";
+import OverviewCompare from "../components/OverviewCompare";
+import OverviewFilters from "../components/OverviewFilters";
 import statePgi202526 from "../data/statePgi202526.json";
 import pgiD202526 from "../data/pgiD202526.json";
 import districtPgiIndicators202526 from "../data/districtPgiIndicators202526.json";
@@ -122,8 +125,15 @@ const Dashboard = () => {
   // (SAT Semester toggle removed — the summary box below now always
   // shows both semesters, so this state no longer drives anything.)
 
+  const [satWeakLOs, setSatWeakLOs] = useState([]);
   const [district, setDistrict] = useState("All");
   const [priorityOnly, setPriorityOnly] = useState(false);
+
+  // Overview-grid filters (Academic Year / Assessment / Grade). District
+  // reuses the page-level `district` state above so the whole page follows.
+  const [ovYear, setOvYear] = useState("2025-26");
+  const [ovAssessment, setOvAssessment] = useState("PGI-D");
+  const [ovGrade, setOvGrade] = useState("All Grades");
 
   const [stage, setStage] = useState("Overall");
 
@@ -166,6 +176,7 @@ const Dashboard = () => {
       setAllDistrictNames(getAllDistrictNames(workbook));
       setAllDistrictItems(getAllDistrictActionItems(workbook));
 
+      setSatWeakLOs(getSATWeakestLOs(workbook, 4).map((x) => ({ label: `${x.subject} · ${x.loCode}`, note: x.indicator, pct: x.PercentAchieved })));
       setSatRankingSem2(getSATDistrictRanking(workbook));
       setSatGradeWiseSem2(getSATGradeWise(workbook));
       setSatSummarySem2(getSATStateSummary(workbook));
@@ -634,457 +645,87 @@ const satSubjectComparisonChartData = (() => {
   // Return
   // -----------------------------
 
+
+  const ovLevels = levelsByDistrict({ assessment: ovAssessment, year: ovYear, grade: ovGrade, pgiRanking2425: pgiRanking, parakhData, satComparison: satSemesterComparison, satGradeWise: satGradeWiseSem2, satGradeWiseSem1 });
+
   return (
         <DashboardLayout>
 
-      <Header />
+      <DashboardHeroBanner
+        filters={
+          <OverviewFilters
+            year={ovYear}
+            setYear={setOvYear}
+            assessment={ovAssessment}
+            setAssessment={setOvAssessment}
+            grade={ovGrade}
+            setGrade={setOvGrade}
+            district={district}
+            setDistrict={setDistrict}
+            districtOptions={[...districts.slice(1)].sort((x, y) => x.localeCompare(y))}
+            satGrades={satGradeWiseSem2.grades}
+          />
+        }
+        kpis={[
+          { label: "Total Districts", value: districts.length - 1 || 33, icon: DASHBOARD_KPI_ICONS.districts },
+          { label: "Priority Districts", value: PRIORITY_DISTRICTS.length, icon: DASHBOARD_KPI_ICONS.priority },
+          { label: "Other Districts", value: (districts.length - 1 || 33) - PRIORITY_DISTRICTS.length, icon: DASHBOARD_KPI_ICONS.school },
+          { label: "Programs Tracked", value: 4, icon: DASHBOARD_KPI_ICONS.programs },
+          (() => {
+            const sel = district !== "All" ? district : null;
+            const both = ovAssessment === "PGI-D" && ovYear === "Both Years";
+            if (sel) {
+              const v = ovLevels.level[sel];
+              return { label: `${sel} · ${ovAssessment}${ovAssessment === "PGI-D" ? ` (${both ? "2025-26" : ovYear})` : ""}`, value: v != null ? `${v.toFixed(1)}%` : "—", icon: DASHBOARD_KPI_ICONS.pgi };
+            }
+            if (ovAssessment === "PGI-D") {
+              const src = ovYear === "2024-25" ? pgiSummary.overall : statePgi202526.overall;
+              return { label: `PGI-D Score (${ovYear === "2024-25" ? ovYear : "2025-26"})`, value: src?.score != null ? `${src.score.toFixed(1)}/1000` : "—", icon: DASHBOARD_KPI_ICONS.pgi };
+            }
+            const vals = Object.values(ovLevels.level);
+            const av = vals.length ? vals.reduce((x, y) => x + y, 0) / vals.length : null;
+            return { label: `${ovAssessment} State Avg`, value: av != null ? `${av.toFixed(1)}%` : "—", icon: DASHBOARD_KPI_ICONS.pgi };
+          })(),
+          (() => {
+            const sem = ovAssessment === "SAT" ? ovYear : "Sem 2";
+            const lv = levelsByDistrict({ assessment: "SAT", year: sem, grade: "All Grades", satComparison: satSemesterComparison }).level;
+            const sel = district !== "All" ? district : null;
+            const vals = Object.values(lv);
+            const v = sel ? lv[sel] : vals.length ? vals.reduce((x, y) => x + y, 0) / vals.length : null;
+            return { label: `SAT ${sel || "State Avg"} (${sem})`, value: v != null ? `${v.toFixed(1)}%` : "—", icon: DASHBOARD_KPI_ICONS.sat };
+          })(),
+        ]}
+      />
 
-      {/* The PARAKH / PGI-D headline KPI rows used to live here as gradient
-          cards, but they duplicated numbers the Executive Snapshot panel
-          below already covers (state average, top/bottom districts,
-          priority split) — removed so the snapshot panel gets the space
-          and reads as the primary "first thing you see" block instead of
-          competing with a KPI strip above it. */}
-
-      <ExecutiveOverviewPanel
-        parakhData={stateWideChartData}
-        pgiRanking={pgiD202526.ranking}
-        satData={satSemesterComparison}
-        priorityOnly={priorityOnly}
-        districts={districts}
+      <DashboardOverviewGrid
+        year={ovYear}
+        assessment={ovAssessment}
+        grade={ovGrade}
         district={district}
         setDistrict={setDistrict}
+        districts={districts}
+        parakhData={parakhData}
+        pgiRanking2425={pgiRanking}
+        satComparison={satSemesterComparison}
+        satGradeWise={satGradeWiseSem2}
+        satGradeWiseSem1={satGradeWiseSem1}
+        pgiState2425={pgiSummary.overall}
       />
+
 
 {/* District Ranking */}
 
-<DistrictFilterBar
-  district={district}
-  setDistrict={setDistrict}
-  districts={dropdownDistricts}
-  priorityOnly={priorityOnly}
-  onPriorityOnlyChange={(v) => {
-    setPriorityOnly(v);
-    if (v && district !== "All" && !isPriorityDistrict(district)) setDistrict("All");
-  }}
-/>
-
-<Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 2.5, mb: 1 }}>
-  <Box sx={{ width: 4, height: 26, borderRadius: 2, bgcolor: "#1976D2" }} />
-  <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: "#16233B" }}>
-    📚 PARAKH — Learning Outcomes
-  </Typography>
-</Box>
-<Typography sx={{ fontSize: 13, color: "text.secondary", mb: 2 }}>
-  District-wise mastery by grade band
-</Typography>
-
-<NationalBenchmarkPanel
-  district={district}
-  subjectData={subjectHeatmap.data}
-  genderData={genderData.data}
-  locationData={locationData.data}
-  managementData={managementData.data}
-  socialGroupData={socialGroupData.data}
-/>
-
-<Paper
-  elevation={0}
-  sx={{
-    p: 2.5,
-    borderRadius: 3,
-    mb: 2,
-    mt: 1,
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 2,
-    border: "1px solid #E4E7F0",
-    bgcolor: "#FBFBFE",
-  }}
->
-
-  <Typography
-    sx={{
-      fontFamily: '"Fraunces", serif',
-      fontWeight: 600,
-      fontSize: 17,
-      color: "#16233B",
-    }}
-  >
-    District Ranking Explorer
-  </Typography>
-
-  <Box sx={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
-
-    <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12.5, fontWeight: 600, color: "#2E7D32" }}>
-      ● HIGH ≥45%
-    </Typography>
-
-    <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12.5, fontWeight: 600, color: "#FB8C00" }}>
-      ● MEDIUM 40–44.99%
-    </Typography>
-
-    <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12.5, fontWeight: 600, color: "#D32F2F" }}>
-      ● LOW &lt;40%
-    </Typography>
-
-  </Box>
-
-</Paper>
-
-
-<Box mt={2}>
-
-  <Card elevation={3}>
-
-    <CardContent>
-
-<Typography
-  sx={{
-    fontFamily: '"Fraunces", serif',
-    fontWeight: 600,
-    fontSize: 18,
-    mb: 2,
-    color: "#16233B",
-  }}
->
-  District-wise Overall Performance (%)
-</Typography>
-
-           <ResponsiveContainer
-        width="100%"
-        height={420}
-      >
-
-        <BarChart
-          data={barChartData}
-          margin={{
-            top: 20,
-            right: 30,
-            left: 20,
-            bottom: 100,
-          }}
-        >
-
-          <CartesianGrid strokeDasharray="3 3" />
-
-          <XAxis
-            dataKey="District"
-            angle={-45}
-            textAnchor="end"
-            interval={0}
-            tick={{ fontSize: 10 }}
-          />
-
-          <YAxis domain={[0, 100]} />
-
-          <Tooltip
-            formatter={(value) => `${value}%`}
-          />
-
-         <Bar
-  dataKey="Score"
-  barSize={20}
-  radius={[6, 6, 0, 0]}
->
-
-  {barChartData.map((entry, index) => (
-
-    <Cell
-      key={index}
-      fill={
-        entry.isAverage
-          ? "#0F172A"   // Gujarat State Average - navy, visually distinct
-          : entry.Score >= 45
-          ? "#2E7D32"   // Green
-          : entry.Score >= 40
-          ? "#FB8C00"   // Orange
-          : "#D32F2F"   // Red
-      }
-    />
-
-  ))}
-
-  <LabelList
-    dataKey="Score"
-    position="top"
-    formatter={(value) => `${value}%`}
-    style={{
-      fontSize: 11,
-      fontWeight: "bold",
-      fill: "#333",
-    }}
-  />
-          </Bar>
-
-        </BarChart>
-
-      </ResponsiveContainer>
-
-    </CardContent>
-
-  </Card>
-
-</Box>
-
-<DistrictTable
-  data={districtTableData}
-/>
-
-{/* PGI 2.0 — District Explorer */}
-<Box mt={5} mb={2}>
-  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-      <Box sx={{ width: 4, height: 26, borderRadius: 2, bgcolor: "#F0B429" }} />
-      <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: "#16233B" }}>
-        🏛️ PGI 2.0 — Governance Score
-      </Typography>
-    </Box>
-
-    <Button
-      component={RouterLink}
-      to="/pgi"
-      endIcon={<ArrowForwardIcon />}
-      sx={{ textTransform: "none", fontWeight: 600 }}
-    >
-      View full PGI 2.0 Dashboard
-    </Button>
-  </Box>
-  <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.5, ml: 2.5 }}>
-    Filtered by the same District selector above · out of 1000 (state) / 600 (district)
-  </Typography>
-</Box>
-
-<Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", p: 3, mb: 2 }}>
-  <Grid container spacing={2}>
-    <Grid size={{ xs: 12, sm: 4 }}>
-      <Box sx={{ p: 2, borderRadius: 2, bgcolor: "#F5F6FA", textAlign: "center", height: "100%" }}>
-        <Typography sx={{ fontSize: 12, color: "text.secondary" }}>STATE OVERALL SCORE</Typography>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.4, mt: 0.5 }}>
-          <Box>
-            <Typography sx={{ fontSize: 10.5, color: "text.secondary", fontWeight: 600 }}>2024-25</Typography>
-            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: colors.navyLight }}>
-              {pgiSummary.overall?.score?.toFixed(1) ?? "-"}
-              <Typography component="span" sx={{ fontSize: 12, color: "text.secondary" }}>
-                {" "}/ {pgiSummary.overall?.maxWeight ?? 1000}
-              </Typography>
-            </Typography>
-            <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11.5, fontWeight: 700, color: colors.navyLight }}>
-              {pgiSummary.overall?.grade || "-"} · {pgiSummary.overall?.percentAchieved?.toFixed(1) ?? 0}%
-            </Typography>
-          </Box>
-          <Box sx={{ borderTop: "1px dashed #D8DCE6", pt: 0.6, mt: 0.2 }}>
-            <Typography sx={{ fontSize: 10.5, color: "text.secondary", fontWeight: 600 }}>2025-26</Typography>
-            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: "#8A6200" }}>
-              {statePgi202526.overall?.score?.toFixed(1) ?? "-"}
-              <Typography component="span" sx={{ fontSize: 12, color: "text.secondary" }}>
-                {" "}/ {statePgi202526.overall?.maxWeight ?? 1000}
-              </Typography>
-            </Typography>
-            <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11.5, fontWeight: 700, color: "#F0B429" }}>
-              {statePgi202526.overall?.grade || "-"} · {statePgi202526.overall?.percentAchieved?.toFixed(1) ?? 0}%
-              {pgiSummary.overall?.percentAchieved != null && statePgi202526.overall?.percentAchieved != null && (
-                <>
-                  {" "}({(statePgi202526.overall.percentAchieved - pgiSummary.overall.percentAchieved >= 0 ? "+" : "") +
-                    (Math.round((statePgi202526.overall.percentAchieved - pgiSummary.overall.percentAchieved) * 10) / 10)}
-                  pp)
-                </>
-              )}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-    </Grid>
-
-    <Grid size={{ xs: 12, sm: 8 }}>
-      <Grid container spacing={1}>
-        {pgiSummary.domains.slice(0, 6).map((d) => {
-          const d2526 = statePgi202526.domains.find((x) => x.domain === d.domain);
-          return (
-            <Grid size={{ xs: 6, md: 4 }} key={d.domain}>
-              <Box sx={{ p: 1.2 }}>
-                <Typography sx={{ fontSize: 11, color: "text.secondary", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {d.domain.split(" - ")[0].replace("Domain ", "D")}
-                </Typography>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Box sx={{ flex: 1, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
-                    <Box sx={{ width: `${Math.min(d.percentAchieved, 100)}%`, height: "100%", bgcolor: colors.navyLight }} />
-                  </Box>
-                  <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 700, width: 66, textAlign: "right" }}>
-                    {d.percentAchieved.toFixed(0)}% (24-25)
-                  </Typography>
-                </Box>
-                {d2526 && (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.3 }}>
-                    <Box sx={{ flex: 1, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
-                      <Box sx={{ width: `${Math.min(d2526.percentAchieved, 100)}%`, height: "100%", bgcolor: colors.gold }} />
-                    </Box>
-                    <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 700, width: 66, textAlign: "right", color: "#8A6200" }}>
-                      {d2526.percentAchieved.toFixed(0)}% (25-26)
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            </Grid>
-          );
-        })}
-      </Grid>
-    </Grid>
-  </Grid>
-</Paper>
-
-<PGIRankingChart
-  data={pgiTableData}
-  allData={pgiTableDataAll}
-  data2526={pgiTableData2526}
-  allData2526={pgiTableDataAll2526}
-/>
-
-<PGITable
-  data={pgiTableData}
-  allData={pgiTableDataAll}
-  data2526={pgiTableData2526}
-  allData2526={pgiTableDataAll2526}
-/>
-
-{/* SAT — Student Assessment Test */}
-<Box mt={5} mb={2}>
-  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-    <Box sx={{ width: 4, height: 26, borderRadius: 2, bgcolor: "#6A1B9A" }} />
-    <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: "#16233B" }}>
-      📝 SAT — Student Assessment Test
-    </Typography>
-  </Box>
-  <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.5, ml: 2.5 }}>
-    District-wise SAT performance — Semester 1 vs Semester 2, plus the full comparison below · filtered by the same District selector above
-  </Typography>
-</Box>
-
-<Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", p: 3, mb: 2 }}>
-  <Grid container spacing={2}>
-    <Grid size={{ xs: 12, sm: 4 }}>
-      <Box sx={{ p: 2, borderRadius: 2, bgcolor: "#F5F6FA", textAlign: "center", height: "100%" }}>
-        <Typography sx={{ fontSize: 12, color: "text.secondary" }}>STATE AVERAGE SCORE</Typography>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.4, mt: 0.5 }}>
-          <Box>
-            <Typography sx={{ fontSize: 10.5, color: "text.secondary", fontWeight: 600 }}>Semester 1</Typography>
-            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: colors.navyLight }}>
-              {satSummarySem1.stateAverage.toFixed(1)}
-              <Typography component="span" sx={{ fontSize: 12, color: "text.secondary" }}> %</Typography>
-            </Typography>
-          </Box>
-          <Box sx={{ borderTop: "1px dashed #D8DCE6", pt: 0.6, mt: 0.2 }}>
-            <Typography sx={{ fontSize: 10.5, color: "text.secondary", fontWeight: 600 }}>Semester 2</Typography>
-            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 22, color: "#8A6200" }}>
-              {satSummarySem2.stateAverage.toFixed(1)}
-              <Typography component="span" sx={{ fontSize: 12, color: "text.secondary" }}> %</Typography>
-            </Typography>
-          </Box>
-        </Box>
-        <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, fontWeight: 700, color: "#6A1B9A", mt: 0.8 }}>
-          {(satSummarySem2.totalDistricts || satSummarySem1.totalDistricts)} Districts Covered
-        </Typography>
-      </Box>
-    </Grid>
-
-    <Grid size={{ xs: 12, sm: 8 }}>
-      <Grid container spacing={1}>
-        {[...new Set([...satGradeWiseSem1.grades, ...satGradeWiseSem2.grades])].map((grade) => {
-          const avgSem1 = satSummarySem1.gradeAverages.find((g) => g.grade === grade)?.average || 0;
-          const avgSem2 = satSummarySem2.gradeAverages.find((g) => g.grade === grade)?.average || 0;
-          return (
-            <Grid size={{ xs: 6, md: 4 }} key={grade}>
-              <Box sx={{ p: 1.2 }}>
-                <Typography sx={{ fontSize: 11, color: "text.secondary", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {grade}
-                </Typography>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Box sx={{ flex: 1, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
-                    <Box sx={{ width: `${Math.min(avgSem1, 100)}%`, height: "100%", bgcolor: colors.navyLight }} />
-                  </Box>
-                  <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10.5, fontWeight: 700, width: 68, textAlign: "right" }}>
-                    {avgSem1.toFixed(0)}% (Sem1)
-                  </Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.3 }}>
-                  <Box sx={{ flex: 1, height: 6, borderRadius: 4, bgcolor: "#EEF0F5", overflow: "hidden" }}>
-                    <Box sx={{ width: `${Math.min(avgSem2, 100)}%`, height: "100%", bgcolor: colors.gold }} />
-                  </Box>
-                  <Typography sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10.5, fontWeight: 700, width: 68, textAlign: "right", color: "#8A6200" }}>
-                    {avgSem2.toFixed(0)}% (Sem2)
-                  </Typography>
-                </Box>
-              </Box>
-            </Grid>
-          );
-        })}
-      </Grid>
-    </Grid>
-  </Grid>
-</Paper>
-
-{satGradeComparisonChartData.length > 0 && (
-  <Card elevation={3} sx={{ mt: 2 }}>
-    <CardContent>
-      <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-        SAT — Grade-wise Performance (%) · Semester 1 vs Semester 2
-        {district !== "All"
-          ? ` · ${district} vs Gujarat State Average`
-          : priorityOnly
-          ? " · ⭐ Priority Districts Avg vs Gujarat State Average"
-          : " · Gujarat State Average"}
-      </Typography>
-
-      <ResponsiveContainer width="100%" height={340}>
-        <BarChart data={satGradeComparisonChartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="grade" tick={{ fontSize: 12 }} />
-          <YAxis domain={[0, 100]} />
-          <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
-          <Legend />
-          <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 18 : 30} />
-          <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 18 : 30} />
-          <Bar dataKey="Sem 1 (State Avg)" fill="#B7C0D1" radius={[4, 4, 0, 0]} barSize={18} />
-          <Bar dataKey="Sem 2 (State Avg)" fill="#F0D9A6" radius={[4, 4, 0, 0]} barSize={18} />
-        </BarChart>
-      </ResponsiveContainer>
-    </CardContent>
-  </Card>
-)}
-
-{satSubjectComparisonChartData.length > 0 && (
-  <Card elevation={3} sx={{ mt: 2 }}>
-    <CardContent>
-      <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
-        SAT — Subject-wise Performance (%) · Semester 1 vs Semester 2{district !== "All" ? ` · ${district} vs Gujarat State Average` : " · Gujarat State-wide"}
-      </Typography>
-
-      <ResponsiveContainer width="100%" height={340}>
-        <BarChart data={satSubjectComparisonChartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="subject" angle={-25} textAnchor="end" interval={0} tick={{ fontSize: 10 }} />
-          <YAxis domain={[0, 100]} />
-          <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
-          <Legend />
-          <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 14 : 22} />
-          <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 14 : 22} />
-          <Bar dataKey="Sem 1 (State Avg)" fill="#B7C0D1" radius={[4, 4, 0, 0]} barSize={14} />
-          <Bar dataKey="Sem 2 (State Avg)" fill="#F0D9A6" radius={[4, 4, 0, 0]} barSize={14} />
-        </BarChart>
-      </ResponsiveContainer>
-    </CardContent>
-  </Card>
-)}
-
-<SATSemesterComparison
-  data={satSemesterComparison}
-  district={district}
-  priorityDistricts={priorityOnly ? PRIORITY_DISTRICTS : []}
-/>
-
-{district !== "All" && (districtPgiIndicators?.overall || districtCompetencies || districtLoBreakdown?.length > 0) && (
+<>
+    <OverviewCompare pgi2425={pgiSummary} pgiRanking2425={pgiRanking} sat1={satSummarySem1} sat2={satSummarySem2} satGw1={satGradeWiseSem1} satGw2={satGradeWiseSem2} subjectHeatmap={subjectHeatmap} district={district} assessment={ovAssessment}
+      satWeak={district !== "All" ? [...(districtLoBreakdown || [])].sort((a, b) => a.pct - b.pct).slice(0, 8).map((x) => ({ label: `${x.subject} · ${x.loCode}`, note: x.indicator, pct: x.pct })) : satWeakLOs}
+      parakhSubjects={(() => {
+        const cols = subjectHeatmap.columns.filter((c) => !c.endsWith("Average"));
+        return cols.map((c) => {
+          const v = subjectHeatmap.data.map((r) => r[c]).filter((x) => typeof x === "number");
+          return { label: c, pct: v.length ? v.reduce((a, b) => a + b, 0) / v.length : null };
+        }).filter((x) => x.pct != null).sort((a, b) => a.pct - b.pct).slice(0, 4);
+      })()} />
+    {district !== "All" && (districtPgiIndicators?.overall || districtCompetencies || districtLoBreakdown?.length > 0) && (
   <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
     <CardContent>
       <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 20, color: "#16233B", mb: 0.5 }}>
@@ -1133,13 +774,8 @@ const satSubjectComparisonChartData = (() => {
   </Card>
 )}
 
-<ActionItemsQueue
-  items={actionItems}
-  allDistricts={allDistrictNames}
-  allItems={allDistrictItems}
-  syncDistrict={district}
-  focusDistricts={priorityOnly ? PRIORITY_DISTRICTS : []}
-/>
+
+</>
 
 </DashboardLayout>
 );

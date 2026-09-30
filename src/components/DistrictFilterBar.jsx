@@ -65,11 +65,14 @@ const DistrictFilterBar = ({
           ))}
         </TextField>
 
-        {district !== "All" && (
+        {(district !== "All" || priorityOnly) && (
           <Button
             variant="text"
             startIcon={<RestartAltIcon />}
-            onClick={() => setDistrict("All")}
+            onClick={() => {
+              setDistrict("All");
+              if (priorityOnly && onPriorityOnlyChange) onPriorityOnlyChange(false);
+            }}
             sx={{ textTransform: "none", fontWeight: 600 }}
           >
             {t("reset")}

@@ -27,6 +27,7 @@ const ExecutiveOverviewPanel = ({
   pgiRanking = [],
   satData = [],
   priorityOnly = false,
+  setPriorityOnly = null,
   districts = [],
   district = "All",
   setDistrict = () => {},
@@ -308,7 +309,13 @@ const ExecutiveOverviewPanel = ({
                 <PieChart>
                   <Pie data={donutData} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="85%" paddingAngle={2}>
                     {donutData.map((d) => (
-                      <Cell key={d.name} fill={d.name === "Priority" ? GOLD : OTHER} stroke="none" />
+                      <Cell
+                        key={d.name}
+                        fill={d.name === "Priority" ? GOLD : OTHER}
+                        stroke="none"
+                        cursor={setPriorityOnly ? "pointer" : "default"}
+                        onClick={() => setPriorityOnly && setPriorityOnly(d.name === "Priority")}
+                      />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
@@ -319,7 +326,17 @@ const ExecutiveOverviewPanel = ({
               </Box>
               <Box sx={{ display: "flex", justifyContent: "center", gap: 1.2, mt: 0.5, flexWrap: "wrap" }}>
                 {donutData.map((d) => (
-                  <Box key={d.name} sx={{ display: "flex", alignItems: "center", gap: 0.4 }}>
+                  <Box
+                    key={d.name}
+                    onClick={() => setPriorityOnly && setPriorityOnly(d.name === "Priority")}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.4,
+                      cursor: setPriorityOnly ? "pointer" : "default",
+                      opacity: priorityOnly && d.name !== "Priority" ? 0.4 : 1,
+                    }}
+                  >
                     <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: d.name === "Priority" ? GOLD : OTHER }} />
                     <Typography sx={{ fontSize: 10.5, color: "rgba(255,255,255,0.75)" }}>
                       {d.name} ({d.value})
@@ -404,10 +421,12 @@ const ExecutiveOverviewPanel = ({
               return (
                 <Box
                   key={d.District}
+                  onClick={() => setDistrict(isSelectedChip ? "All" : d.District)}
                   sx={{
                     display: "flex",
                     alignItems: "center",
                     gap: 0.8,
+                    cursor: "pointer",
                     bgcolor: isSelectedChip ? "rgba(240,180,41,0.28)" : "rgba(240,180,41,0.12)",
                     border: isSelectedChip ? `1.5px solid ${GOLD}` : "1.5px solid transparent",
                     borderLeft: `3px solid ${GOLD}`,
@@ -415,6 +434,8 @@ const ExecutiveOverviewPanel = ({
                     px: 1,
                     py: 0.5,
                     minWidth: 140,
+                    transition: "background-color 0.15s ease",
+                    "&:hover": { bgcolor: "rgba(240,180,41,0.22)" },
                   }}
                 >
                   <Typography sx={{ fontSize: 11.5, color: "#fff", fontWeight: 600, whiteSpace: "nowrap" }}>

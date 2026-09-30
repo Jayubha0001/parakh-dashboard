@@ -52,6 +52,14 @@ const PGIRankingChart = ({ data = [], allData = null, data2526 = [], allData2526
     });
   }
 
+  // With all 33 districts × 2 years on screen at once, a % label over
+  // every single bar just overlaps into an unreadable smear — so labels
+  // only render once there are few enough bars for them to actually fit
+  // (a filtered district, or a short priority-only list). The exact
+  // number is always still one hover away via the tooltip, and in the
+  // full table right below this chart.
+  const showLabels = chartData.length <= 8;
+
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 2.5 }}>
       <CardContent>
@@ -59,7 +67,7 @@ const PGIRankingChart = ({ data = [], allData = null, data2526 = [], allData2526
           📊 District-wise PGI-D % Achieved (out of 600) — 2024-25 vs 2025-26
         </Typography>
 
-        <ResponsiveContainer width="100%" height={420}>
+        <ResponsiveContainer width="100%" height={chartData.length > 8 ? 460 : 420}>
           <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
             <CartesianGrid strokeDasharray="3 3" />
 
@@ -80,12 +88,14 @@ const PGIRankingChart = ({ data = [], allData = null, data2526 = [], allData2526
               {chartData.map((entry, index) => (
                 <Cell key={index} fill={entry.isAverage ? colors.navy : colors.navyLight} />
               ))}
-              <LabelList
-                dataKey="2024-25"
-                position="top"
-                formatter={(value) => (value == null ? "" : `${value}%`)}
-                style={{ fontSize: 9.5, fontWeight: "bold", fill: "#333" }}
-              />
+              {showLabels && (
+                <LabelList
+                  dataKey="2024-25"
+                  position="top"
+                  formatter={(value) => (value == null ? "" : `${value}%`)}
+                  style={{ fontSize: 9.5, fontWeight: "bold", fill: "#333" }}
+                />
+              )}
             </Bar>
 
             {has2526 && (
@@ -93,12 +103,14 @@ const PGIRankingChart = ({ data = [], allData = null, data2526 = [], allData2526
                 {chartData.map((entry, index) => (
                   <Cell key={index} fill={entry.isAverage ? "#8A6200" : colors.gold} />
                 ))}
-                <LabelList
-                  dataKey="2025-26"
-                  position="top"
-                  formatter={(value) => (value == null ? "" : `${value}%`)}
-                  style={{ fontSize: 9.5, fontWeight: "bold", fill: "#333" }}
-                />
+                {showLabels && (
+                  <LabelList
+                    dataKey="2025-26"
+                    position="top"
+                    formatter={(value) => (value == null ? "" : `${value}%`)}
+                    style={{ fontSize: 9.5, fontWeight: "bold", fill: "#333" }}
+                  />
+                )}
               </Bar>
             )}
           </BarChart>

@@ -21,6 +21,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  LabelList,
 } from "recharts";
 
 const pctColor = (pct) => {
@@ -78,6 +79,12 @@ const SATSemesterComparison = ({ data = [], district = "All", priorityDistricts 
     "Sem 2": d.Sem2Pct != null ? Number(d.Sem2Pct.toFixed(1)) : null,
   }));
 
+  // Same reasoning as the PGI-D ranking chart: labels only fit cleanly
+  // when there are few enough bars (a single district, or the 10
+  // priority districts) — the full 33-district view relies on the
+  // tooltip and the table below instead of cramming numbers onto bars.
+  const showLabels = chartData.length <= 12;
+
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 2.5 }}>
       <CardContent>
@@ -93,7 +100,7 @@ const SATSemesterComparison = ({ data = [], district = "All", priorityDistricts 
         </Typography>
 
         <ResponsiveContainer width="100%" height={district !== "All" ? 200 : 420}>
-          <BarChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: district !== "All" ? 10 : 100 }}>
+          <BarChart data={chartData} margin={{ top: 20, right: 20, left: 10, bottom: district !== "All" ? 10 : 100 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="District"
@@ -105,8 +112,26 @@ const SATSemesterComparison = ({ data = [], district = "All", priorityDistricts 
             <YAxis domain={[0, 100]} />
             <Tooltip formatter={(value) => (value == null ? "—" : `${value}%`)} />
             <Legend />
-            <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 14} />
-            <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 14} />
+            <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 14}>
+              {showLabels && (
+                <LabelList
+                  dataKey="Sem 1"
+                  position="top"
+                  formatter={(value) => (value == null ? "" : `${value}%`)}
+                  style={{ fontSize: 10, fontWeight: "bold", fill: "#5B6B85" }}
+                />
+              )}
+            </Bar>
+            <Bar dataKey="Sem 2" fill="#6A1B9A" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 14}>
+              {showLabels && (
+                <LabelList
+                  dataKey="Sem 2"
+                  position="top"
+                  formatter={(value) => (value == null ? "" : `${value}%`)}
+                  style={{ fontSize: 10, fontWeight: "bold", fill: "#6A1B9A" }}
+                />
+              )}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
 

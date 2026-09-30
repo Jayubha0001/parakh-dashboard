@@ -1648,7 +1648,7 @@ export const getSATDistrictLOBreakdown = (workbook, districtName) => {
 
   rows.slice(1).forEach((r) => {
     const district = r[0];
-    if (district !== districtName) return;
+    if (isSATSummaryRow(district) || normalizeSATDistrict(district) !== normalizeSATDistrict(districtName)) return;
 
     const subject = typeof r[2] === "string" ? r[2].replace(/\s+/g, " ").trim() : r[2];
     const loCode = r[3];

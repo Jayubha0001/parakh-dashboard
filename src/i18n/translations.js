@@ -24,6 +24,9 @@ export const translations = {
     nav_crc_visit: "CRC Visit",
     nav_comparison: "Comparison",
     nav_reports: "Reports",
+    nav_data_download: "Data Download",
+    nav_insights: "Key Insights",
+    nav_settings: "Settings",
 
     // District Filter bar (shared across PARAKH / PGI / SAT / PM Shri)
     district_label: "District",
@@ -89,6 +92,9 @@ export const translations = {
     nav_crc_visit: "CRC મુલાકાત",
     nav_comparison: "સરખામણી",
     nav_reports: "અહેવાલો",
+    nav_data_download: "ડેટા ડાઉનલોડ",
+    nav_insights: "મુખ્ય તારણો",
+    nav_settings: "સેટિંગ્સ",
 
     district_label: "જિલ્લો",
     all_districts: "બધા જિલ્લા",

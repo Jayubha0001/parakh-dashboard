@@ -22,10 +22,13 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import PlaceIcon from "@mui/icons-material/Place";
 import BarChartIcon from "@mui/icons-material/BarChart";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import DownloadIcon from "@mui/icons-material/Download";
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
+import SettingsIcon from "@mui/icons-material/Settings";
+import MenuOpenIcon from "@mui/icons-material/MenuOpen";
+import MenuIcon from "@mui/icons-material/Menu";
 import { colors } from "../theme/theme";
-import { SHOW_ATTENDANCE_TAB, SHOW_CRC_VISIT_TAB } from "../config/featureFlags";
+import { useFeatureFlags } from "../config/FeatureFlagsContext";
 import { useLanguage } from "../i18n/LanguageContext";
 
 export const DRAWER_WIDTH = 240;
@@ -95,16 +98,43 @@ const menuItems = [
     path: "/reports",
     color: "#9AA5B1",
   },
+  {
+    text: "Data Download",
+    textKey: "nav_data_download",
+    icon: <DownloadIcon />,
+    path: "/data-download",
+    color: "#4DB6E5",
+  },
+  {
+    text: "Key Insights",
+    textKey: "nav_insights",
+    icon: <LightbulbIcon />,
+    path: "/insights",
+    color: "#F0B429",
+  },
 ];
 
-// Tabs behind a feature flag (see src/config/featureFlags.js) are simply
-// left out of this list — turning a flag on/off is the only thing needed
-// to show/hide a tab, no other change here.
-const visibleMenuItems = menuItems.filter((item) => {
-  if (item.path === "/attendance") return SHOW_ATTENDANCE_TAB;
-  if (item.path === "/live-visits") return SHOW_CRC_VISIT_TAB;
-  return true;
-});
+// Settings is pinned to the very bottom of the rail, visually separated
+// from the page tabs above it — it's a utility/account-style entry, not
+// another data page, so it doesn't belong in the same scrolling list.
+const settingsItem = {
+  text: "Settings",
+  textKey: "nav_settings",
+  icon: <SettingsIcon />,
+  path: "/settings",
+  color: "#9AA5B1",
+};
+
+// Which menu items a feature flag governs (see FeatureFlagsContext) —
+// looked up by path so toggling a flag in Settings shows/hides the tab
+// immediately, with no code edit needed.
+const FLAG_BY_PATH = {
+  "/attendance": "attendance",
+  "/live-visits": "crcVisit",
+  "/reports": "reports",
+  "/comparison": "comparison",
+  "/data-download": "dataDownload",
+};
 
 // Shared list markup, rendered inside BOTH the permanent (desktop) drawer
 // and the temporary (mobile, overlay) drawer below — one source of truth
@@ -112,132 +142,138 @@ const visibleMenuItems = menuItems.filter((item) => {
 // the text labels down to an icon rail, and `onToggleCollapse` renders the
 // expand/collapse chevron in place of the old plain "PARAKH" brand text.
 const DrawerContent = ({ onNavigate, collapsed = false, onToggleCollapse = null }) => {
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
+  const { flags } = useFeatureFlags();
+
+  // Tabs behind a feature flag are simply left out of this list — the
+  // flag itself now lives in Settings (admin-gated), not a file you have
+  // to go edit in code.
+  const visibleMenuItems = menuItems.filter((item) => {
+    const flagKey = FLAG_BY_PATH[item.path];
+    return flagKey ? flags[flagKey] : true;
+  });
+
+  const renderItem = (item) => {
+    const label = t(item.textKey);
+    const button = (
+      <ListItemButton
+        component={NavLink}
+        to={item.path}
+        onClick={onNavigate}
+        sx={{
+          color: "rgba(255,255,255,0.85)",
+          textDecoration: "none",
+          borderRadius: 2,
+          pl: collapsed ? 1.1 : 1.5,
+          justifyContent: collapsed ? "center" : "flex-start",
+          transition: "background-color 0.15s ease, color 0.15s ease",
+          outline: "none",
+
+          "&.active": {
+            backgroundColor: "rgba(240,180,41,0.14)",
+            color: "#fff",
+            fontWeight: 600,
+            borderLeft: collapsed ? "none" : `3px solid ${colors.gold}`,
+            pl: collapsed ? 1.1 : "9px",
+          },
+
+          "&.active .MuiListItemIcon-root": {
+            color: colors.goldLight,
+          },
+
+          "&:hover": {
+            backgroundColor: "rgba(255,255,255,0.06)",
+          },
+
+          // Keyboard/click focus should read as "gold", the app's own
+          // accent, rather than the browser's default blue ring.
+          "&:focus, &:focus-visible": {
+            outline: "none",
+            boxShadow: `inset 0 0 0 1px ${colors.gold}`,
+          },
+        }}
+      >
+        <ListItemIcon
+          sx={{
+            color: item.color,
+            minWidth: collapsed ? 0 : 40,
+            opacity: 0.9,
+            justifyContent: "center",
+            "& .MuiSvgIcon-root": { fontSize: 21 },
+          }}
+        >
+          {item.icon}
+        </ListItemIcon>
+
+        {!collapsed && <ListItemText primary={label} />}
+      </ListItemButton>
+    );
+
+    return (
+      <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+        {collapsed ? (
+          <Tooltip title={label} placement="right">
+            <Box sx={{ width: "100%" }}>{button}</Box>
+          </Tooltip>
+        ) : (
+          button
+        )}
+      </ListItem>
+    );
+  };
 
   return (
-  <>
+  <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
     <Toolbar sx={{ justifyContent: onToggleCollapse ? "flex-end" : "flex-start", px: collapsed ? 1 : 2 }}>
       {onToggleCollapse && (
-        <IconButton onClick={onToggleCollapse} size="small" sx={{ color: "rgba(255,255,255,0.75)" }}>
-          {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-        </IconButton>
+        <Tooltip title={collapsed ? "Expand menu" : "Collapse menu"} placement="right">
+          <IconButton
+            onClick={onToggleCollapse}
+            size="small"
+            aria-label={collapsed ? "Expand menu" : "Collapse menu"}
+            sx={{
+              color: "#2DD4BF",
+              border: "1px solid rgba(45,212,191,0.35)",
+              borderRadius: 1.5,
+              p: 0.5,
+              "&:hover": { backgroundColor: "rgba(45,212,191,0.12)" },
+            }}
+          >
+            {collapsed ? <MenuIcon fontSize="small" /> : <MenuOpenIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
       )}
     </Toolbar>
 
-    {/* EN / ગુજરાતી toggle — one global switch that changes the nav
-        labels and the shared District Filter / Snapshot panel text
-        everywhere in the app. Hidden down to nothing meaningful when the
-        rail is collapsed, since there's no room for two-letter buttons
-        at that width. */}
-    <Box sx={{ px: collapsed ? 0.75 : 1.5, mb: 1 }}>
-      <Box
-        sx={{
-          display: "flex",
-          borderRadius: 2,
-          bgcolor: "rgba(255,255,255,0.06)",
-          p: 0.4,
-          gap: 0.4,
-        }}
-      >
-        {[
-          { code: "en", label: "EN" },
-          { code: "gu", label: "ગુ" },
-        ].map((opt) => (
-          <Box
-            key={opt.code}
-            component="button"
-            onClick={() => setLanguage(opt.code)}
-            sx={{
-              flex: 1,
-              border: "none",
-              cursor: "pointer",
-              borderRadius: 1.5,
-              py: 0.5,
-              fontSize: 12,
-              fontWeight: 700,
-              fontFamily: "inherit",
-              color: language === opt.code ? colors.navy : "rgba(255,255,255,0.7)",
-              bgcolor: language === opt.code ? colors.gold : "transparent",
-              transition: "background-color 0.15s ease, color 0.15s ease",
-            }}
-          >
-            {collapsed ? opt.label.slice(0, 1) : opt.label}
-          </Box>
-        ))}
+    {/* Reach to Teach Foundation — the partner org this dashboard was
+        built for/with, shown up top the way the original design had it,
+        centred either way. Hidden in the collapsed icon-rail state since
+        the logo bakes in the "Reach to Teach FOUNDATION" wordmark, which
+        isn't legible at that width anyway. */}
+    {!collapsed && (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", px: 2, mb: 1.5, mt: 0.5 }}>
+        <Box
+          component="img"
+          src="/logo-reach-to-teach.png"
+          alt="Reach to Teach Foundation"
+          sx={{
+            display: "block",
+            width: 150,
+            height: "auto",
+            objectFit: "contain",
+          }}
+        />
       </Box>
+    )}
+
+    <List sx={{ px: collapsed ? 0.75 : 1.5, flex: 1 }}>{visibleMenuItems.map(renderItem)}</List>
+
+    {/* Settings — pinned to the bottom, separated by a divider line, the
+        way an account/utility entry usually sits apart from page tabs. */}
+    <Box sx={{ borderTop: "1px solid rgba(255,255,255,0.08)", px: collapsed ? 0.75 : 1.5, py: 1 }}>
+      {renderItem(settingsItem)}
     </Box>
-
-    <List sx={{ px: collapsed ? 0.75 : 1.5 }}>
-      {visibleMenuItems.map((item) => {
-        const label = t(item.textKey);
-        const button = (
-          <ListItemButton
-            component={NavLink}
-            to={item.path}
-            onClick={onNavigate}
-            sx={{
-              color: "rgba(255,255,255,0.85)",
-              textDecoration: "none",
-              borderRadius: 2,
-              pl: collapsed ? 1.1 : 1.5,
-              justifyContent: collapsed ? "center" : "flex-start",
-              transition: "background-color 0.15s ease, color 0.15s ease",
-              outline: "none",
-
-              "&.active": {
-                backgroundColor: "rgba(240,180,41,0.14)",
-                color: "#fff",
-                fontWeight: 600,
-                borderLeft: collapsed ? "none" : `3px solid ${colors.gold}`,
-                pl: collapsed ? 1.1 : "9px",
-              },
-
-              "&.active .MuiListItemIcon-root": {
-                color: colors.goldLight,
-              },
-
-              "&:hover": {
-                backgroundColor: "rgba(255,255,255,0.06)",
-              },
-
-              // Keyboard/click focus should read as "gold", the app's own
-              // accent, rather than the browser's default blue ring.
-              "&:focus, &:focus-visible": {
-                outline: "none",
-                boxShadow: `inset 0 0 0 1px ${colors.gold}`,
-              },
-            }}
-          >
-            <ListItemIcon
-              sx={{
-                color: item.color,
-                minWidth: collapsed ? 0 : 40,
-                opacity: 0.9,
-                justifyContent: "center",
-                "& .MuiSvgIcon-root": { fontSize: 21 },
-              }}
-            >
-              {item.icon}
-            </ListItemIcon>
-
-            {!collapsed && <ListItemText primary={label} />}
-          </ListItemButton>
-        );
-
-        return (
-          <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-            {collapsed ? (
-              <Tooltip title={label} placement="right">
-                <Box sx={{ width: "100%" }}>{button}</Box>
-              </Tooltip>
-            ) : (
-              button
-            )}
-          </ListItem>
-        );
-      })}
-    </List>
-  </>
+  </Box>
   );
 };
 
