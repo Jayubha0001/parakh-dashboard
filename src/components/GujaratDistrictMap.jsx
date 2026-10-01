@@ -342,7 +342,7 @@ const GujaratDistrictMap = ({
               placed at each shape's centroid (cx/cy from the boundary
               file). pointer-events "none" so they never block clicks on
               the path underneath them. */}
-          {!compact && !hideLabels &&
+          {!hideLabels &&
             GUJARAT_DISTRICT_PATHS.map((p) => {
               const normName = normalize(p.name);
               const yourName = geoNameToYourName[normName];
@@ -405,7 +405,7 @@ const GujaratDistrictMap = ({
         )}
       </Box>
 
-      {dataByDistrict && bands && (
+      {dataByDistrict && bands && !compact && (
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, mt: 1.5 }}>
           {bands.map((b) => (
             <Box key={b.label} sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
@@ -435,15 +435,6 @@ const GujaratDistrictMap = ({
             {minVal}
             {valueSuffix} – {maxVal}
             {valueSuffix}
-          </Typography>
-        </Box>
-      )}
-
-      {priorityDistricts.length > 0 && (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, mt: 1 }}>
-          <Box sx={{ width: 22, height: 12, border: "2.4px dashed #F0B429", borderRadius: 1 }} />
-          <Typography sx={{ fontSize: 11.5, color: "text.secondary" }}>
-            ⭐ Dashed gold border = one of the 10 priority districts
           </Typography>
         </Box>
       )}

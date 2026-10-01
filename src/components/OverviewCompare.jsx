@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Box, Paper, Typography } from "@mui/material";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import pgiD202526 from "../data/pgiD202526.json";
+import { useFeatureFlags } from "../config/FeatureFlagsContext";
 import { normalizeDistrictName } from "../utils/satDistrictMap";
 import statePgi202526 from "../data/statePgi202526.json";
 import pgiIndicators from "../data/districtPgiIndicators202526.json";
@@ -9,21 +10,22 @@ import gog from "../data/pmshriGOG.json";
 import goi from "../data/pmshriGOI.json";
 
 const C1 = "#F0B429", C2 = "#1976D2";
+const avg2 = (a, b) => (typeof a === "number" && typeof b === "number" ? (a + b) / 2 : typeof a === "number" ? a : typeof b === "number" ? b : null);
 const r1 = (n) => (n == null ? null : Math.round(n * 10) / 10);
 const domKey = (s) => (String(s).match(/Domain\s*\d+|Category\s*\d+/i) || [String(s)])[0];
 const domShort = (s) => String(s).replace(/^Domain\s*\d+:\s*/i, "").replace(/\s*-\s*\d+\s*$/, "").replace(/\(.*?\)/, "").trim();
 
 const Card = ({ title, sub, children }) => (
-  <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: { xs: 1.75, md: 2.25 }, minWidth: 0, boxShadow: "0 1px 2px rgba(15,23,42,0.04)" }}>
-    <Typography sx={{ fontWeight: 700, fontSize: 16, color: "#16233B", lineHeight: 1.25 }}>{title}</Typography>
-    <Typography sx={{ fontSize: 12, color: "#5B6B85", mb: 0.5 }}>{sub}</Typography>
+  <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: { xs: 1.25, md: 1.5 }, minWidth: 0, boxShadow: "0 1px 2px rgba(15,23,42,0.04)" }}>
+    <Typography sx={{ fontWeight: 700, fontSize: 14, color: "#16233B", lineHeight: 1.25 }}>{title}</Typography>
+    <Typography sx={{ fontSize: 11, color: "#5B6B85", mb: 0.25 }}>{sub}</Typography>
     {children}
   </Paper>
 );
 
-const Compare = ({ data, k1, k2, h = 170, fmt = (v) => `${v}%` }) => (
+const Compare = ({ data, k1, k2, k3, h = 150, fmt = (v) => `${v}%` }) => (
   <ResponsiveContainer width="100%" height={h}>
-    <BarChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+    <BarChart key={`${k1}-${k2}-${k3 || ""}`} data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
       <CartesianGrid strokeDasharray="3 3" vertical={false} />
       <XAxis dataKey="name" tick={{ fontSize: 10.5 }} interval={0} />
       <YAxis tick={{ fontSize: 10.5 }} domain={[0, "auto"]} />
@@ -31,21 +33,26 @@ const Compare = ({ data, k1, k2, h = 170, fmt = (v) => `${v}%` }) => (
       <Legend wrapperStyle={{ fontSize: 11 }} />
       <Bar dataKey={k1} fill={C1} radius={[3, 3, 0, 0]} />
       <Bar dataKey={k2} fill={C2} radius={[3, 3, 0, 0]} />
+      {k3 && <Bar dataKey={k3} fill="#2E9E6B" radius={[3, 3, 0, 0]} />}
     </BarChart>
   </ResponsiveContainer>
 );
 
-const Weak = ({ title, color, rows }) => (
+const Weak = ({ title, hint, color, rows }) => (
   <Box sx={{ minWidth: 0 }}>
-    <Typography sx={{ fontWeight: 700, fontSize: 12.5, color, mb: 0.6 }}>{title}</Typography>
+    <Typography sx={{ fontWeight: 700, fontSize: 12.5, color, lineHeight: 1.2 }}>{title}</Typography>
+    <Typography sx={{ fontSize: 10.5, color: "#7A869A", mb: 0.8 }}>{hint}</Typography>
     {rows.length === 0 && <Typography sx={{ fontSize: 12, color: "text.secondary" }}>—</Typography>}
-    {rows.map((r) => (
-      <Box key={r.label} sx={{ mb: 0.7 }} title={r.note || r.label}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}>
-          <Typography noWrap sx={{ fontSize: 11.5, color: "#16233B", fontWeight: 600 }}>{r.label}</Typography>
-          <Typography sx={{ fontSize: 11.5, fontWeight: 700, color }}>{r1(r.pct)}%</Typography>
+    {rows.map((r, i) => (
+      <Box key={`${r.label}${i}`} sx={{ mb: 0.9 }} title={`${r.label}${r.note ? " — " + r.note : ""}`}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1 }}>
+          <Typography sx={{ fontSize: 11.5, color: "#16233B", fontWeight: 600, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+            {r.note || r.label}
+          </Typography>
+          <Typography sx={{ fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>{r1(r.pct)}%</Typography>
         </Box>
-        <Box sx={{ height: 4, borderRadius: 2, bgcolor: "#EEF0F5" }}>
+        {r.note && <Typography noWrap sx={{ fontSize: 10, color: "#7A869A" }}>{r.label}</Typography>}
+        <Box sx={{ height: 4, borderRadius: 2, bgcolor: "#EEF0F5", mt: 0.3 }}>
           <Box sx={{ width: `${Math.min(r.pct, 100)}%`, height: "100%", borderRadius: 2, bgcolor: color }} />
         </Box>
       </Box>
@@ -55,14 +62,17 @@ const Weak = ({ title, color, rows }) => (
 
 const same = (a, b) => String(normalizeDistrictName(a)).toLowerCase() === String(normalizeDistrictName(b)).toLowerCase();
 const ci = (list, name) => (list || []).find((d) => same(d.District, name));
-const lowN = (rows, n) => rows.filter((r) => r.pct != null).sort((a, b) => a.pct - b.pct).slice(0, n);
+const fix = (v) => (typeof v === "number" ? (v <= 1.5 ? v * 100 : v) : null);
+const lowN = (rows, n) => rows.filter((r) => r.pct != null).map((r) => ({ ...r, pct: fix(r.pct) })).sort((a, b) => a.pct - b.pct).slice(0, n);
 
 const OverviewCompare = ({ pgi2425, pgiRanking2425 = [], sat1, sat2, satGw1, satGw2, subjectHeatmap, district = "All", assessment = "Overall", parakhSubjects = [], satWeak = [] }) => {
+  const { flags } = useFeatureFlags();
+  const on = (k) => flags[k] !== false;
   const sel = district !== "All" ? district : null;
-  const showPGI = assessment === "Overall" || assessment === "PGI-D";
-  const showSAT = assessment === "Overall" || assessment === "SAT";
-  const showPM = assessment === "Overall";
-  const N = assessment === "Overall" ? 4 : 8;
+  const showPGI = on("cmp_pgi") && (assessment === "Overall" || assessment === "PGI-D");
+  const showSAT = on("cmp_sat") && (assessment === "Overall" || assessment === "SAT");
+  const showPM = on("cmp_pmshri") && assessment === "Overall";
+  const N = assessment === "Overall" ? 4 : 6;
   const pgiDomains = useMemo(() => {
     if (sel) {
       const a = ci(pgiRanking2425, sel)?.PercentAchieved;
@@ -81,10 +91,10 @@ const OverviewCompare = ({ pgi2425, pgiRanking2425 = [], sat1, sat2, satGw1, sat
   const satGrades = useMemo(() => {
     if (sel) {
       const a = ci(satGw1?.data, sel), b = ci(satGw2?.data, sel);
-      return (satGw2?.grades || []).map((g) => ({ name: g, "Sem 1": r1(a?.[g]), "Sem 2": r1(b?.[g]) }));
+      return (satGw2?.grades || []).map((g) => ({ name: g, "Sem 1": r1(a?.[g]), "Sem 2": r1(b?.[g]), Overall: r1(avg2(a?.[g], b?.[g])) }));
     }
     const g2 = Object.fromEntries((sat2?.gradeAverages || []).map((g) => [g.grade, g.average]));
-    return (sat1?.gradeAverages || []).map((g) => ({ name: g.grade, "Sem 1": r1(g.average), "Sem 2": r1(g2[g.grade]) }));
+    return (sat1?.gradeAverages || []).map((g) => ({ name: g.grade, "Sem 1": r1(g.average), "Sem 2": r1(g2[g.grade]), Overall: r1(avg2(g.average, g2[g.grade])) }));
   }, [sat1, sat2, sel, satGw1, satGw2]);
 
   const de = sel ? ci(goi.districtEnrollment, sel) : null;
@@ -123,14 +133,14 @@ const OverviewCompare = ({ pgi2425, pgiRanking2425 = [], sat1, sat2, satGw1, sat
   const who = sel ? `${sel}` : "State";
   const k1 = sel ? "District" : null;
   const wk = [
-    showPGI && ["PGI-D indicators", "#D32F2F", weak.pgi],
-    (assessment === "Overall" || assessment === "PARAKH") && ["PARAKH subjects", "#1976D2", sel ? weak.parakh : parakhSubjects.slice(0, N)],
-    showSAT && ["SAT learning outcomes", "#B7791F", satWeak.slice(0, N)],
-    showPM && [sel ? "GSQAC schools (2024-25)" : "GSQAC districts", "#6A1B9A", weak.g],
+    showPGI && ["PGI-D indicators", "#D32F2F", weak.pgi, "% of indicator marks scored"],
+    (assessment === "Overall" || assessment === "PARAKH") && ["PARAKH subjects", "#1976D2", sel ? weak.parakh : lowN(parakhSubjects, N), "% of students at proficiency, grade · subject"],
+    showSAT && ["SAT learning outcomes", "#B7791F", satWeak.slice(0, N), "% of marks scored, class · subject · LO code"],
+    showPM && [sel ? "GSQAC schools (2024-25)" : "GSQAC districts", "#6A1B9A", weak.g, sel ? "GSQAC % per school" : "Avg GSQAC % per district"],
   ].filter(Boolean);
-  const dual = (d, a, b) => (sel ? <Compare data={d} k1="District" k2="State" h={170} /> : <Compare data={d} k1={a} k2={b} />);
+  const dual = (d, a, b) => (sel ? <Compare data={d} k1="District" k2="State" h={150} /> : <Compare data={d} k1={a} k2={b} />);
   return (
-    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0,1fr))", lg: `repeat(${Math.max(1, Math.min(3, cmpCards))}, minmax(0,1fr))` }, gap: 2, mt: 2 }}>
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0,1fr))", lg: cmpCards === 1 ? "repeat(2, minmax(0,1fr))" : `repeat(${Math.min(3, cmpCards)}, minmax(0,1fr))` }, gap: 1.25, mt: 1.25 }}>
       {showPGI && (
         <Card title="PGI-D — 2024-25 vs 2025-26" sub={sel ? `${sel} vs state — % achieved` : "Domain-wise % achieved (state)"}>
           {sel ? <Compare data={pgiDomains} k1="District" k2="State" /> : <Compare data={pgiDomains} k1="2024-25" k2="2025-26" />}
@@ -138,13 +148,13 @@ const OverviewCompare = ({ pgi2425, pgiRanking2425 = [], sat1, sat2, satGw1, sat
       )}
       {showSAT && (
         <Card title="SAT — Semester 1 vs Semester 2" sub={`Grade-wise ${who.toLowerCase() === "state" ? "state average" : sel} (%)`}>
-          <Compare data={satGrades} k1="Sem 1" k2="Sem 2" />
+          <Compare data={satGrades} k1="Sem 1" k2="Sem 2" k3="Overall" />
         </Card>
       )}
       {showPM && (
         <Card title="PM SHRI — Enrolment & GSQAC by year" sub={`${who} totals, year-wise`}>
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
-            <ResponsiveContainer width="100%" height={170}>
+            <ResponsiveContainer width="100%" height={150}>
               <BarChart data={enroll} margin={{ top: 8, right: 4, left: -4, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} />
@@ -152,7 +162,7 @@ const OverviewCompare = ({ pgi2425, pgiRanking2425 = [], sat1, sat2, satGw1, sat
                 <Bar dataKey="Enrollment" name="Enrolment" fill={C2} radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-            <ResponsiveContainer width="100%" height={170}>
+            <ResponsiveContainer width="100%" height={150}>
               <BarChart data={gsqac} margin={{ top: 8, right: 4, left: -12, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} domain={[0, 100]} />
@@ -163,13 +173,13 @@ const OverviewCompare = ({ pgi2425, pgiRanking2425 = [], sat1, sat2, satGw1, sat
           </Box>
         </Card>
       )}
-      <Box sx={{ gridColumn: "1 / -1", minWidth: 0 }}>
+      {on("dash_weakest") && <Box sx={{ gridColumn: cmpCards === 1 ? { xs: "1 / -1", lg: "span 1" } : "1 / -1", minWidth: 0 }}>
         <Card title={sel ? `${sel} — Weakest Indicators` : "Weakest Indicators — by program"} sub={assessment === "Overall" ? "Lowest-scoring items in each program" : `Lowest-scoring ${assessment} items`}>
-          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", lg: `repeat(${Math.min(4, wk.length)}, 1fr)` }, gap: 2 }}>
-            {wk.map(([t, c, r]) => <Weak key={t} title={t} color={c} rows={r || []} />)}
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", lg: `repeat(${cmpCards === 1 ? 1 : Math.min(4, wk.length)}, 1fr)` }, gap: 1.25 }}>
+            {wk.map(([t, c, r, h]) => <Weak key={t} title={t} hint={h} color={c} rows={r || []} />)}
           </Box>
         </Card>
-      </Box>
+      </Box>}
     </Box>
   );
 };

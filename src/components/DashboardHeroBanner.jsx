@@ -46,7 +46,7 @@ const DashboardHeroBanner = ({ kpis = [], insights = [], filters = null }) => {
           background: `linear-gradient(120deg, ${TEAL_DARK} 0%, ${TEAL_MID} 55%, ${TEAL_BRIGHT} 100%)`,
           color: "#fff",
           px: { xs: 2, md: 3 },
-          py: { xs: 2, md: 2.5 },
+          py: { xs: 1.5, md: 1.75 },
         }}
       >
         <Box
@@ -78,10 +78,10 @@ const DashboardHeroBanner = ({ kpis = [], insights = [], filters = null }) => {
             >
               📊
             </Box>
-            <Typography sx={{ fontFamily: fontDisplay, fontWeight: 700, fontSize: { xs: 20, md: 26 }, lineHeight: 1.15 }}>
-              PARAKH GUJARAT{" "}
+            <Typography sx={{ fontFamily: fontDisplay, fontWeight: 700, fontSize: { xs: 15, md: 19 }, lineHeight: 1.2 }}>
+              PARAKH 2024 · PGI 2.0 · SAT · PM SHRI —{" "}
               <Box component="span" sx={{ color: MINT }}>
-                ANALYTICS
+                GUJARAT ANALYTICS
               </Box>
             </Typography>
           </Box>
@@ -130,7 +130,7 @@ const DashboardHeroBanner = ({ kpis = [], insights = [], filters = null }) => {
           {kpis.map((kpi, i) => {
             const accent = KPI_ACCENTS[i % KPI_ACCENTS.length];
             return (
-              <Grid size={{ xs: 6, sm: 4, md: 2 }} key={kpi.label}>
+              <Grid size={{ xs: 6, sm: 4, md: Math.min(3, Math.max(2, Math.floor(12 / Math.max(1, kpis.length)))) }} key={kpi.label}>
                 <Box
                   sx={{
                     display: "flex",
@@ -139,8 +139,8 @@ const DashboardHeroBanner = ({ kpis = [], insights = [], filters = null }) => {
                     borderRadius: 2.5,
                     bgcolor: `${accent}14`,
                     border: `1px solid ${accent}33`,
-                    px: 1.5,
-                    py: 1.25,
+                    px: 1.25,
+                    py: 0.9,
                     height: "100%",
                   }}
                 >
@@ -163,7 +163,7 @@ const DashboardHeroBanner = ({ kpis = [], insights = [], filters = null }) => {
                     <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "#5B6B85", whiteSpace: "nowrap" }}>
                       {kpi.label}
                     </Typography>
-                    <Typography sx={{ fontFamily: fontMono, fontWeight: 700, fontSize: 17, color: "#16233B", lineHeight: 1.3 }}>
+                    <Typography sx={{ fontFamily: fontMono, fontWeight: 700, fontSize: 15, color: "#16233B", lineHeight: 1.25 }}>
                       {kpi.value}
                     </Typography>
                   </Box>

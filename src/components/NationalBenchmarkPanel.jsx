@@ -178,7 +178,7 @@ const BenchmarkChart = ({ item, showDistrict, districtBarLabel = "District" }) =
     <Box sx={{ height: 200 }}>
       <Typography sx={{ fontSize: 12.5, fontWeight: 600, mb: 0.5, textAlign: "center" }}>{item.name}</Typography>
       <ResponsiveContainer width="100%" height="88%">
-        <BarChart data={data} margin={{ top: 5, right: 8, left: -18, bottom: 0 }} barGap={3}>
+        <BarChart key={showDistrict ? districtBarLabel : "state-only"} data={data} margin={{ top: 5, right: 8, left: -18, bottom: 0 }} barGap={3}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="grade" tick={{ fontSize: 11 }} />
           <YAxis domain={[0, 100]} unit="%" tick={{ fontSize: 10 }} />

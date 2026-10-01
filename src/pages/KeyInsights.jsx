@@ -7,7 +7,7 @@ import StarIcon from "@mui/icons-material/Star";
 import LightbulbIcon from "@mui/icons-material/Lightbulb";
 import DashboardLayout from "../components/DashboardLayout";
 import Header from "../components/Header";
-import { loadExcel, getDistrictPGIRanking, getSheetData, getSubjectHeatmap, getSATWeakestLOs } from "../services/dataService";
+import { loadExcel, getDistrictPGIRanking, getSheetData, getSubjectHeatmap, getSATWeakestLOs, getSATDistrictRanking, getSATSem1DistrictRanking } from "../services/dataService";
 import { isPriorityDistrict, PRIORITY_DISTRICTS } from "../utils/priorityDistricts";
 import pgiD202526 from "../data/pgiD202526.json";
 import statePgi202526 from "../data/statePgi202526.json";
@@ -31,6 +31,8 @@ const KeyInsights = () => {
   const [parakhOverview, setParakhOverview] = useState([]);
   const [weakParakh, setWeakParakh] = useState([]);
   const [weakSat, setWeakSat] = useState([]);
+  const [satRank1, setSatRank1] = useState([]);
+  const [satRank2, setSatRank2] = useState([]);
 
   useEffect(() => {
     (async () => {
@@ -41,10 +43,13 @@ const KeyInsights = () => {
       setWeakParakh(
         hm.columns.filter((c) => !c.endsWith("Average")).map((c) => {
           const v = hm.data.map((r) => r[c]).filter((x) => typeof x === "number");
-          return { label: c, pct: v.length ? v.reduce((a, b) => a + b, 0) / v.length : null };
+          const m = v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+          return { label: c, pct: m == null ? null : m <= 1.5 ? m * 100 : m };
         }).filter((x) => x.pct != null).sort((a, b) => a.pct - b.pct).slice(0, 5)
       );
-      setWeakSat(getSATWeakestLOs(workbook, 5).map((x) => ({ label: `${x.subject} · ${x.loCode}`, note: x.indicator, pct: x.PercentAchieved })));
+      setWeakSat(getSATWeakestLOs(workbook, 5).map((x) => ({ label: `${x.grade ? x.grade + " · " : ""}${x.subject} · ${x.loCode}`, note: x.indicator, pct: x.PercentAchieved })));
+      setSatRank1(getSATSem1DistrictRanking(workbook));
+      setSatRank2(getSATDistrictRanking(workbook));
       setLoading(false);
     })();
   }, []);
@@ -113,6 +118,50 @@ const KeyInsights = () => {
   const avg26 = avg(pgiRanking2526, "PercentAchieved");
   const gs = goiData.stateGSQAC || [];
   const gsFirst = gs[0], gsLast = gs[gs.length - 1];
+
+  const pctOf = (v) => (typeof v === "number" ? (v <= 1.5 ? v * 100 : v) : null);
+  const mk = (rows) => rows.filter((r) => r.pct != null).sort((a, b) => b.pct - a.pct);
+  const sgn = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)} pp`;
+  const grpAvg = (rows, pr) => avg(rows.filter((r) => isPriorityDistrict(r.label) === pr), "pct");
+  const lowSchools = [...(gogData.schoolGSQACDetail || [])].filter((x) => typeof x["% 2024-25"] === "number")
+    .sort((a, b) => a["% 2024-25"] - b["% 2024-25"]).slice(0, 5)
+    .map((x) => ({ label: x["School Name"], note: `${x.District} · ${x.Block}`, pct: x["% 2024-25"] }));
+  const progRows = {
+    pgi: mk(pgiRanking2526.map((d) => ({ label: d.District, pct: d.PercentAchieved }))),
+    parakh: mk(parakhOverview.map((d) => ({ label: d.District, pct: pctOf(d.Overall) }))),
+    sat: mk(satRank2.map((d) => ({ label: d.District, pct: d.PercentAchieved }))),
+    gsqac: mk((gogData.districtGSQACResult || []).map((d) => ({ label: d.District, pct: d["Avg % (2024-25)"] }))),
+  };
+  const sat1Avg = avg(satRank1, "PercentAchieved"), sat2Avg = avg(satRank2, "PercentAchieved");
+  const programs = [
+    { title: "PGI-D 2.0", sub: "District score, 2025-26", color: "#D32F2F", rows: progRows.pgi, weak: weakPgi, weakTitle: "Weakest indicators",
+      chips: [["State avg", `${avg26?.toFixed(1)}%`], ["Priority", `${priorityAvg?.toFixed(1)}%`], ["Other", `${otherAvg?.toFixed(1)}%`], ["vs 2024-25", avg25 != null ? sgn(avg26 - avg25) : "—"]] },
+    { title: "PARAKH 2024", sub: "District overall score", color: "#1976D2", rows: progRows.parakh, weak: weakParakh, weakTitle: "Weakest subjects (grade · subject)",
+      chips: [["State avg", `${avg(progRows.parakh, "pct")?.toFixed(1)}%`], ["Priority", `${grpAvg(progRows.parakh, true)?.toFixed(1)}%`], ["Other", `${grpAvg(progRows.parakh, false)?.toFixed(1)}%`]] },
+    { title: "SAT", sub: "District average, Semester 2", color: "#B7791F", rows: progRows.sat, weak: weakSat, weakTitle: "Weakest learning outcomes (class · subject)",
+      chips: [["Sem 1 avg", `${sat1Avg?.toFixed(1)}%`], ["Sem 2 avg", `${sat2Avg?.toFixed(1)}%`], ["Change", sat1Avg != null && sat2Avg != null ? sgn(sat2Avg - sat1Avg) : "—"], ["Priority (Sem 2)", `${grpAvg(progRows.sat, true)?.toFixed(1)}%`]] },
+    { title: "PM SHRI — GSQAC", sub: "District average GSQAC %, 2024-25", color: "#6A1B9A", rows: progRows.gsqac, weak: lowSchools, weakTitle: "Lowest-scoring schools",
+      chips: [["State avg", `${avg(progRows.gsqac, "pct")?.toFixed(1)}%`], ["Priority", `${grpAvg(progRows.gsqac, true)?.toFixed(1)}%`], ...(gsFirst && gsLast && gsFirst !== gsLast ? [[`${gsFirst.year} → ${gsLast.year}`, sgn(gsLast.avgPct - gsFirst.avgPct)]] : [])] },
+  ];
+
+  const List = ({ title, rows, color }) => (
+    <Box sx={{ minWidth: 0 }}>
+      <Typography sx={{ fontWeight: 700, fontSize: 12.5, color: "#16233B", mb: 0.8 }}>{title}</Typography>
+      {rows.length === 0 && <Typography sx={{ fontSize: 12, color: "text.secondary" }}>Data not available.</Typography>}
+      {rows.map((r, i) => (
+        <Box key={`${r.label}${i}`} sx={{ mb: 0.8 }} title={r.note || r.label}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}>
+            <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#16233B", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{r.note && title !== "Top 5 districts" ? r.note : r.label}</Typography>
+            <Typography sx={{ fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>{r.pct.toFixed(1)}%</Typography>
+          </Box>
+          {r.note && r.label && title !== "Top 5 districts" && <Typography noWrap sx={{ fontSize: 10, color: "#7A869A" }}>{r.label}</Typography>}
+          <Box sx={{ height: 4, borderRadius: 2, bgcolor: "#EEF0F5" }}>
+            <Box sx={{ width: `${Math.min(r.pct, 100)}%`, height: "100%", borderRadius: 2, bgcolor: color }} />
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  );
 
   const cards = [
     avg25 != null && avg26 != null && {
@@ -185,58 +234,43 @@ const KeyInsights = () => {
         pageSubtitle="A few specific, checkable findings pulled from the PARAKH / PGI-D / GSQAC data already on this dashboard"
       />
 
-      <Typography sx={{ fontWeight: 700, fontSize: 18, color: "#16233B", mb: 1.5 }}>Weakest Indicators — by program</Typography>
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1.5, mb: 3 }}>
-        {weakPanels.map((p) => (
-          <Paper key={p.title} elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: 2.25 }}>
-            <Typography sx={{ fontWeight: 700, fontSize: 14.5, color: "#16233B" }}>{p.title}</Typography>
-            <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 1.5 }}>{p.sub}</Typography>
-            {p.rows.length === 0 && <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Data not available.</Typography>}
-            {p.rows.map((r) => (
-              <Box key={r.label} sx={{ mb: 1.1 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}>
-                  <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: "#16233B" }}>{r.label}</Typography>
-                  <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: p.color }}>{r.pct.toFixed(1)}%</Typography>
-                </Box>
-                {r.note && <Typography sx={{ fontSize: 11, color: "text.secondary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.note}>{r.note}</Typography>}
-                <Box sx={{ height: 5, borderRadius: 3, bgcolor: "#EEF0F5", mt: 0.4 }}>
-                  <Box sx={{ width: `${Math.min(r.pct, 100)}%`, height: "100%", borderRadius: 3, bgcolor: p.color }} />
-                </Box>
-              </Box>
-            ))}
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr", xl: "repeat(4, 1fr)" }, gap: 1.25, mb: 2.5 }}>
+        {cards.map((c) => (
+          <Paper key={c.title} elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: 1.75, display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+            <Box sx={{ width: 34, height: 34, borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: `${c.color}1A`, color: c.color, flexShrink: 0 }}>
+              {c.icon}
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: 13, color: "#16233B", mb: 0.3 }}>{c.title}</Typography>
+              <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{c.body}</Typography>
+            </Box>
           </Paper>
         ))}
       </Box>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-        {cards.map((c) => (
-          <Paper
-            key={c.title}
-            elevation={0}
-            sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: 2.25, display: "flex", gap: 2, alignItems: "flex-start" }}
-          >
-            <Box
-              sx={{
-                width: 40,
-                height: 40,
-                borderRadius: 2,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                bgcolor: `${c.color}1A`,
-                color: c.color,
-                flexShrink: 0,
-              }}
-            >
-              {c.icon}
-            </Box>
+      {programs.map((p) => (
+        <Paper key={p.title} elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: 2, mb: 1.5 }}>
+          <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 1.5 }}>
             <Box>
-              <Typography sx={{ fontWeight: 700, fontSize: 14.5, color: "#16233B", mb: 0.3 }}>{c.title}</Typography>
-              <Typography sx={{ fontSize: 13, color: "text.secondary" }}>{c.body}</Typography>
+              <Typography sx={{ fontWeight: 700, fontSize: 15.5, color: "#16233B" }}>{p.title}</Typography>
+              <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{p.sub}</Typography>
             </Box>
-          </Paper>
-        ))}
-      </Box>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+              {p.chips.map(([k, v]) => (
+                <Box key={k} sx={{ px: 1.25, py: 0.4, borderRadius: 2, bgcolor: `${p.color}12`, border: `1px solid ${p.color}33` }}>
+                  <Typography sx={{ fontSize: 10.5, color: "text.secondary", lineHeight: 1.2 }}>{k}</Typography>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: p.color, lineHeight: 1.3 }}>{v}</Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" }, gap: 2.5 }}>
+            <List title="Top 5 districts" rows={p.rows.slice(0, 5)} color="#178A4B" />
+            <List title="Bottom 5 districts" rows={p.rows.slice(-5).reverse()} color="#D93A2B" />
+            <List title={p.weakTitle} rows={p.weak} color={p.color} />
+          </Box>
+        </Paper>
+      ))}
     </DashboardLayout>
   );
 };

@@ -325,7 +325,7 @@ export const SATLOBreakdownSection = ({ los = [] }) => {
                     return (
                       <TableRow key={idx} hover sx={isWeak ? { bgcolor: "#FDEAEA" } : undefined}>
                         <TableCell sx={{ fontSize: 12, color: "text.secondary", whiteSpace: "nowrap" }}>
-                          {item.loCode}
+                          {item.grade ? `${item.grade} · ` : ""}{item.loCode}
                         </TableCell>
                         <TableCell sx={{ fontSize: 12.5 }}>
                           {item.indicator}
@@ -372,7 +372,7 @@ export const SATLOBreakdownSection = ({ los = [] }) => {
               <Box component="li" key={i} sx={{ mb: 1.2 }}>
                 <Typography sx={{ fontSize: 13.5, color: "#16233B" }}>
                   <strong>{item.indicator}</strong>{" "}
-                  <span style={{ color: "#5B6B85", fontSize: 12 }}>({item.subject})</span> — {t("currently")}{" "}
+                  <span style={{ color: "#5B6B85", fontSize: 12 }}>({item.grade ? `${item.grade} · ` : ""}{item.subject})</span> — {t("currently")}{" "}
                   <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, color: "#B71C1C" }}>
                     {item.obtainedMarks.toFixed(1)} / {item.totalMarks} ({item.pct.toFixed(1)}%)
                   </span>

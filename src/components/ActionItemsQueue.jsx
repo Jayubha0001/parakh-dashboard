@@ -1,3 +1,4 @@
+import { useFeatureFlags } from "../config/FeatureFlagsContext";
 import { useState, useEffect } from "react";
 import { Box, Paper, Typography, Chip, TextField, MenuItem } from "@mui/material";
 import { colors } from "../theme/theme";
@@ -159,7 +160,7 @@ const DistrictDetailCard = ({ item }) => {
   );
 };
 
-const ActionItemsQueue = ({ items = [], allDistricts = [], allItems = [], syncDistrict = "All", focusDistricts = [] }) => {
+const ActionItemsQueueInner = ({ items = [], allDistricts = [], allItems = [], syncDistrict = "All", focusDistricts = [] }) => {
   const [selectedDistrict, setSelectedDistrict] = useState("");
 
   // Priority order for what this panel shows by default:
@@ -258,6 +259,11 @@ const ActionItemsQueue = ({ items = [], allDistricts = [], allItems = [], syncDi
       </Box>
     </Paper>
   );
+};
+
+const ActionItemsQueue = (props) => {
+  const { flags } = useFeatureFlags();
+  return flags.pg_actions === false ? null : <ActionItemsQueueInner {...props} />;
 };
 
 export default ActionItemsQueue;

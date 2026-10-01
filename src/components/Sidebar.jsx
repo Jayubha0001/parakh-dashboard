@@ -129,6 +129,12 @@ const settingsItem = {
 // looked up by path so toggling a flag in Settings shows/hides the tab
 // immediately, with no code edit needed.
 const FLAG_BY_PATH = {
+  "/": "dashboard",
+  "/parakh": "parakh",
+  "/pgi": "pgi",
+  "/sat": "sat",
+  "/pmshri": "pmshri",
+  "/insights": "insights",
   "/attendance": "attendance",
   "/live-visits": "crcVisit",
   "/reports": "reports",

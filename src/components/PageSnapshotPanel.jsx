@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useFeatureFlags } from "../config/FeatureFlagsContext";
 import { Box, Typography, Grid } from "@mui/material";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { fontDisplay, fontMono } from "../theme/theme";
 import { isPriorityDistrict } from "../utils/priorityDistricts";
-import GujaratBubbleMap from "./GujaratBubbleMap";
+import GujaratDistrictMap from "./GujaratDistrictMap";
+import { quintileBands } from "../utils/mapBands";
 import { useLanguage } from "../i18n/LanguageContext";
 
 // Light/teal "Executive Snapshot" card — same structure as the dashboard's
@@ -19,7 +21,7 @@ const OTHER = "#B7BFCF";
 const INK = "#16233B";
 const SLATE = "#5B6B85";
 
-const PageSnapshotPanel = ({
+const PageSnapshotPanelInner = ({
   eyebrow = "Government of Gujarat · School Education Department",
   title,
   metricLabel,
@@ -116,16 +118,20 @@ const PageSnapshotPanel = ({
       <Grid container spacing={2.5}>
         {/* Map */}
         <Grid size={{ xs: 12, md: 3 }}>
-          <GujaratBubbleMap
-            light
-            district={district}
-            setDistrict={setDistrict}
-            districts={districts}
-            dataByDistrict={dataByDistrict}
-            metricLabel={metricLabel}
-            valueSuffix={valueSuffix}
-            priorityDistricts={districts.filter((d) => isPriorityDistrict(d))}
-          />
+          <Box sx={{ maxWidth: 340, mx: "auto" }}>
+            <GujaratDistrictMap
+              bare
+              compact
+                            district={district}
+              setDistrict={setDistrict}
+              districts={districts}
+              dataByDistrict={dataByDistrict}
+              metricLabel={metricLabel}
+              valueSuffix={valueSuffix}
+              priorityDistricts={districts.filter((d) => isPriorityDistrict(d))}
+              bands={quintileBands(dataByDistrict, valueSuffix)}
+            />
+          </Box>
         </Grid>
 
         {/* Coverage donut */}
@@ -166,7 +172,7 @@ const PageSnapshotPanel = ({
             {isSingleDistrict ? `${district} vs State Average` : `Avg ${metricLabel} — Priority vs Other`}
           </Typography>
           <ResponsiveContainer width="100%" height={175}>
-            <BarChart data={isSingleDistrict ? districtCompareData : compareData} margin={{ left: -18, right: 8 }}>
+            <BarChart key={isSingleDistrict ? "district" : "groups"} data={isSingleDistrict ? districtCompareData : compareData} margin={{ left: -18, right: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F6" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: SLATE }} />
               <YAxis unit={valueSuffix} domain={[0, 100]} tick={{ fontSize: 10, fill: SLATE }} />
@@ -266,6 +272,11 @@ const PageSnapshotPanel = ({
       )}
     </Box>
   );
+};
+
+const PageSnapshotPanel = (props) => {
+  const { flags } = useFeatureFlags();
+  return flags.pg_snapshot === false ? null : <PageSnapshotPanelInner {...props} />;
 };
 
 export default PageSnapshotPanel;

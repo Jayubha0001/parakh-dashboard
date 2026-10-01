@@ -55,6 +55,7 @@ import {
   getDistrictPGIRanking,
   getSubjectHeatmap,
   getSATWeakestLOs,
+  getPGICategoryHeatmap,
   getGenderComparison,
   getLocationComparison,
   getManagementComparison,
@@ -79,8 +80,10 @@ import {
 } from "../services/dataService";
 import { PGIIndicatorSection, PARAKHCompetencySection, SATLOBreakdownSection } from "../components/DistrictDeepDive";
 import DashboardOverviewGrid from "../components/DashboardOverviewGrid";
+import { periodOptionsFor } from "../utils/overviewConfig";
 import { levelsByDistrict } from "../utils/overviewValues";
 import OverviewCompare from "../components/OverviewCompare";
+import { useFeatureFlags } from "../config/FeatureFlagsContext";
 import OverviewFilters from "../components/OverviewFilters";
 import statePgi202526 from "../data/statePgi202526.json";
 import pgiD202526 from "../data/pgiD202526.json";
@@ -88,6 +91,8 @@ import districtPgiIndicators202526 from "../data/districtPgiIndicators202526.jso
 import { PRIORITY_DISTRICTS, isPriorityDistrict } from "../utils/priorityDistricts";
 
 const Dashboard = () => {
+  const { flags } = useFeatureFlags();
+  const on = (k) => flags[k] !== false;
   // -----------------------------
   // State
   // -----------------------------
@@ -126,13 +131,14 @@ const Dashboard = () => {
   // shows both semesters, so this state no longer drives anything.)
 
   const [satWeakLOs, setSatWeakLOs] = useState([]);
+  const [pgiHeat2425, setPgiHeat2425] = useState(null);
   const [district, setDistrict] = useState("All");
   const [priorityOnly, setPriorityOnly] = useState(false);
 
   // Overview-grid filters (Academic Year / Assessment / Grade). District
   // reuses the page-level `district` state above so the whole page follows.
-  const [ovYear, setOvYear] = useState("2025-26");
-  const [ovAssessment, setOvAssessment] = useState("PGI-D");
+  const [ovYear, setOvYear] = useState("Latest");
+  const [ovAssessment, setOvAssessment] = useState("Overall");
   const [ovGrade, setOvGrade] = useState("All Grades");
 
   const [stage, setStage] = useState("Overall");
@@ -176,7 +182,8 @@ const Dashboard = () => {
       setAllDistrictNames(getAllDistrictNames(workbook));
       setAllDistrictItems(getAllDistrictActionItems(workbook));
 
-      setSatWeakLOs(getSATWeakestLOs(workbook, 4).map((x) => ({ label: `${x.subject} · ${x.loCode}`, note: x.indicator, pct: x.PercentAchieved })));
+      setPgiHeat2425(getPGICategoryHeatmap(workbook));
+      setSatWeakLOs(getSATWeakestLOs(workbook, 4).map((x) => ({ label: `${x.grade ? x.grade + " · " : ""}${x.subject} · ${x.loCode}`, note: x.indicator, pct: x.PercentAchieved })));
       setSatRankingSem2(getSATDistrictRanking(workbook));
       setSatGradeWiseSem2(getSATGradeWise(workbook));
       setSatSummarySem2(getSATStateSummary(workbook));
@@ -646,6 +653,14 @@ const satSubjectComparisonChartData = (() => {
   // -----------------------------
 
 
+  const enabledAssessments = [["Overall", "as_overall"], ["PGI-D", "as_pgi"], ["PARAKH", "as_parakh"], ["SAT", "as_sat"]].filter(([, k]) => on(k)).map(([a]) => a);
+  useEffect(() => {
+    if (enabledAssessments.length && !enabledAssessments.includes(ovAssessment)) {
+      setOvAssessment(enabledAssessments[0]);
+      setOvYear(periodOptionsFor(enabledAssessments[0])[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flags]);
   const ovLevels = levelsByDistrict({ assessment: ovAssessment, year: ovYear, grade: ovGrade, pgiRanking2425: pgiRanking, parakhData, satComparison: satSemesterComparison, satGradeWise: satGradeWiseSem2, satGradeWiseSem1 });
 
   return (
@@ -666,11 +681,13 @@ const satSubjectComparisonChartData = (() => {
             satGrades={satGradeWiseSem2.grades}
           />
         }
-        kpis={[
+        kpis={!on("dash_kpis") ? [] : [
+          ...(flags.dash_kpiCounts === true ? [
           { label: "Total Districts", value: districts.length - 1 || 33, icon: DASHBOARD_KPI_ICONS.districts },
           { label: "Priority Districts", value: PRIORITY_DISTRICTS.length, icon: DASHBOARD_KPI_ICONS.priority },
           { label: "Other Districts", value: (districts.length - 1 || 33) - PRIORITY_DISTRICTS.length, icon: DASHBOARD_KPI_ICONS.school },
           { label: "Programs Tracked", value: 4, icon: DASHBOARD_KPI_ICONS.programs },
+          ] : []),
           (() => {
             const sel = district !== "All" ? district : null;
             const both = ovAssessment === "PGI-D" && ovYear === "Both Years";
@@ -710,22 +727,23 @@ const satSubjectComparisonChartData = (() => {
         satGradeWise={satGradeWiseSem2}
         satGradeWiseSem1={satGradeWiseSem1}
         pgiState2425={pgiSummary.overall}
+        pgiHeat2425={pgiHeat2425}
       />
 
 
 {/* District Ranking */}
 
 <>
-    <OverviewCompare pgi2425={pgiSummary} pgiRanking2425={pgiRanking} sat1={satSummarySem1} sat2={satSummarySem2} satGw1={satGradeWiseSem1} satGw2={satGradeWiseSem2} subjectHeatmap={subjectHeatmap} district={district} assessment={ovAssessment}
-      satWeak={district !== "All" ? [...(districtLoBreakdown || [])].sort((a, b) => a.pct - b.pct).slice(0, 8).map((x) => ({ label: `${x.subject} · ${x.loCode}`, note: x.indicator, pct: x.pct })) : satWeakLOs}
+    {(on("cmp_pgi") || on("cmp_sat") || on("cmp_pmshri") || on("dash_weakest")) && <OverviewCompare pgi2425={pgiSummary} pgiRanking2425={pgiRanking} sat1={satSummarySem1} sat2={satSummarySem2} satGw1={satGradeWiseSem1} satGw2={satGradeWiseSem2} subjectHeatmap={subjectHeatmap} district={district} assessment={ovAssessment}
+      satWeak={district !== "All" ? [...(districtLoBreakdown || [])].sort((a, b) => a.pct - b.pct).slice(0, 8).map((x) => ({ label: `${x.grade ? x.grade + " · " : ""}${x.subject} · ${x.loCode}`, note: x.indicator, pct: x.pct })) : satWeakLOs}
       parakhSubjects={(() => {
         const cols = subjectHeatmap.columns.filter((c) => !c.endsWith("Average"));
         return cols.map((c) => {
           const v = subjectHeatmap.data.map((r) => r[c]).filter((x) => typeof x === "number");
           return { label: c, pct: v.length ? v.reduce((a, b) => a + b, 0) / v.length : null };
         }).filter((x) => x.pct != null).sort((a, b) => a.pct - b.pct).slice(0, 4);
-      })()} />
-    {district !== "All" && (districtPgiIndicators?.overall || districtCompetencies || districtLoBreakdown?.length > 0) && (
+      })()} />}
+    {on("dash_deepDive") && district !== "All" && (districtPgiIndicators?.overall || districtCompetencies || districtLoBreakdown?.length > 0) && (
   <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
     <CardContent>
       <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 20, color: "#16233B", mb: 0.5 }}>

@@ -1,5 +1,6 @@
 import { Box, MenuItem, TextField } from "@mui/material";
 import { isPriorityDistrict } from "../utils/priorityDistricts";
+import { useFeatureFlags } from "../config/FeatureFlagsContext";
 import { ASSESSMENTS, periodOptionsFor, periodLabelFor, gradeOptionsFor } from "../utils/overviewConfig";
 
 const C = { ink: "#16233B" };
@@ -33,6 +34,8 @@ const OverviewFilters = ({
   satGrades = [],
 }) => {
   const gradeOptions = gradeOptionsFor(assessment, satGrades);
+  const { flags } = useFeatureFlags();
+  const KEY = { Overall: "as_overall", "PGI-D": "as_pgi", PARAKH: "as_parakh", SAT: "as_sat" };
   const periods = periodOptionsFor(assessment);
   const yearLocked = periods.length <= 1;
 
@@ -67,7 +70,7 @@ const OverviewFilters = ({
         }}
         sx={filterSx}
       >
-        {ASSESSMENTS.map((a) => (
+        {ASSESSMENTS.filter((a) => flags[KEY[a]] !== false).map((a) => (
           <MenuItem key={a} value={a}>
             {a}
           </MenuItem>

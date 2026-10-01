@@ -1611,7 +1611,7 @@ export const getSATWeakestLOs = (workbook, limit = 10) => {
     const key = `${subject}__${loCode}`;
 
     if (!totals[key]) {
-      totals[key] = { subject, loCode, indicator, totalMarks: 0, obtainedMarks: 0 };
+      totals[key] = { subject, grade: r[1], loCode, indicator, totalMarks: 0, obtainedMarks: 0 };
     }
     totals[key].totalMarks += totalMarks;
     totals[key].obtainedMarks += obtainedMarks;
@@ -1660,7 +1660,7 @@ export const getSATDistrictLOBreakdown = (workbook, districtName) => {
 
     const key = `${subject}__${loCode}`;
     if (!totals[key]) {
-      totals[key] = { subject: cleanSubjectLabel(subject), loCode, indicator, totalMarks: 0, obtainedMarks: 0 };
+      totals[key] = { subject: cleanSubjectLabel(subject), grade: r[1], loCode, indicator, totalMarks: 0, obtainedMarks: 0 };
     }
     totals[key].totalMarks += totalMarks;
     totals[key].obtainedMarks += obtainedMarks;
