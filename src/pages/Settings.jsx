@@ -22,7 +22,8 @@ const EXTRA_FLAGS = [
     ["as_overall", "Overall"], ["as_pgi", "PGI-D"], ["as_parakh", "PARAKH"], ["as_sat", "SAT"],
   ] },
   { group: "Program pages (PARAKH, PGI, SAT, PM SHRI)", items: [
-    ["pg_snapshot", "District Snapshot panel (map + charts)"], ["pg_actions", "Action Items"],
+    ["pg_snapshot_parakh", "PARAKH page: District Snapshot (map + charts)"], ["pg_snapshot_pgi", "PGI 2.0 page: District Snapshot"],
+    ["pg_snapshot_sat", "SAT page: District Snapshot"], ["pg_snapshot_pmshri", "PM Shri page: District Snapshot"], ["pg_actions", "Action Items (all program pages)"],
   ] },
 ];
 

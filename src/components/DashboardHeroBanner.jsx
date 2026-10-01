@@ -125,7 +125,7 @@ const DashboardHeroBanner = ({ kpis = [], insights = [], filters = null }) => {
       {/* KPI card row — separate light-tinted cards (one per accent
           colour), not a single continuous strip, so each stat reads as
           its own card the way the reference layout does. */}
-      <Box sx={{ bgcolor: "#F4F7FA", p: { xs: 1.25, md: 1.75 } }}>
+      <Box sx={{ bgcolor: "#F4F7FA", p: { xs: 1.25, md: 1.75 }, display: kpis.length ? "block" : "none" }}>
         <Grid container spacing={1.25}>
           {kpis.map((kpi, i) => {
             const accent = KPI_ACCENTS[i % KPI_ACCENTS.length];

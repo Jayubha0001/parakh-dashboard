@@ -487,7 +487,7 @@ const DistrictCompareView = ({
 
             {weakCompareRows.length > 0 && (
               <Box sx={{ mt: 2, p: 2.5, borderRadius: 2, bgcolor: "#FFFBEF", border: "1px dashed #F0B429" }}>
-                <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 16, color: "#16233B", mb: 0.5 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B", mb: 0.5 }}>
                   🎯 Action Points — Weakest Indicators ({weakCompareRows.length})
                 </Typography>
                 <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 1.5 }}>

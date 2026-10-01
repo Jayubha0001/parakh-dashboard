@@ -244,7 +244,7 @@ const NationalBenchmarkPanel = ({
     <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
       <CardContent>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 1 }}>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, color: "#16233B" }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B" }}>
             🇮🇳 {district !== "All" ? `${district} vs Gujarat vs National` : usePriorityAvg ? "Priority Districts Avg vs Gujarat vs National" : "Gujarat vs National"} — PARAKH Rashtriya Sarvekshan 2024
           </Typography>
 

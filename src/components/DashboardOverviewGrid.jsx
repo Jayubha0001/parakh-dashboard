@@ -160,7 +160,7 @@ const DashboardOverviewGrid = ({
   // ---- Priority vs Other (or District vs State when a district is picked) ----
   const priorityVsOther = useMemo(() => {
     const T = "Priority vs Other Districts";
-    if (isOverall) return { title: T, subtitle: "Score % by program (latest)", rows: [row("PGI-D", maps.pgi26), row("PARAKH", maps.parakh, natOf()), row("SAT", maps.sat)] };
+    if (isOverall) return { title: T, subtitle: "Score % by program (latest)", rows: [row("PGI-D", maps.pgi26), row("PARAKH", maps.parakh), row("SAT", maps.sat)] };
     if (isPGI) return { title: T, subtitle: "PGI-D % achieved by academic year", rows: [row("2024-25", maps.pgi25), row("2025-26", maps.pgi26)] };
     if (isPARAKH) {
       const stage = (col) => Object.fromEntries(parakhData.filter((r) => typeof r[col] === "number").map((r) => [r.District, r[col] * 100]));
@@ -173,7 +173,7 @@ const DashboardOverviewGrid = ({
   // ---- Grade-wise (SAT / PARAKH), Domain-wise (PGI-D), Program-wise (Overall) ----
   const breakdown = useMemo(() => {
     const mk = (name, rowsAll) => ({ name, ...rowsAll });
-    if (isOverall) return { title: "Program-wise Performance", rows: [row("PGI-D", maps.pgi26), row("PARAKH", maps.parakh, natOf()), row("SAT", maps.sat)] };
+    if (isOverall) return { title: "Program-wise Performance", rows: [row("PGI-D", maps.pgi26), row("PARAKH", maps.parakh), row("SAT", maps.sat)] };
     if (isPGI) {
       const heat = pgiD202526.heatmapData;
       const selRow = sel ? heat.find((r) => r.District === sel) : null;

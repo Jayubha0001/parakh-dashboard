@@ -359,12 +359,12 @@ const GujaratDistrictMap = ({
                   dominantBaseline="middle"
                   pointerEvents="none"
                   style={{
-                    fontSize: isSelected ? 8.5 : 7,
+                    fontSize: isSelected ? 12 : 10.5,
                     fontWeight: isSelected ? 700 : 600,
                     fill: isSelected ? "#ffffff" : "#5A3A1B",
                     paintOrder: "stroke",
                     stroke: "#ffffff",
-                    strokeWidth: isSelected ? 0 : 2,
+                    strokeWidth: isSelected ? 0 : 3,
                     strokeLinejoin: "round",
                   }}
               >

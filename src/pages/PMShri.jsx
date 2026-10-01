@@ -275,6 +275,7 @@ const PMShri = () => {
 
         return (
           <PageSnapshotPanel
+            page="pmshri"
             title="PM Shri (GSQAC) — District Snapshot"
             metricLabel="GSQAC"
             district={gsqacDistrictFilter}
@@ -417,7 +418,7 @@ const PMShri = () => {
 
       <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
         <CardContent>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 2, color: "#16233B" }}>
             PM Shri Schools — GOI vs GOG, by District
           </Typography>
 
@@ -437,7 +438,7 @@ const PMShri = () => {
 
       <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
         <CardContent>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 2, color: "#16233B" }}>
             District-wise PM Shri School Details
           </Typography>
 
@@ -497,7 +498,7 @@ const PMShri = () => {
               PM SHRI · GSQAC Result
             </Typography>
           </Box>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 0.5, color: "#16233B" }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 0.5, color: "#16233B" }}>
             Gujarat State Quality Assurance & Certification — {gsqac.latestYearLabel}{gsqacDistrictFilter !== "All" ? ` · ${gsqacDistrictFilter}` : ""}
           </Typography>
           <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 2 }}>
@@ -540,7 +541,7 @@ const PMShri = () => {
           {/* Year-wise comparison — All / GOI / GOG average score across
               every assessment cycle, so an improving or worsening trend
               is visible at a glance. */}
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 16, mb: 1.5, color: "#16233B" }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1.5, color: "#16233B" }}>
             Year-wise Comparison
           </Typography>
           <ResponsiveContainer width="100%" height={300}>
@@ -639,7 +640,7 @@ const PMShri = () => {
           </Box>
 
           {/* District-wise colour-grade distribution */}
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 16, mb: 1.5, color: "#16233B" }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1.5, color: "#16233B" }}>
             District-wise Colour Grade Distribution — {gsqacSelectedYearLabel}{gsqacSegment !== "All" ? ` · ${gsqacSegment} Schools` : ""}
           </Typography>
           <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 500, border: "1px solid #E4E7F0", mb: 2 }}>
@@ -677,7 +678,7 @@ const PMShri = () => {
           </TableContainer>
 
           {/* School-level search (District is controlled by the filter at the top of this tab) */}
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 16, mb: 1.5, color: "#16233B" }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1.5, color: "#16233B" }}>
             School-wise Result
           </Typography>
           <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", mb: 2 }}>
@@ -788,7 +789,7 @@ const PMShri = () => {
               Weakest — needs attention
             </Typography>
           </Box>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 0.5, color: "#16233B" }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 0.5, color: "#16233B" }}>
             Schools Declined vs Previous Year {gsqacSegment !== "All" ? `— ${gsqacSegment} Schools` : ""}{gsqacDistrictFilter !== "All" ? ` · ${gsqacDistrictFilter}` : ""}
           </Typography>
           <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 2 }}>

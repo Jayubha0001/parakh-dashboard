@@ -23,7 +23,7 @@ const Header = ({ pageEyebrow, pageIcon, pageTitle, pageSubtitle, statChip, cont
   return (
     <Box
       sx={{
-        background: `linear-gradient(120deg, ${colors.navy} 0%, ${colors.navyLight} 100%)`,
+        background: "linear-gradient(120deg, #0B4F6C 0%, #146E8C 55%, #2FA8C8 100%)",
         borderRadius: 4,
         color: "#fff",
         p: { xs: 1.5, md: 3 },
@@ -60,7 +60,7 @@ const Header = ({ pageEyebrow, pageIcon, pageTitle, pageSubtitle, statChip, cont
           width: 420,
           height: 420,
           borderRadius: "50%",
-          background: `radial-gradient(circle, ${colors.navyLight} 0%, transparent 70%)`,
+          background: "radial-gradient(circle, #8CF0E322 0%, transparent 70%)",
           opacity: 0.6,
           pointerEvents: "none",
         }}

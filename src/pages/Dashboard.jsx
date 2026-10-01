@@ -756,7 +756,7 @@ const satSubjectComparisonChartData = (() => {
 
       {districtPgiIndicators?.overall && (
         <>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 17, color: "#16233B", mb: 1 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B", mb: 1 }}>
             🏛️ PGI-D 2.0 — Full Indicator Breakdown (70 Indicators) — 2024-25 vs 2025-26
           </Typography>
           <PGIIndicatorSection
@@ -773,7 +773,7 @@ const satSubjectComparisonChartData = (() => {
 
       {districtCompetencies && (
         <>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 17, color: "#16233B", mt: 2.5, mb: 1 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B", mt: 2.5, mb: 1 }}>
             📖 PARAKH — Competency-wise Mastery vs National Benchmark
           </Typography>
           <PARAKHCompetencySection competencies={districtCompetencies} />
@@ -782,7 +782,7 @@ const satSubjectComparisonChartData = (() => {
 
       {districtLoBreakdown?.length > 0 && (
         <>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 17, color: "#16233B", mt: 2.5, mb: 1 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B", mt: 2.5, mb: 1 }}>
             📝 SAT — Learning-Outcome Breakdown
           </Typography>
           <SATLOBreakdownSection los={districtLoBreakdown} />

@@ -9,7 +9,7 @@ import pgiIndicators from "../data/districtPgiIndicators202526.json";
 import gog from "../data/pmshriGOG.json";
 import goi from "../data/pmshriGOI.json";
 
-const C1 = "#F0B429", C2 = "#1976D2";
+const C1 = "#F0B429", C2 = "#3B82F6";
 const avg2 = (a, b) => (typeof a === "number" && typeof b === "number" ? (a + b) / 2 : typeof a === "number" ? a : typeof b === "number" ? b : null);
 const r1 = (n) => (n == null ? null : Math.round(n * 10) / 10);
 const domKey = (s) => (String(s).match(/Domain\s*\d+|Category\s*\d+/i) || [String(s)])[0];
@@ -40,16 +40,16 @@ const Compare = ({ data, k1, k2, k3, h = 150, fmt = (v) => `${v}%` }) => (
 
 const Weak = ({ title, hint, color, rows }) => (
   <Box sx={{ minWidth: 0 }}>
-    <Typography sx={{ fontWeight: 700, fontSize: 12.5, color, lineHeight: 1.2 }}>{title}</Typography>
-    <Typography sx={{ fontSize: 10.5, color: "#7A869A", mb: 0.8 }}>{hint}</Typography>
+    <Typography sx={{ fontWeight: 700, fontSize: 12, color, lineHeight: 1.2 }}>{title}</Typography>
+    <Typography sx={{ fontSize: 10, color: "#7A869A", mb: 0.6 }}>{hint}</Typography>
     {rows.length === 0 && <Typography sx={{ fontSize: 12, color: "text.secondary" }}>—</Typography>}
     {rows.map((r, i) => (
       <Box key={`${r.label}${i}`} sx={{ mb: 0.9 }} title={`${r.label}${r.note ? " — " + r.note : ""}`}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1 }}>
-          <Typography sx={{ fontSize: 11.5, color: "#16233B", fontWeight: 600, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+          <Typography sx={{ fontSize: 10.5, color: "#16233B", fontWeight: 600, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
             {r.note || r.label}
           </Typography>
-          <Typography sx={{ fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>{r1(r.pct)}%</Typography>
+          <Typography sx={{ fontSize: 11, fontWeight: 700, color, flexShrink: 0 }}>{r1(r.pct)}%</Typography>
         </Box>
         {r.note && <Typography noWrap sx={{ fontSize: 10, color: "#7A869A" }}>{r.label}</Typography>}
         <Box sx={{ height: 4, borderRadius: 2, bgcolor: "#EEF0F5", mt: 0.3 }}>
@@ -173,7 +173,7 @@ const OverviewCompare = ({ pgi2425, pgiRanking2425 = [], sat1, sat2, satGw1, sat
           </Box>
         </Card>
       )}
-      {on("dash_weakest") && <Box sx={{ gridColumn: cmpCards === 1 ? { xs: "1 / -1", lg: "span 1" } : "1 / -1", minWidth: 0 }}>
+      {on("dash_weakest") && !(sel && on("dash_deepDive")) && <Box sx={{ gridColumn: cmpCards === 1 ? { xs: "1 / -1", lg: "span 1" } : "1 / -1", minWidth: 0 }}>
         <Card title={sel ? `${sel} — Weakest Indicators` : "Weakest Indicators — by program"} sub={assessment === "Overall" ? "Lowest-scoring items in each program" : `Lowest-scoring ${assessment} items`}>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", lg: `repeat(${cmpCards === 1 ? 1 : Math.min(4, wk.length)}, 1fr)` }, gap: 1.25 }}>
             {wk.map(([t, c, r, h]) => <Weak key={t} title={t} hint={h} color={c} rows={r || []} />)}

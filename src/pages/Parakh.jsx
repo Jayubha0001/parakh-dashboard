@@ -156,6 +156,7 @@ const PARAKH = () => {
 
         return (
           <PageSnapshotPanel
+            page="parakh"
             title="PARAKH — District Snapshot"
             metricLabel="PARAKH"
             district={district}
@@ -261,7 +262,7 @@ const PARAKH = () => {
       {district !== "All" && competencies && (
         <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
           <CardContent>
-            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
+            <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 2, color: "#16233B" }}>
               📖 {district} — Competency-wise Mastery vs National Benchmark
             </Typography>
             <PARAKHCompetencySection competencies={competencies} />

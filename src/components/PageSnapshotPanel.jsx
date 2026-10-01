@@ -276,7 +276,7 @@ const PageSnapshotPanelInner = ({
 
 const PageSnapshotPanel = (props) => {
   const { flags } = useFeatureFlags();
-  return flags.pg_snapshot === false ? null : <PageSnapshotPanelInner {...props} />;
+  return flags[`pg_snapshot_${props.page}`] === false ? null : <PageSnapshotPanelInner {...props} />;
 };
 
 export default PageSnapshotPanel;

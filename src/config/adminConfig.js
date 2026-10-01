@@ -7,7 +7,7 @@
 // Note: this is a soft lock for a static site. The password ships inside
 // the JavaScript bundle, so it stops casual viewers but is not real security.
 // -----------------------------------------------------------------------
-export const ADMIN_PASSWORD = "Tank@2550";
+export const ADMIN_PASSWORD = "ChangeMe@2526";
 
 // -----------------------------------------------------------------------
 // DEFAULT TABS: which sidebar tabs show for anyone who has NOT changed
@@ -27,12 +27,12 @@ export const DEFAULT_TAB_FLAGS = {
   comparison: false,
   dataDownload: false,
   // Dashboard sections
-  dash_kpis: true, dash_kpiCounts: false, dash_map: true, dash_donut: true, dash_priorityVsOther: true,
+  dash_kpis: false, dash_kpiCounts: false, dash_map: true, dash_donut: true, dash_priorityVsOther: true,
   dash_breakdown: true, dash_priorityList: true, dash_weakest: true, dash_deepDive: true,
   // Dashboard comparison cards
   cmp_pgi: true, cmp_sat: true, cmp_pmshri: true,
   // Assessment dropdown options
   as_overall: true, as_pgi: true, as_parakh: true, as_sat: true,
   // Program pages
-  pg_snapshot: true, pg_actions: true,
+  pg_snapshot_parakh: true, pg_snapshot_pgi: true, pg_snapshot_sat: true, pg_snapshot_pmshri: false, pg_actions: true,
 };

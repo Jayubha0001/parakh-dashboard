@@ -242,6 +242,7 @@ const PGI = () => {
       />
 
       <PageSnapshotPanel
+        page="pgi"
         title="Gujarat PGI 2.0 — District Snapshot"
         metricLabel="PGI-D 25-26"
         district={district}
@@ -290,7 +291,7 @@ const PGI = () => {
 
       <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2, border: "1px solid #E4E7F0" }} elevation={0}>
         <CardContent>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 2, color: "#16233B" }}>
             📊 District-wise PGI-D % Achieved — 2024-25 vs 2025-26
           </Typography>
           <ResponsiveContainer width="100%" height={420}>
@@ -309,7 +310,7 @@ const PGI = () => {
 
       <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2, border: "1px solid #E4E7F0" }} elevation={0}>
         <CardContent>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 2, color: "#16233B" }}>
             📋 District-wise PGI-D 2.0 Ranking (out of 600) — 2024-25 vs 2025-26
           </Typography>
           <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #E4E7F0", maxHeight: 560 }}>
@@ -389,7 +390,7 @@ const PGI = () => {
       {district !== "All" && districtIndicators?.overall && (
         <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2.5, border: "1px solid #E4E7F0" }} elevation={0}>
           <CardContent>
-            <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}>
+            <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 2, color: "#16233B" }}>
               🔎 {district} — Full Indicator Breakdown (70 Indicators) — 2024-25 vs 2025-26
             </Typography>
             <PGIIndicatorSection

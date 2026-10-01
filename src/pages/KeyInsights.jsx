@@ -151,8 +151,8 @@ const KeyInsights = () => {
       {rows.map((r, i) => (
         <Box key={`${r.label}${i}`} sx={{ mb: 0.8 }} title={r.note || r.label}>
           <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}>
-            <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#16233B", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{r.note && title !== "Top 5 districts" ? r.note : r.label}</Typography>
-            <Typography sx={{ fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>{r.pct.toFixed(1)}%</Typography>
+            <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "#16233B", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{r.note && title !== "Top 5 districts" ? r.note : r.label}</Typography>
+            <Typography sx={{ fontSize: 11, fontWeight: 700, color, flexShrink: 0 }}>{r.pct.toFixed(1)}%</Typography>
           </Box>
           {r.note && r.label && title !== "Top 5 districts" && <Typography noWrap sx={{ fontSize: 10, color: "#7A869A" }}>{r.label}</Typography>}
           <Box sx={{ height: 4, borderRadius: 2, bgcolor: "#EEF0F5" }}>
@@ -235,7 +235,7 @@ const KeyInsights = () => {
       />
 
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr", xl: "repeat(4, 1fr)" }, gap: 1.25, mb: 2.5 }}>
-        {cards.map((c) => (
+        {cards.filter((c) => /Most improved|Steepest|Weakest PGI-D/.test(c.title)).map((c) => (
           <Paper key={c.title} elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: 1.75, display: "flex", gap: 1.5, alignItems: "flex-start" }}>
             <Box sx={{ width: 34, height: 34, borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: `${c.color}1A`, color: c.color, flexShrink: 0 }}>
               {c.icon}

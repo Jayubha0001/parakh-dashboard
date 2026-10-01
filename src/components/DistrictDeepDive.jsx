@@ -230,7 +230,7 @@ export const PGIIndicatorSection = ({
             border: "1px dashed #F0B429",
           }}
         >
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 16, color: "#16233B", mb: 0.5 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B", mb: 0.5 }}>
             🎯 Action Points — Weakest Indicators ({weakIndicators.length})
           </Typography>
           <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 1.5 }}>
@@ -360,7 +360,7 @@ export const SATLOBreakdownSection = ({ los = [] }) => {
 
       {weakLOs.length > 0 && (
         <Box sx={{ mt: 2, p: 2.5, borderRadius: 2, bgcolor: "#FFFBEF", border: "1px dashed #F0B429" }}>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 16, color: "#16233B", mb: 0.5 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B", mb: 0.5 }}>
             🎯 {t("action_points_weakest_los")} ({weakLOs.length})
           </Typography>
           <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 1.5 }}>
@@ -485,7 +485,7 @@ const SingleSubjectCompetencyTable = ({ data = [] }) => {
 
       {weakRows.length > 0 && (
         <Box sx={{ mt: 2, p: 2.5, borderRadius: 2, bgcolor: "#FFFBEF", border: "1px dashed #F0B429" }}>
-          <Typography sx={{ fontFamily: '"Fraunces", serif', fontWeight: 700, fontSize: 16, color: "#16233B", mb: 0.5 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B", mb: 0.5 }}>
             🎯 {t("action_points_weakest_competencies")} ({weakRows.length})
           </Typography>
           <Typography sx={{ fontSize: 12.5, color: "text.secondary", mb: 1.5 }}>
@@ -583,7 +583,7 @@ const DistrictDeepDive = ({ pgiDetail, competencies }) => {
     <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2, border: "1px solid #E4E7F0" }} elevation={0}>
       <CardContent>
         <Typography
-          sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mb: 2, color: "#16233B" }}
+          sx={{ fontWeight: 700, fontSize: 15, mb: 2, color: "#16233B" }}
         >
           🔎 PGI-D 2.0 — Full Indicator Breakdown (70 Indicators)
         </Typography>
@@ -595,7 +595,7 @@ const DistrictDeepDive = ({ pgiDetail, competencies }) => {
         />
 
         <Typography
-          sx={{ fontFamily: '"Fraunces", serif', fontWeight: 600, fontSize: 18, mt: 2.5, mb: 1, color: "#16233B" }}
+          sx={{ fontWeight: 700, fontSize: 15, mt: 2.5, mb: 1, color: "#16233B" }}
         >
           📖 PARAKH — Competency-wise Mastery vs National Benchmark
         </Typography>
