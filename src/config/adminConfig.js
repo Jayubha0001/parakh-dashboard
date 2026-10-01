@@ -23,9 +23,9 @@ export const DEFAULT_TAB_FLAGS = {
   insights: true,
   attendance: false,
   crcVisit: false,
-  reports: true,
-  comparison: true,
-  dataDownload: true,
+  reports: false,
+  comparison: false,
+  dataDownload: false,
   // Dashboard sections
   dash_kpis: true, dash_kpiCounts: false, dash_map: true, dash_donut: true, dash_priorityVsOther: true,
   dash_breakdown: true, dash_priorityList: true, dash_weakest: true, dash_deepDive: true,
