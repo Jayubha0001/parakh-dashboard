@@ -1,3 +1,5 @@
+import { barLabel } from "../utils/chartLabels";
+import { fmt1 } from "../utils/fmt";
 import { useEffect, useState } from "react";
 import { Box, Grid, Paper, Card, CardContent, Typography, ToggleButtonGroup, ToggleButton } from "@mui/material";
 import {
@@ -494,6 +496,19 @@ const SAT = () => {
         }
       />
 
+      <Box sx={{ my: 2 }}>
+        <DistrictFilterBar
+          district={district}
+          setDistrict={setDistrict}
+          districts={dropdownDistricts}
+          priorityOnly={priorityOnly}
+          onPriorityOnlyChange={(v) => {
+            setPriorityOnly(v);
+            if (v && district !== "All" && !isPriorityDistrict(district)) setDistrict("All");
+          }}
+        />
+      </Box>
+
       {(() => {
         const priorityRows = satRanking.filter((d) => isPriorityDistrict(d.District));
         const otherRows = satRanking.filter((d) => !isPriorityDistrict(d.District));
@@ -548,20 +563,6 @@ const SAT = () => {
         );
       })()}
 
-      {/* District Filter */}
-      <Box mt={1} mb={2}>
-        <DistrictFilterBar
-          district={district}
-          setDistrict={setDistrict}
-          districts={dropdownDistricts}
-          priorityOnly={priorityOnly}
-          onPriorityOnlyChange={(v) => {
-            setPriorityOnly(v);
-            if (v && district !== "All" && !isPriorityDistrict(district)) setDistrict("All");
-          }}
-        />
-      </Box>
-
       {/* District-wise bar chart — Sem 1 vs Sem 2, always both */}
       <Card elevation={0} sx={{ mb: 2.5, borderRadius: 3, border: "1px solid #E4E7F0", borderLeft: `4px solid ${colors.navy}`, boxShadow: "none" }}>
         <CardContent>
@@ -576,19 +577,23 @@ const SAT = () => {
           </Typography>
 
           <ResponsiveContainer width="100%" height={460}>
-            <BarChart data={districtComparisonChartData} margin={{ top: 30, right: 30, left: 20, bottom: 100 }}>
+            <BarChart data={districtComparisonChartData} margin={{ top: 34, right: 30, left: 20, bottom: 100 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="District" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 10 }} />
               <YAxis domain={[0, 100]} />
               <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
               <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: 12 }} />
-              <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
-              <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10} />
+              <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10}>
+<LabelList dataKey="Sem 1" content={barLabel(false)} />
+</Bar>
+              <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10}>
+<LabelList dataKey="Sem 2" content={barLabel(false)} />
+</Bar>
               <Bar dataKey="Sem 1 (State Avg)" fill="#B7C0D1" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10}>
-                <LabelList dataKey="Sem 1 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 11, fontWeight: "bold", fill: "#555" }} />
+                <LabelList dataKey="Sem 1 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${fmt1(v)}%`)} style={{ fontSize: 11, fontWeight: "bold", fill: "#555" }} />
               </Bar>
               <Bar dataKey="Sem 2 (State Avg)" fill="#F0D9A6" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 10}>
-                <LabelList dataKey="Sem 2 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 11, fontWeight: "bold", fill: "#333" }} />
+                <LabelList dataKey="Sem 2 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${fmt1(v)}%`)} style={{ fontSize: 11, fontWeight: "bold", fill: "#333" }} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -622,16 +627,16 @@ const SAT = () => {
                 <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
                 <Legend />
                 <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 18 : 30}>
-                  <LabelList dataKey="Sem 1" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 10, fontWeight: "bold", fill: "#555" }} />
+                  <LabelList dataKey="Sem 1" position="top" formatter={(v) => (v == null ? "" : `${fmt1(v)}%`)} style={{ fontSize: 10, fontWeight: "bold", fill: "#555" }} />
                 </Bar>
                 <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 18 : 30}>
-                  <LabelList dataKey="Sem 2" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 10, fontWeight: "bold", fill: "#333" }} />
+                  <LabelList dataKey="Sem 2" position="top" formatter={(v) => (v == null ? "" : `${fmt1(v)}%`)} style={{ fontSize: 10, fontWeight: "bold", fill: "#333" }} />
                 </Bar>
                 <Bar dataKey="Sem 1 (State Avg)" fill="#B7C0D1" radius={[4, 4, 0, 0]} barSize={18}>
-                  <LabelList dataKey="Sem 1 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#555" }} />
+                  <LabelList dataKey="Sem 1 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${fmt1(v)}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#555" }} />
                 </Bar>
                 <Bar dataKey="Sem 2 (State Avg)" fill="#F0D9A6" radius={[4, 4, 0, 0]} barSize={18}>
-                  <LabelList dataKey="Sem 2 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#333" }} />
+                  <LabelList dataKey="Sem 2 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${fmt1(v)}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#333" }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -666,16 +671,16 @@ const SAT = () => {
                 <Tooltip formatter={(value) => (value == null ? "—" : `${Number(value).toFixed(1)}%`)} />
                 <Legend />
                 <Bar dataKey="Sem 1" fill={colors.navyLight} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 14 : 22}>
-                  <LabelList dataKey="Sem 1" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#555" }} />
+                  <LabelList dataKey="Sem 1" position="top" formatter={(v) => (v == null ? "" : `${fmt1(v)}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#555" }} />
                 </Bar>
                 <Bar dataKey="Sem 2" fill={colors.gold} radius={[4, 4, 0, 0]} barSize={district !== "All" ? 14 : 22}>
-                  <LabelList dataKey="Sem 2" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#333" }} />
+                  <LabelList dataKey="Sem 2" position="top" formatter={(v) => (v == null ? "" : `${fmt1(v)}%`)} style={{ fontSize: 9, fontWeight: "bold", fill: "#333" }} />
                 </Bar>
                 <Bar dataKey="Sem 1 (State Avg)" fill="#B7C0D1" radius={[4, 4, 0, 0]} barSize={14}>
-                  <LabelList dataKey="Sem 1 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 8, fontWeight: "bold", fill: "#555" }} />
+                  <LabelList dataKey="Sem 1 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${fmt1(v)}%`)} style={{ fontSize: 8, fontWeight: "bold", fill: "#555" }} />
                 </Bar>
                 <Bar dataKey="Sem 2 (State Avg)" fill="#F0D9A6" radius={[4, 4, 0, 0]} barSize={14}>
-                  <LabelList dataKey="Sem 2 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${v}%`)} style={{ fontSize: 8, fontWeight: "bold", fill: "#333" }} />
+                  <LabelList dataKey="Sem 2 (State Avg)" position="top" formatter={(v) => (v == null ? "" : `${fmt1(v)}%`)} style={{ fontSize: 8, fontWeight: "bold", fill: "#333" }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

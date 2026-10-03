@@ -11,6 +11,7 @@ import { loadExcel, getDistrictPGIRanking, getSheetData, getSubjectHeatmap, getS
 import { isPriorityDistrict, PRIORITY_DISTRICTS } from "../utils/priorityDistricts";
 import pgiD202526 from "../data/pgiD202526.json";
 import statePgi202526 from "../data/statePgi202526.json";
+import { buildInsights } from "../utils/insightEngine";
 import goiData from "../data/pmshriGOI.json";
 import gogData from "../data/pmshriGOG.json";
 import pgiIndicators from "../data/districtPgiIndicators202526.json";
@@ -144,6 +145,20 @@ const KeyInsights = () => {
       chips: [["State avg", `${avg(progRows.gsqac, "pct")?.toFixed(1)}%`], ["Priority", `${grpAvg(progRows.gsqac, true)?.toFixed(1)}%`], ...(gsFirst && gsLast && gsFirst !== gsLast ? [[`${gsFirst.year} → ${gsLast.year}`, sgn(gsLast.avgPct - gsFirst.avgPct)]] : [])] },
   ];
 
+  const engine = buildInsights({
+    programs: {
+      "PGI-D": pgiRanking2526.map((d) => ({ District: d.District, v: d.PercentAchieved })),
+      PARAKH: parakhOverview.map((d) => ({ District: d.District, v: pctOf(d.Overall) })),
+      SAT: satRank2.map((d) => ({ District: d.District, v: d.PercentAchieved })),
+      GSQAC: (gogData.districtGSQACResult || []).map((d) => ({ District: d.District, v: d["Avg % (2024-25)"] })),
+    },
+    prevPgi: pgiRanking2425.map((d) => ({ District: d.District, v: d.PercentAchieved })),
+    sat1: satRank1.map((d) => ({ District: d.District, v: d.PercentAchieved })),
+    isPriority: isPriorityDistrict,
+    weak: { pgi: weakPgi, parakh: weakParakh, sat: weakSat },
+  });
+  const TONE = { alert: ["#D93A2B", "#FDEAEA", "Act now"], watch: ["#B7791F", "#FFF4D6", "Keep an eye on this"], good: ["#178A4B", "#E6F4EA", "Doing well"], info: ["#3B82F6", "#EEF3FF", "Good to know"] };
+
   const List = ({ title, rows, color }) => (
     <Box sx={{ minWidth: 0 }}>
       <Typography sx={{ fontWeight: 700, fontSize: 12.5, color: "#16233B", mb: 0.8 }}>{title}</Typography>
@@ -234,20 +249,66 @@ const KeyInsights = () => {
         pageSubtitle="A few specific, checkable findings pulled from the PARAKH / PGI-D / GSQAC data already on this dashboard"
       />
 
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr", xl: "repeat(4, 1fr)" }, gap: 1.25, mb: 2.5 }}>
-        {cards.filter((c) => /Most improved|Steepest|Weakest PGI-D/.test(c.title)).map((c) => (
-          <Paper key={c.title} elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: 1.75, display: "flex", gap: 1.5, alignItems: "flex-start" }}>
-            <Box sx={{ width: 34, height: 34, borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: `${c.color}1A`, color: c.color, flexShrink: 0 }}>
-              {c.icon}
-            </Box>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography sx={{ fontWeight: 700, fontSize: 13, color: "#16233B", mb: 0.3 }}>{c.title}</Typography>
-              <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{c.body}</Typography>
-            </Box>
-          </Paper>
+      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: 1.75, mb: 2, bgcolor: "#F7FAFC" }}>
+        <Typography sx={{ fontSize: 12, color: "#5B6B85" }}>
+          <b style={{ color: "#16233B" }}>How to read this page: </b>every line below is worked out automatically from the latest PGI-D, PARAKH, SAT and PM SHRI (GSQAC) numbers.
+          Red means act now, yellow means keep an eye on it, green means a strength. "Points" means percentage points (a move from 50% to 53% is 3 points).
+          "State average" is the average of all 33 districts. Priority districts are the 10 districts chosen for extra support.
+        </Typography>
+      </Paper>
+
+      <Paper elevation={0} sx={{ borderRadius: 3, p: 2.25, mb: 2, color: "#fff", background: "linear-gradient(120deg, #0B4F6C 0%, #146E8C 55%, #2FA8C8 100%)" }}>
+        <Typography sx={{ fontSize: 11, letterSpacing: 1, fontWeight: 700, opacity: 0.85, mb: 0.75 }}>THE SHORT VERSION</Typography>
+        {engine.bullets.map((t) => (
+          <Typography key={t} sx={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.6 }}>• {t}</Typography>
         ))}
+      </Paper>
+
+      <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B", mb: 1 }}>What the numbers show, and what to do about it</Typography>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, gap: 1.25, mb: 2.5 }}>
+        {engine.insights.map((it) => {
+          const [c, bg, label] = TONE[it.tone];
+          return (
+            <Paper key={it.title} elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", borderLeft: `4px solid ${c}`, p: 1.75 }}>
+              <Box sx={{ display: "inline-block", px: 1, py: 0.1, borderRadius: 1, bgcolor: bg, color: c, fontSize: 10.5, fontWeight: 700, mb: 0.6 }}>{label}</Box>
+              <Typography sx={{ fontWeight: 700, fontSize: 13, color: "#16233B", lineHeight: 1.35, mb: 0.6 }}>{it.title}</Typography>
+              <Typography sx={{ fontSize: 12, color: "#16233B", mb: 0.5 }}><b style={{ color: "#5B6B85" }}>What we see: </b>{it.detail}</Typography>
+              {it.why && <Typography sx={{ fontSize: 12, color: "#16233B", mb: 0.5 }}><b style={{ color: "#5B6B85" }}>Why it matters: </b>{it.why}</Typography>}
+              <Typography sx={{ fontSize: 12, color: "#16233B" }}><b style={{ color: c }}>What to do: </b>{it.action}</Typography>
+            </Paper>
+          );
+        })}
       </Box>
 
+      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: 2, mb: 2.5, overflowX: "auto" }}>
+        <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B" }}>Districts that need the most support</Typography>
+        <Typography sx={{ fontSize: 11, color: "#5B6B85", mb: 1 }}>Districts are ranked by how they do across all programs together. Red number = below the state average, green = above. "Weakest program" is where that district is furthest behind.</Typography>
+        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+          <thead>
+            <tr style={{ textAlign: "left", color: "#5B6B85" }}>
+              <th style={{ padding: "4px 8px" }}>#</th><th style={{ padding: "4px 8px" }}>District</th>
+              {engine.keys.map((k) => <th key={k} style={{ padding: "4px 8px" }}>{k}</th>)}
+              <th style={{ padding: "4px 8px" }}>Weakest program</th>
+            </tr>
+          </thead>
+          <tbody>
+            {engine.focus.map((r, i) => (
+              <tr key={r.d} style={{ borderTop: "1px solid #EEF0F5" }}>
+                <td style={{ padding: "6px 8px" }}>{i + 1}</td>
+                <td style={{ padding: "6px 8px", fontWeight: 700 }}>{r.d}{r.priority ? " ⭐" : ""}</td>
+                {engine.keys.map((k) => (
+                  <td key={k} style={{ padding: "6px 8px", color: r.vals[k] ? (r.vals[k].diff < 0 ? "#D93A2B" : "#178A4B") : "#9AA5B1", fontWeight: 600 }}>
+                    {r.vals[k] ? `${r.vals[k].v.toFixed(1)}%` : "—"}
+                  </td>
+                ))}
+                <td style={{ padding: "6px 8px", fontWeight: 700 }}>{r.focusProgram}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Box>
+      </Paper>
+
+      <Typography sx={{ fontWeight: 700, fontSize: 15, color: "#16233B", mb: 1 }}>The detail behind it: best and weakest districts in each program</Typography>
       {programs.map((p) => (
         <Paper key={p.title} elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: 2, mb: 1.5 }}>
           <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 1.5 }}>

@@ -1,3 +1,4 @@
+import { fmt1 } from "../utils/fmt";
 import { useMemo } from "react";
 import { Box, Typography } from "@mui/material";
 import {
@@ -397,7 +398,7 @@ const DashboardOverviewGrid = ({
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E9EDF3" />
               <XAxis dataKey="name" tick={chartFont} axisLine={false} tickLine={false} />
               <YAxis domain={[0, 100]} tick={chartFont} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(v) => `${v}%`} />
+              <Tooltip formatter={(v) => `${fmt1(v)}%`} />
               <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
               {seriesKeys.map(([k, col, nm]) => (
                 <Bar key={k} dataKey={k} name={nm} fill={col} radius={[5, 5, 0, 0]} maxBarSize={36}>
@@ -425,11 +426,11 @@ const DashboardOverviewGrid = ({
                 <CartesianGrid strokeDasharray="3 3" stroke="#E9EDF3" vertical={false} />
                 <XAxis dataKey="name" tick={{ ...chartFont, fontSize: 10 }} axisLine={false} tickLine={false} interval={0} />
                 <YAxis domain={[0, 100]} tick={chartFont} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(v) => `${v}%`} />
+                <Tooltip formatter={(v) => `${fmt1(v)}%`} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 10.5 }} />
                 {lineKeys.map(([k, col, nm, dashed]) => (
                   <Bar key={k} dataKey={k} name={nm} fill={col} radius={[3, 3, 0, 0]} maxBarSize={13}>
-                    {!dashed && <LabelList dataKey={k} position="top" formatter={(v) => (v == null ? "" : Math.round(v))} style={{ fontSize: 9, fontWeight: 700, fill: C.ink }} />}
+                    {!dashed && <LabelList dataKey={k} position="top" formatter={fmt1} style={{ fontSize: 9, fontWeight: 700, fill: C.ink }} />}
                   </Bar>
                 ))}
               </BarChart>
@@ -438,7 +439,7 @@ const DashboardOverviewGrid = ({
               <CartesianGrid strokeDasharray="3 3" stroke="#E9EDF3" />
               <XAxis dataKey="name" tick={chartFont} axisLine={false} tickLine={false} interval={0} />
               <YAxis domain={[0, 100]} tick={chartFont} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(v) => `${v}%`} />
+              <Tooltip formatter={(v) => `${fmt1(v)}%`} />
               <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
               {lineKeys.map(([k, col, nm, dashed], i) => (
                 <Line key={k} type="monotone" dataKey={k} name={nm} stroke={col} strokeWidth={dashed ? 2 : 2.5} strokeDasharray={dashed ? "5 4" : undefined} dot={{ r: dashed ? 3 : 4 }} connectNulls>

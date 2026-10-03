@@ -1,6 +1,10 @@
+import { barLabel } from "../utils/chartLabels";
+import { fmt1 } from "../utils/fmt";
 import { useMemo } from "react";
 import { Box, Paper, Typography } from "@mui/material";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  LabelList,
+} from "recharts";
 import pgiD202526 from "../data/pgiD202526.json";
 import { useFeatureFlags } from "../config/FeatureFlagsContext";
 import { normalizeDistrictName } from "../utils/satDistrictMap";
@@ -25,15 +29,21 @@ const Card = ({ title, sub, children }) => (
 
 const Compare = ({ data, k1, k2, k3, h = 150, fmt = (v) => `${v}%` }) => (
   <ResponsiveContainer width="100%" height={h}>
-    <BarChart key={`${k1}-${k2}-${k3 || ""}`} data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+    <BarChart key={`${k1}-${k2}-${k3 || ""}`} data={data} margin={{ top: 34, right: 8, left: -12, bottom: 0 }}>
       <CartesianGrid strokeDasharray="3 3" vertical={false} />
       <XAxis dataKey="name" tick={{ fontSize: 10.5 }} interval={0} />
       <YAxis tick={{ fontSize: 10.5 }} domain={[0, "auto"]} />
       <Tooltip formatter={(v) => (v == null ? "—" : fmt(v))} />
       <Legend wrapperStyle={{ fontSize: 11 }} />
-      <Bar dataKey={k1} fill={C1} radius={[3, 3, 0, 0]} />
-      <Bar dataKey={k2} fill={C2} radius={[3, 3, 0, 0]} />
-      {k3 && <Bar dataKey={k3} fill="#2E9E6B" radius={[3, 3, 0, 0]} />}
+      <Bar dataKey={k1} fill={C1} radius={[3, 3, 0, 0]}>
+<LabelList dataKey={k1} content={barLabel(false)} />
+</Bar>
+      <Bar dataKey={k2} fill={C2} radius={[3, 3, 0, 0]}>
+<LabelList dataKey={k2} content={barLabel(false)} />
+</Bar>
+      {k3 && <Bar dataKey={k3} fill="#2E9E6B" radius={[3, 3, 0, 0]}>
+<LabelList dataKey={k3} content={barLabel(false)} />
+</Bar>}
     </BarChart>
   </ResponsiveContainer>
 );
@@ -155,19 +165,23 @@ const OverviewCompare = ({ pgi2425, pgiRanking2425 = [], sat1, sat2, satGw1, sat
         <Card title="PM SHRI — Enrolment & GSQAC by year" sub={`${who} totals, year-wise`}>
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
             <ResponsiveContainer width="100%" height={150}>
-              <BarChart data={enroll} margin={{ top: 8, right: 4, left: -4, bottom: 0 }}>
+              <BarChart data={enroll} margin={{ top: 34, right: 4, left: -4, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} />
-                <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="Enrollment" name="Enrolment" fill={C2} radius={[3, 3, 0, 0]} />
+                <Tooltip formatter={(v) => (typeof v === "number" ? fmt1(v) : v)} /><Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="Enrollment" name="Enrolment" fill={C2} radius={[3, 3, 0, 0]}>
+<LabelList dataKey="Enrollment" content={barLabel(false)} />
+</Bar>
               </BarChart>
             </ResponsiveContainer>
             <ResponsiveContainer width="100%" height={150}>
-              <BarChart data={gsqac} margin={{ top: 8, right: 4, left: -12, bottom: 0 }}>
+              <BarChart data={gsqac} margin={{ top: 34, right: 4, left: -12, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} domain={[0, 100]} />
-                <Tooltip formatter={(v) => `${v}%`} /><Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="GSQAC %" fill={C1} radius={[3, 3, 0, 0]} />
+                <Tooltip formatter={(v) => `${fmt1(v)}%`} /><Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="GSQAC %" fill={C1} radius={[3, 3, 0, 0]}>
+<LabelList dataKey="GSQAC %" content={barLabel(false)} />
+</Bar>
               </BarChart>
             </ResponsiveContainer>
           </Box>

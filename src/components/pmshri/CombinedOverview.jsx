@@ -1,3 +1,5 @@
+import { barLabel } from "../../utils/chartLabels";
+import { fmt1 } from "../../utils/fmt";
 import { Grid, Paper, Typography, Box } from "@mui/material";
 import {
   ResponsiveContainer,
@@ -8,6 +10,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  LabelList,
 } from "recharts";
 
 import goi from "../../data/pmshriGOI.json";
@@ -181,14 +184,18 @@ const CombinedOverview = ({ selectedDistrict = "All", priorityOnly = false, prio
                 Enrollment — GOI vs GOG{usePriorityView ? " (Priority Districts)" : ""}
               </Typography>
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={enrollmentChartData}>
+                <BarChart data={enrollmentChartData} margin={{ top: 34, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="year" tick={{ fontSize: 11 }} />
                   <YAxis domain={["auto", "auto"]} tick={{ fontSize: 11 }} />
-                  <Tooltip />
+                  <Tooltip formatter={(v) => (typeof v === "number" ? fmt1(v) : v)} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="GOI" fill="#1976D2" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="GOG" fill="#8E24AA" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="GOI" fill="#1976D2" radius={[6, 6, 0, 0]}>
+<LabelList dataKey="GOI" content={barLabel(false)} />
+</Bar>
+                  <Bar dataKey="GOG" fill="#8E24AA" radius={[6, 6, 0, 0]}>
+<LabelList dataKey="GOG" content={barLabel(false)} />
+</Bar>
                 </BarChart>
               </ResponsiveContainer>
             </Grid>
@@ -197,14 +204,18 @@ const CombinedOverview = ({ selectedDistrict = "All", priorityOnly = false, prio
                 Avg GSQAC % (2024-25) — GOI vs GOG{usePriorityView ? " (Priority Districts)" : ""}
               </Typography>
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={gsqacChartData}>
+                <BarChart data={gsqacChartData} margin={{ top: 34, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="year" tick={{ fontSize: 11 }} />
                   <YAxis domain={["auto", "auto"]} tick={{ fontSize: 11 }} />
-                  <Tooltip />
+                  <Tooltip formatter={(v) => (typeof v === "number" ? fmt1(v) : v)} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="GOI" fill="#1976D2" radius={[6, 6, 0, 0]} barSize={60} />
-                  <Bar dataKey="GOG" fill="#8E24AA" radius={[6, 6, 0, 0]} barSize={60} />
+                  <Bar dataKey="GOI" fill="#1976D2" radius={[6, 6, 0, 0]} barSize={60}>
+<LabelList dataKey="GOI" content={barLabel(false)} />
+</Bar>
+                  <Bar dataKey="GOG" fill="#8E24AA" radius={[6, 6, 0, 0]} barSize={60}>
+<LabelList dataKey="GOG" content={barLabel(false)} />
+</Bar>
                 </BarChart>
               </ResponsiveContainer>
             </Grid>

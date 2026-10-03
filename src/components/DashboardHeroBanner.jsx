@@ -89,9 +89,6 @@ const DashboardHeroBanner = ({ kpis = [], insights = [], filters = null }) => {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
             <Box sx={{ display: { xs: "none", lg: "flex" }, alignItems: "center", gap: 1 }}>
               <Box sx={{ width: 22, height: 1, bgcolor: "rgba(255,255,255,0.4)" }} />
-              <Typography sx={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.8)", whiteSpace: "nowrap" }}>
-                Every District · Every Score
-              </Typography>
             </Box>
             <Box
               onClick={() => navigate("/reports")}

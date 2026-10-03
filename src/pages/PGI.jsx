@@ -1,6 +1,10 @@
+import { barLabel } from "../utils/chartLabels";
+import { fmt1 } from "../utils/fmt";
 import { useEffect, useState } from "react";
 import { Box, Typography, Paper, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, Chip } from "@mui/material";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  LabelList,
+} from "recharts";
 
 import DashboardLayout from "../components/DashboardLayout";
 import Header from "../components/Header";
@@ -241,6 +245,19 @@ const PGI = () => {
         }}
       />
 
+      <Box sx={{ my: 2 }}>
+        <DistrictFilterBar
+          district={district}
+          setDistrict={setDistrict}
+          districts={dropdownDistricts}
+          priorityOnly={priorityOnly}
+          onPriorityOnlyChange={(v) => {
+            setPriorityOnly(v);
+            if (v && district !== "All" && !isPriorityDistrict(district)) setDistrict("All");
+          }}
+        />
+      </Box>
+
       <PageSnapshotPanel
         page="pgi"
         title="Gujarat PGI 2.0 — District Snapshot"
@@ -276,33 +293,24 @@ const PGI = () => {
         }
       />
 
-      <Box mt={2.5}>
-        <DistrictFilterBar
-          district={district}
-          setDistrict={setDistrict}
-          districts={dropdownDistricts}
-          priorityOnly={priorityOnly}
-          onPriorityOnlyChange={(v) => {
-            setPriorityOnly(v);
-            if (v && district !== "All" && !isPriorityDistrict(district)) setDistrict("All");
-          }}
-        />
-      </Box>
-
       <Card sx={{ borderRadius: 3, boxShadow: 3, mt: 2, border: "1px solid #E4E7F0" }} elevation={0}>
         <CardContent>
           <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 2, color: "#16233B" }}>
             📊 District-wise PGI-D % Achieved — 2024-25 vs 2025-26
           </Typography>
           <ResponsiveContainer width="100%" height={420}>
-            <BarChart data={rankingChartData} margin={{ top: 10, right: 20, bottom: 90 }}>
+            <BarChart data={rankingChartData} margin={{ top: 34, right: 20, bottom: 90 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="District" tick={{ fontSize: 10.5 }} interval={0} angle={-45} textAnchor="end" height={90} />
               <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v) => (v == null ? "—" : `${v}%`)} />
+              <Tooltip formatter={(v) => (v == null ? "—" : `${fmt1(v)}%`)} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="2024-25" fill="#8B94A8" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="2025-26" fill="#F0B429" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="2024-25" fill="#8B94A8" radius={[4, 4, 0, 0]}>
+<LabelList dataKey="2024-25" content={barLabel(false)} />
+</Bar>
+              <Bar dataKey="2025-26" fill="#F0B429" radius={[4, 4, 0, 0]}>
+<LabelList dataKey="2025-26" content={barLabel(false)} />
+</Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

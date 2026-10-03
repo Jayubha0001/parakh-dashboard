@@ -1,3 +1,5 @@
+import { barLabel, pointLabel } from "../../utils/chartLabels";
+import { fmt1 } from "../../utils/fmt";
 import {
   Box,
   Typography,
@@ -18,6 +20,7 @@ import {
   Tooltip,
   LineChart,
   Line,
+  LabelList,
 } from "recharts";
 
 import goi from "../../data/pmshriGOI.json";
@@ -67,12 +70,14 @@ const GOIAnalysisPanel = ({ selectedDistrict = "All" }) => {
               Total Enrollment by Year
             </Typography>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={goi.stateEnrollment}>
+              <BarChart data={goi.stateEnrollment} margin={{ top: 34, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="year" tick={{ fontSize: 11 }} />
                 <YAxis domain={["auto", "auto"]} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="totalEnrollment" name="Enrollment" fill="#1976D2" radius={[6, 6, 0, 0]} />
+                <Tooltip formatter={(v) => (typeof v === "number" ? fmt1(v) : v)} />
+                <Bar dataKey="totalEnrollment" name="Enrollment" fill="#1976D2" radius={[6, 6, 0, 0]}>
+<LabelList dataKey="totalEnrollment" content={barLabel(false)} />
+</Bar>
               </BarChart>
             </ResponsiveContainer>
           </Grid>
@@ -85,8 +90,10 @@ const GOIAnalysisPanel = ({ selectedDistrict = "All" }) => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="year" tick={{ fontSize: 11 }} />
                 <YAxis domain={["auto", "auto"]} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="avgPct" name="Avg GSQAC %" stroke="#8E24AA" strokeWidth={2.5} dot={{ r: 4 }} />
+                <Tooltip formatter={(v) => (typeof v === "number" ? fmt1(v) : v)} />
+                <Line type="monotone" dataKey="avgPct" name="Avg GSQAC %" stroke="#8E24AA" strokeWidth={2.5} dot={{ r: 4 }}>
+<LabelList dataKey="avgPct" content={pointLabel} />
+</Line>
               </LineChart>
             </ResponsiveContainer>
           </Grid>

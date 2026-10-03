@@ -1,3 +1,5 @@
+import { barLabel } from "../utils/chartLabels";
+import { fmt1 } from "../utils/fmt";
 import {
   Box,
   Card,
@@ -20,6 +22,7 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   Legend,
+  LabelList,
 } from "recharts";
 
 import { PARAKH_NATIONAL_BENCHMARKS } from "../constants/parakhNationalBenchmarks";
@@ -178,14 +181,20 @@ const BenchmarkChart = ({ item, showDistrict, districtBarLabel = "District" }) =
     <Box sx={{ height: 200 }}>
       <Typography sx={{ fontSize: 12.5, fontWeight: 600, mb: 0.5, textAlign: "center" }}>{item.name}</Typography>
       <ResponsiveContainer width="100%" height="88%">
-        <BarChart key={showDistrict ? districtBarLabel : "state-only"} data={data} margin={{ top: 5, right: 8, left: -18, bottom: 0 }} barGap={3}>
+        <BarChart key={showDistrict ? districtBarLabel : "state-only"} data={data} margin={{ top: 34, right: 8, left: -18, bottom: 0 }} barGap={3}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="grade" tick={{ fontSize: 11 }} />
           <YAxis domain={[0, 100]} unit="%" tick={{ fontSize: 10 }} />
-          <RechartsTooltip formatter={(value) => `${value}%`} />
-          {showDistrict && <Bar dataKey={districtBarLabel} fill={BAR_COLORS.district} radius={[3, 3, 0, 0]} barSize={14} />}
-          <Bar dataKey="Gujarat" fill={BAR_COLORS.state} radius={[3, 3, 0, 0]} barSize={14} />
-          <Bar dataKey="National" fill={BAR_COLORS.national} radius={[3, 3, 0, 0]} barSize={14} />
+          <RechartsTooltip formatter={(value) => `${fmt1(value)}%`} />
+          {showDistrict && <Bar dataKey={districtBarLabel} fill={BAR_COLORS.district} radius={[3, 3, 0, 0]} barSize={14}>
+<LabelList dataKey={districtBarLabel} content={barLabel(false)} />
+</Bar>}
+          <Bar dataKey="Gujarat" fill={BAR_COLORS.state} radius={[3, 3, 0, 0]} barSize={14}>
+<LabelList dataKey="Gujarat" content={barLabel(false)} />
+</Bar>
+          <Bar dataKey="National" fill={BAR_COLORS.national} radius={[3, 3, 0, 0]} barSize={14}>
+<LabelList dataKey="National" content={barLabel(false)} />
+</Bar>
         </BarChart>
       </ResponsiveContainer>
     </Box>

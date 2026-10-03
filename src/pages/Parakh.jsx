@@ -123,6 +123,19 @@ const PARAKH = () => {
     <DashboardLayout>
       <Header />
 
+      <Box sx={{ my: 2 }}>
+        <DistrictFilterBar
+        district={district}
+        setDistrict={setDistrict}
+        districts={dropdownDistricts}
+        priorityOnly={priorityOnly}
+        onPriorityOnlyChange={(v) => {
+          setPriorityOnly(v);
+          if (v && district !== "All" && !isPriorityDistrict(district)) setDistrict("All");
+        }}
+      />
+      </Box>
+
       {overall.length > 0 && (() => {
         const dataByDistrict = Object.fromEntries(overall.map((d) => [d.District, (d.Overall ?? 0) * 100]));
         const priorityRows = overall.filter((d) => isPriorityDistrict(d.District));
@@ -177,17 +190,6 @@ const PARAKH = () => {
           />
         );
       })()}
-
-      <DistrictFilterBar
-        district={district}
-        setDistrict={setDistrict}
-        districts={dropdownDistricts}
-        priorityOnly={priorityOnly}
-        onPriorityOnlyChange={(v) => {
-          setPriorityOnly(v);
-          if (v && district !== "All" && !isPriorityDistrict(district)) setDistrict("All");
-        }}
-      />
 
       <NationalBenchmarkPanel
         district={district}

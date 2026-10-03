@@ -1,3 +1,5 @@
+import { barLabel } from "../../utils/chartLabels";
+import { fmt1 } from "../../utils/fmt";
 import {
   Box,
   Typography,
@@ -18,6 +20,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  LabelList,
 } from "recharts";
 
 import gog from "../../data/pmshriGOG.json";
@@ -67,7 +70,7 @@ const GOGAnalysisPanel = ({ selectedDistrict = "All" }) => {
                     <Cell key={g.grade} fill={GRADE_PIE_COLORS[g.grade] || "#B0BEC5"} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(v) => (typeof v === "number" ? fmt1(v) : v)} />
               </PieChart>
             </ResponsiveContainer>
           </Grid>
@@ -76,12 +79,14 @@ const GOGAnalysisPanel = ({ selectedDistrict = "All" }) => {
               GSQAC % Movement (2023-24 → 2024-25)
             </Typography>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={gog.gsqacMovement}>
+              <BarChart data={gog.gsqacMovement} margin={{ top: 34, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="category" tick={{ fontSize: 10 }} interval={0} angle={-10} textAnchor="end" height={50} />
                 <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="schools" name="Schools" fill="#8E24AA" radius={[6, 6, 0, 0]} />
+                <Tooltip formatter={(v) => (typeof v === "number" ? fmt1(v) : v)} />
+                <Bar dataKey="schools" name="Schools" fill="#8E24AA" radius={[6, 6, 0, 0]}>
+<LabelList dataKey="schools" content={barLabel(false)} />
+</Bar>
               </BarChart>
             </ResponsiveContainer>
           </Grid>

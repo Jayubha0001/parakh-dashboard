@@ -1,3 +1,5 @@
+import { barLabel } from "../utils/chartLabels";
+import { fmt1 } from "../utils/fmt";
 import {
   Card,
   CardContent,
@@ -30,6 +32,7 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   Legend,
+  LabelList,
 } from "recharts";
 import { bandColor } from "./CombinedBandSummary";
 
@@ -96,7 +99,7 @@ const DetailChart = ({ rows, colHeadA, colHeadB }) => {
   return (
     <Box sx={{ width: "100%", height: 320 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: rows.length > 4 ? 70 : 30 }} barGap={4}>
+        <BarChart data={chartData} margin={{ top: 34, right: 20, left: 0, bottom: rows.length > 4 ? 70 : 30 }} barGap={4}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis
             dataKey="name"
@@ -106,10 +109,14 @@ const DetailChart = ({ rows, colHeadA, colHeadB }) => {
             interval={0}
           />
           <YAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
-          <RechartsTooltip formatter={(value) => (value == null ? "No data" : `${value}%`)} />
+          <RechartsTooltip formatter={(value) => (value == null ? "No data" : `${fmt1(value)}%`)} />
           <Legend wrapperStyle={{ fontSize: 12 }} />
-          <Bar dataKey={colHeadA} fill="#1E3A8A" radius={[3, 3, 0, 0]} barSize={rows.length > 6 ? 14 : 22} />
-          <Bar dataKey={colHeadB} fill="#F0B429" radius={[3, 3, 0, 0]} barSize={rows.length > 6 ? 14 : 22} />
+          <Bar dataKey={colHeadA} fill="#1E3A8A" radius={[3, 3, 0, 0]} barSize={rows.length > 6 ? 14 : 22}>
+<LabelList dataKey={colHeadA} content={barLabel(false)} />
+</Bar>
+          <Bar dataKey={colHeadB} fill="#F0B429" radius={[3, 3, 0, 0]} barSize={rows.length > 6 ? 14 : 22}>
+<LabelList dataKey={colHeadB} content={barLabel(false)} />
+</Bar>
         </BarChart>
       </ResponsiveContainer>
     </Box>

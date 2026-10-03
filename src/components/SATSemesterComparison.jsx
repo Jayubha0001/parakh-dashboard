@@ -1,3 +1,4 @@
+import { fmt1 } from "../utils/fmt";
 import {
   Card,
   CardContent,
@@ -83,7 +84,7 @@ const SATSemesterComparison = ({ data = [], district = "All", priorityDistricts 
   // when there are few enough bars (a single district, or the 10
   // priority districts) — the full 33-district view relies on the
   // tooltip and the table below instead of cramming numbers onto bars.
-  const showLabels = chartData.length <= 12;
+  const showLabels = true;
 
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 2.5 }}>
@@ -110,14 +111,14 @@ const SATSemesterComparison = ({ data = [], district = "All", priorityDistricts 
               tick={{ fontSize: 10 }}
             />
             <YAxis domain={[0, 100]} />
-            <Tooltip formatter={(value) => (value == null ? "—" : `${value}%`)} />
+            <Tooltip formatter={(value) => (value == null ? "—" : `${fmt1(value)}%`)} />
             <Legend />
             <Bar dataKey="Sem 1" fill="#9AA5B1" radius={[4, 4, 0, 0]} barSize={district !== "All" ? 60 : 14}>
               {showLabels && (
                 <LabelList
                   dataKey="Sem 1"
                   position="top"
-                  formatter={(value) => (value == null ? "" : `${value}%`)}
+                  formatter={(value) => (value == null ? "" : `${fmt1(value)}%`)}
                   style={{ fontSize: 10, fontWeight: "bold", fill: "#5B6B85" }}
                 />
               )}
@@ -127,7 +128,7 @@ const SATSemesterComparison = ({ data = [], district = "All", priorityDistricts 
                 <LabelList
                   dataKey="Sem 2"
                   position="top"
-                  formatter={(value) => (value == null ? "" : `${value}%`)}
+                  formatter={(value) => (value == null ? "" : `${fmt1(value)}%`)}
                   style={{ fontSize: 10, fontWeight: "bold", fill: "#6A1B9A" }}
                 />
               )}

@@ -1,3 +1,4 @@
+import { fmt1 } from "../utils/fmt";
 import { Card, CardContent, Typography } from "@mui/material";
 import {
   ResponsiveContainer,
@@ -58,7 +59,7 @@ const PGIRankingChart = ({ data = [], allData = null, data2526 = [], allData2526
   // (a filtered district, or a short priority-only list). The exact
   // number is always still one hover away via the tooltip, and in the
   // full table right below this chart.
-  const showLabels = chartData.length <= 8;
+  const showLabels = true;
 
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 4, mt: 2.5 }}>
@@ -81,7 +82,7 @@ const PGIRankingChart = ({ data = [], allData = null, data2526 = [], allData2526
 
             <YAxis domain={[0, 100]} />
 
-            <Tooltip formatter={(value) => (value == null ? "—" : `${value}%`)} />
+            <Tooltip formatter={(value) => (value == null ? "—" : `${fmt1(value)}%`)} />
             <Legend />
 
             <Bar dataKey="2024-25" barSize={has2526 ? 16 : 20} radius={[6, 6, 0, 0]} fill={colors.navyLight}>
@@ -92,7 +93,7 @@ const PGIRankingChart = ({ data = [], allData = null, data2526 = [], allData2526
                 <LabelList
                   dataKey="2024-25"
                   position="top"
-                  formatter={(value) => (value == null ? "" : `${value}%`)}
+                  formatter={(value) => (value == null ? "" : `${fmt1(value)}%`)}
                   style={{ fontSize: 9.5, fontWeight: "bold", fill: "#333" }}
                 />
               )}
@@ -107,7 +108,7 @@ const PGIRankingChart = ({ data = [], allData = null, data2526 = [], allData2526
                   <LabelList
                     dataKey="2025-26"
                     position="top"
-                    formatter={(value) => (value == null ? "" : `${value}%`)}
+                    formatter={(value) => (value == null ? "" : `${fmt1(value)}%`)}
                     style={{ fontSize: 9.5, fontWeight: "bold", fill: "#333" }}
                   />
                 )}

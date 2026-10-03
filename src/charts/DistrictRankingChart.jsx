@@ -1,3 +1,5 @@
+import { barLabel } from "../utils/chartLabels";
+import { fmt1 } from "../utils/fmt";
 import { Card, CardContent, Typography, Box } from "@mui/material";
 import {
   ResponsiveContainer,
@@ -8,6 +10,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  LabelList,
 } from "recharts";
 
 // A vertical grouped bar chart — one column-group per district, with a
@@ -47,7 +50,7 @@ const DistrictRankingChart = ({ data = [] }) => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
-                margin={{ top: 10, right: 20, left: 0, bottom: 70 }}
+                margin={{ top: 34, right: 20, left: 0, bottom: 70 }}
                 barGap={2}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -64,15 +67,21 @@ const DistrictRankingChart = ({ data = [] }) => {
                 <YAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
 
                 <Tooltip
-                  formatter={(value, name) => [value != null ? `${value}%` : "No data", name]}
+                  formatter={(value, name) => [value != null ? `${fmt1(value)}%` : "No data", name]}
                   labelFormatter={(label) => label}
                 />
 
                 <Legend wrapperStyle={{ fontSize: 12.5 }} verticalAlign="top" />
 
-                <Bar dataKey="PGI-D %" fill="#1E3A8A" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="PARAKH %" fill="#F0B429" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="SAT %" fill="#2E7D32" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="PGI-D %" fill="#1E3A8A" radius={[3, 3, 0, 0]}>
+<LabelList dataKey="PGI-D %" content={barLabel(false)} />
+</Bar>
+                <Bar dataKey="PARAKH %" fill="#F0B429" radius={[3, 3, 0, 0]}>
+<LabelList dataKey="PARAKH %" content={barLabel(false)} />
+</Bar>
+                <Bar dataKey="SAT %" fill="#2E7D32" radius={[3, 3, 0, 0]}>
+<LabelList dataKey="SAT %" content={barLabel(false)} />
+</Bar>
               </BarChart>
             </ResponsiveContainer>
           </Box>

@@ -1,3 +1,5 @@
+import { barLabel } from "../utils/chartLabels";
+import { fmt1 } from "../utils/fmt";
 import { useEffect, useState } from "react";
 import { Box, Card, CardContent, Grid, Typography, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, Paper, Chip, TextField, MenuItem, TablePagination, Tabs, Tab, ToggleButton } from "@mui/material";
 import StarIcon from "@mui/icons-material/Star";
@@ -15,6 +17,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  LabelList,
 } from "recharts";
 
 import DashboardLayout from "../components/DashboardLayout";
@@ -39,6 +42,7 @@ import { isPriorityDistrict, PRIORITY_DISTRICTS } from "../utils/priorityDistric
 import PriorityChip from "../components/PriorityChip";
 import ActionItemsQueue from "../components/ActionItemsQueue";
 import DropdownFilter from "../components/DropdownFilter";
+import DistrictFilterBar from "../components/DistrictFilterBar";
 import PageSnapshotPanel from "../components/PageSnapshotPanel";
 import GOIAnalysisPanel from "../components/pmshri/GOIAnalysisPanel";
 import GOGAnalysisPanel from "../components/pmshri/GOGAnalysisPanel";
@@ -221,26 +225,18 @@ const PMShri = () => {
     <DashboardLayout>
       <Header />
 
-      <Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", mt: 2, px: 1 }}>
-        <Tabs
-          value={activeTab}
-          onChange={(_, v) => setActiveTab(v)}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            "& .MuiTab-root": { textTransform: "none", fontWeight: 600, fontSize: 13.5, minHeight: 48 },
-            "& .Mui-selected": { color: "#0F172A !important" },
-            "& .MuiTabs-indicator": { bgcolor: "#0F172A", height: 3 },
+      <Box sx={{ my: 2 }}>
+        <DistrictFilterBar
+          district={gsqacDistrictFilter}
+          setDistrict={setGsqacDistrictFilter}
+          districts={["All", ...[...districts].filter((d) => !priorityOnly || isPriorityDistrict(d.district)).map((d) => d.district).sort((a, b) => a.localeCompare(b))]}
+          priorityOnly={priorityOnly}
+          onPriorityOnlyChange={(v) => {
+            setPriorityOnly(v);
+            if (v && gsqacDistrictFilter !== "All" && !isPriorityDistrict(gsqacDistrictFilter)) setGsqacDistrictFilter("All");
           }}
-        >
-          <Tab label="GSQAC Overview" />
-          <Tab label="GOI Analysis — Enrollment & Board Results" />
-          <Tab label="GOG 426 Deep-Dive" />
-        </Tabs>
-      </Paper>
-
-      {activeTab === 1 && <GOIAnalysisPanel selectedDistrict={gsqacDistrictFilter} />}
-      {activeTab === 2 && <GOGAnalysisPanel selectedDistrict={gsqacDistrictFilter} />}
+        />
+      </Box>
 
       {(() => {
         const gsqacDistricts = gsqac.districts;
@@ -297,48 +293,26 @@ const PMShri = () => {
         );
       })()}
 
-      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid #E4E7F0", p: 2, mt: 2, display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
-        <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: "text.secondary" }}>
-          District Filter — applies across all tabs on this page:
-        </Typography>
-        <DropdownFilter
-          minWidth={220}
-          value={gsqacDistrictFilter}
-          onChange={(e) => setGsqacDistrictFilter(e.target.value)}
-          options={[
-            { value: "All", label: "All Districts" },
-            ...[...districts]
-              .filter((d) => !priorityOnly || isPriorityDistrict(d.district))
-              .sort((a, b) => a.district.localeCompare(b.district))
-              .map((d) => ({ value: d.district, label: `${d.district}${isPriorityDistrict(d.district) ? " ⭐" : ""}` })),
-          ]}
-        />
-
-        <ToggleButton
-          value="priority"
-          selected={priorityOnly}
-          onChange={() => {
-            const next = !priorityOnly;
-            setPriorityOnly(next);
-            if (next && gsqacDistrictFilter !== "All" && !isPriorityDistrict(gsqacDistrictFilter)) {
-              setGsqacDistrictFilter("All");
-            }
-          }}
-          size="small"
+      <Paper elevation={0} sx={{ borderRadius: 4, border: "1px solid #E4E7F0", mt: 2, px: 1 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, v) => setActiveTab(v)}
+          variant="scrollable"
+          scrollButtons="auto"
           sx={{
-            textTransform: "none",
-            fontWeight: 700,
-            gap: 0.6,
-            px: 1.5,
-            color: priorityOnly ? "#8A6200" : undefined,
-            borderColor: priorityOnly ? "#F0B429" : undefined,
-            "&.Mui-selected": { bgcolor: "#FFF4D6", "&:hover": { bgcolor: "#FDEBB8" } },
+            "& .MuiTab-root": { textTransform: "none", fontWeight: 600, fontSize: 13.5, minHeight: 48 },
+            "& .Mui-selected": { color: "#0F172A !important" },
+            "& .MuiTabs-indicator": { bgcolor: "#0F172A", height: 3 },
           }}
         >
-          <StarIcon fontSize="small" sx={{ color: priorityOnly ? "#F0B429" : undefined }} />
-          Priority Districts Only
-        </ToggleButton>
+          <Tab label="GSQAC Overview" />
+          <Tab label="GOI Analysis — Enrollment & Board Results" />
+          <Tab label="GOG 426 Deep-Dive" />
+        </Tabs>
       </Paper>
+
+      {activeTab === 1 && <GOIAnalysisPanel selectedDistrict={gsqacDistrictFilter} />}
+      {activeTab === 2 && <GOGAnalysisPanel selectedDistrict={gsqacDistrictFilter} />}
 
       {activeTab === 0 && (
       <>
@@ -427,10 +401,14 @@ const PMShri = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="District" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 10 }} />
               <YAxis allowDecimals={false} />
-              <Tooltip />
+              <Tooltip formatter={(v) => (typeof v === "number" ? fmt1(v) : v)} />
               <Legend verticalAlign="top" height={30} />
-              <Bar dataKey="GOI Schools" stackId="a" fill="#1976D2" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="GOG Schools" stackId="a" fill="#F0B429" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="GOI Schools" stackId="a" fill="#1976D2" radius={[0, 0, 0, 0]}>
+<LabelList dataKey="GOI Schools" position="center" formatter={fmt1} style={{ fontSize: 9, fontWeight: 700, fill: "#fff" }} />
+</Bar>
+              <Bar dataKey="GOG Schools" stackId="a" fill="#F0B429" radius={[6, 6, 0, 0]}>
+<LabelList dataKey="GOG Schools" position="center" formatter={fmt1} style={{ fontSize: 9, fontWeight: 700, fill: "#fff" }} />
+</Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -545,15 +523,21 @@ const PMShri = () => {
             Year-wise Comparison
           </Typography>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={gsqacYearWiseFiltered} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}>
+            <BarChart data={gsqacYearWiseFiltered} margin={{ top: 34, right: 30, left: 20, bottom: 10 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="year" tick={{ fontSize: 12 }} />
               <YAxis domain={[0, 100]} />
-              <Tooltip formatter={(v) => (v == null ? "—" : `${v}%`)} />
+              <Tooltip formatter={(v) => (v == null ? "—" : `${fmt1(v)}%`)} />
               <Legend verticalAlign="top" height={30} />
-              <Bar dataKey="GOI" fill="#1976D2" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="GOG" fill="#8E24AA" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="All Schools" fill="#F0B429" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="GOI" fill="#1976D2" radius={[4, 4, 0, 0]}>
+<LabelList dataKey="GOI" content={barLabel(false)} />
+</Bar>
+              <Bar dataKey="GOG" fill="#8E24AA" radius={[4, 4, 0, 0]}>
+<LabelList dataKey="GOG" content={barLabel(false)} />
+</Bar>
+              <Bar dataKey="All Schools" fill="#F0B429" radius={[4, 4, 0, 0]}>
+<LabelList dataKey="All Schools" content={barLabel(false)} />
+</Bar>
             </BarChart>
           </ResponsiveContainer>
 

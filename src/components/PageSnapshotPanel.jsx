@@ -1,7 +1,11 @@
+import { barLabel } from "../utils/chartLabels";
+import { fmt1 } from "../utils/fmt";
 import { useState } from "react";
 import { useFeatureFlags } from "../config/FeatureFlagsContext";
 import { Box, Typography, Grid } from "@mui/material";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  LabelList,
+} from "recharts";
 import { fontDisplay, fontMono } from "../theme/theme";
 import { isPriorityDistrict } from "../utils/priorityDistricts";
 import GujaratDistrictMap from "./GujaratDistrictMap";
@@ -172,20 +176,28 @@ const PageSnapshotPanelInner = ({
             {isSingleDistrict ? `${district} vs State Average` : `Avg ${metricLabel} — Priority vs Other`}
           </Typography>
           <ResponsiveContainer width="100%" height={175}>
-            <BarChart key={isSingleDistrict ? "district" : "groups"} data={isSingleDistrict ? districtCompareData : compareData} margin={{ left: -18, right: 8 }}>
+            <BarChart key={isSingleDistrict ? "district" : "groups"} data={isSingleDistrict ? districtCompareData : compareData} margin={{ left: -18, right: 8 , top: 34}}>
               <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F6" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: SLATE }} />
               <YAxis unit={valueSuffix} domain={[0, 100]} tick={{ fontSize: 10, fill: SLATE }} />
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v) => `${v}${valueSuffix}`} />
               {isSingleDistrict ? (
                 <>
-                  <Bar dataKey="District" fill={GOLD} radius={[3, 3, 0, 0]} barSize={16} />
-                  <Bar dataKey="State Avg" fill={TEAL} radius={[3, 3, 0, 0]} barSize={16} />
+                  <Bar dataKey="District" fill={GOLD} radius={[3, 3, 0, 0]} barSize={16}>
+<LabelList dataKey="District" content={barLabel(false)} />
+</Bar>
+                  <Bar dataKey="State Avg" fill={TEAL} radius={[3, 3, 0, 0]} barSize={16}>
+<LabelList dataKey="State Avg" content={barLabel(false)} />
+</Bar>
                 </>
               ) : (
                 <>
-                  <Bar dataKey="Priority" fill={GOLD} radius={[3, 3, 0, 0]} barSize={16} />
-                  {!priorityOnly && <Bar dataKey="Other" fill={TEAL} radius={[3, 3, 0, 0]} barSize={16} />}
+                  <Bar dataKey="Priority" fill={GOLD} radius={[3, 3, 0, 0]} barSize={16}>
+<LabelList dataKey="Priority" content={barLabel(false)} />
+</Bar>
+                  {!priorityOnly && <Bar dataKey="Other" fill={TEAL} radius={[3, 3, 0, 0]} barSize={16}>
+<LabelList dataKey="Other" content={barLabel(false)} />
+</Bar>}
                 </>
               )}
             </BarChart>
@@ -219,8 +231,12 @@ const PageSnapshotPanelInner = ({
                 <XAxis type="number" tick={{ fontSize: 10, fill: SLATE }} allowDecimals={false} />
                 <YAxis type="category" dataKey="label" tick={{ fontSize: 10, fill: INK }} width={72} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Bar dataKey="Priority" stackId="g" fill={GOLD} radius={[0, 0, 0, 0]} barSize={14} />
-                {!priorityOnly && <Bar dataKey="Other" stackId="g" fill={TEAL} radius={[0, 4, 4, 0]} barSize={14} />}
+                <Bar dataKey="Priority" stackId="g" fill={GOLD} radius={[0, 0, 0, 0]} barSize={14}>
+<LabelList dataKey="Priority" position="center" formatter={fmt1} style={{ fontSize: 9, fontWeight: 700, fill: "#fff" }} />
+</Bar>
+                {!priorityOnly && <Bar dataKey="Other" stackId="g" fill={TEAL} radius={[0, 4, 4, 0]} barSize={14}>
+<LabelList dataKey="Other" position="center" formatter={fmt1} style={{ fontSize: 9, fontWeight: 700, fill: "#fff" }} />
+</Bar>}
               </BarChart>
             </ResponsiveContainer>
           )}
